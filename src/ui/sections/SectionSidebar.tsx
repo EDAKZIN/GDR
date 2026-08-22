@@ -26,7 +26,7 @@ type ModalState =
   | null;
 
 const inputClass =
-  "w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-teal-400";
+  "w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-amber-400";
 
 function clampMenu(x: number, y: number): { left: number; top: number } {
   return {
@@ -131,7 +131,7 @@ function SectionFormModal({
         <div className="flex flex-col gap-1 text-xs font-medium text-zinc-400">
           Icono (nombre de Lucide o URL de imagen)
           <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-teal-300">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-amber-300">
               <IconRenderer icon={icon} />
             </span>
             <input
@@ -169,7 +169,7 @@ function SectionFormModal({
           </button>
           <button
             type="submit"
-            className="rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={saving || name.trim() === ""}
           >
             {saving ? "Guardando…" : "Guardar"}
@@ -343,7 +343,7 @@ function SectionRow({
         tabIndex={0}
         className={`group flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2 transition-colors ${
           active
-            ? "border-teal-500/50 bg-teal-500/10"
+            ? "border-amber-500/50 bg-amber-500/10"
             : "border-transparent hover:border-zinc-700 hover:bg-zinc-900"
         } ${dimmed ? "opacity-50" : ""}`}
         onClick={() => {
@@ -362,7 +362,7 @@ function SectionRow({
       >
         <span
           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
-            active ? "bg-teal-500/20 text-teal-300" : "bg-zinc-800 text-zinc-400"
+            active ? "bg-amber-500/20 text-amber-300" : "bg-zinc-800 text-zinc-400"
           }`}
         >
           <IconRenderer icon={section.icon} />
@@ -439,7 +439,7 @@ export function SectionSidebar() {
   }
 
   return (
-    <aside className="flex min-h-0 w-64 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950">
+    <aside className="flex min-h-0 w-52 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950 lg:w-64">
       <header className="flex items-center justify-between gap-2 px-3 py-3">
         <h1 className="text-sm font-bold tracking-tight text-zinc-100">Secciones</h1>
         <div className="flex items-center gap-1">
@@ -462,7 +462,7 @@ export function SectionSidebar() {
             type="button"
             aria-label="Nueva sección"
             title="Nueva sección"
-            className="rounded-md bg-teal-600 p-1.5 text-white transition-colors hover:bg-teal-500"
+            className="rounded-md bg-amber-600 p-1.5 text-white transition-colors hover:bg-amber-500"
             onClick={() => {
               setModal({ mode: "create" });
             }}
@@ -503,7 +503,7 @@ export function SectionSidebar() {
                   </span>
                   <button
                     type="button"
-                    className="shrink-0 rounded-md border border-zinc-700 px-1.5 py-1 text-[11px] text-zinc-300 transition-colors hover:border-teal-400 hover:text-teal-300"
+                    className="shrink-0 rounded-md border border-zinc-700 px-1.5 py-1 text-[11px] text-zinc-300 transition-colors hover:border-amber-400 hover:text-amber-300"
                     onClick={() => {
                       void restoreSection(section.id);
                     }}
@@ -537,7 +537,7 @@ export function SectionSidebar() {
                 <Plus className="h-6 w-6 text-zinc-600" />
                 <p className="text-xs leading-relaxed text-zinc-500">
                   Crea tu primera sección con el botón{" "}
-                  <span className="font-semibold text-teal-400">+</span> para empezar a
+                  <span className="font-semibold text-amber-400">+</span> para empezar a
                   organizar tus datos.
                 </p>
               </div>

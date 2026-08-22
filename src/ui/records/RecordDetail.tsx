@@ -63,7 +63,7 @@ function ValueRow({ field, value }: { field: Field; value: unknown }) {
           href={value}
           target="_blank"
           rel="noreferrer"
-          className="break-all text-teal-300 underline decoration-teal-500/40 hover:decoration-teal-300"
+          className="break-all text-amber-300 underline decoration-amber-500/40 hover:decoration-amber-300"
         >
           {formatted}
         </a>
@@ -98,7 +98,7 @@ export function RecordDetail() {
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-teal-500"
+            className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-500"
             onClick={() => {
               startEditing();
             }}

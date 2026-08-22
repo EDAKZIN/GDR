@@ -22,7 +22,7 @@ type ModalState =
   | null;
 
 const inputClass =
-  "w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-teal-400";
+  "w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-amber-400";
 
 function FormFormModal({
   state,
@@ -137,7 +137,7 @@ function FormFormModal({
           </button>
           <button
             type="submit"
-            className="rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={saving || name.trim() === ""}
           >
             {saving ? "Guardando…" : "Guardar"}
@@ -342,7 +342,7 @@ export function FormList() {
             type="button"
             aria-label="Nuevo formulario"
             title="Nuevo formulario"
-            className="rounded-md bg-teal-600 p-1.5 text-white transition-colors hover:bg-teal-500"
+            className="rounded-md bg-amber-600 p-1.5 text-white transition-colors hover:bg-amber-500"
             onClick={() => {
               setModal({ mode: "create" });
             }}
@@ -377,7 +377,7 @@ export function FormList() {
                 </span>
                 <button
                   type="button"
-                  className="shrink-0 rounded-md border border-zinc-700 px-2 py-1 text-[11px] text-zinc-300 transition-colors hover:border-teal-400 hover:text-teal-300"
+                  className="shrink-0 rounded-md border border-zinc-700 px-2 py-1 text-[11px] text-zinc-300 transition-colors hover:border-amber-400 hover:text-amber-300"
                   onClick={() => {
                     void restoreForm(form.id);
                   }}
@@ -413,7 +413,7 @@ export function FormList() {
           </p>
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-teal-500"
+            className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-500"
             onClick={() => {
               setModal({ mode: "create" });
             }}
@@ -433,7 +433,7 @@ export function FormList() {
                   tabIndex={0}
                   className={`group flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2 transition-colors ${
                     active
-                      ? "border-teal-500/50 bg-teal-500/10"
+                      ? "border-amber-500/50 bg-amber-500/10"
                       : "border-transparent hover:border-zinc-700 hover:bg-zinc-900"
                   }`}
                   onClick={() => {
@@ -460,7 +460,7 @@ export function FormList() {
                     type="button"
                     aria-label={`Constructor de ${form.name}`}
                     title="Diseñar campos"
-                    className="shrink-0 rounded-md p-1 text-zinc-500 opacity-0 transition-all hover:bg-zinc-700 hover:text-teal-300 focus-visible:opacity-100 group-hover:opacity-100"
+                    className="shrink-0 rounded-md p-1 text-zinc-500 opacity-0 transition-all hover:bg-zinc-700 hover:text-amber-300 focus-visible:opacity-100 group-hover:opacity-100"
                     onClick={(event) => {
                       event.stopPropagation();
                       handleSelectForm(form.id);

@@ -4,7 +4,7 @@ import { hasEmbeddedOptions } from "../../../core/fields";
 export const FIELD_INPUT_CLASS =
   "w-full rounded-md border bg-zinc-900 px-3 py-2 text-sm text-zinc-100 " +
   "placeholder-zinc-500 shadow-inner outline-none transition-colors " +
-  "focus:border-teal-400 focus:ring-1 focus:ring-teal-400/40 disabled:cursor-not-allowed disabled:opacity-50";
+  "focus:border-amber-400 focus:ring-1 focus:ring-amber-400/40 disabled:cursor-not-allowed disabled:opacity-50";
 
 export function fieldInputClass(hasError?: boolean): string {
   return `${FIELD_INPUT_CLASS} ${hasError ? "border-rose-500/70" : "border-zinc-700"}`;
