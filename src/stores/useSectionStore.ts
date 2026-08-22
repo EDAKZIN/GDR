@@ -56,7 +56,6 @@ export interface SectionState {
   /** Formularios eliminados de la sección activa. */
   trashedForms: Form[];
   activeFormId: string | null;
-  formBuilderOpen: boolean;
 
   loadingSections: boolean;
   loadingForms: boolean;
@@ -86,9 +85,6 @@ export interface SectionState {
   restoreForm: (id: string) => Promise<void>;
   hardDeleteForm: (id: string) => Promise<void>;
   moveForm: (id: string, delta: -1 | 1) => Promise<void>;
-
-  openBuilder: () => void;
-  closeBuilder: () => void;
 }
 
 async function loadAllSections(): Promise<{
@@ -131,7 +127,6 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
   forms: [],
   trashedForms: [],
   activeFormId: null,
-  formBuilderOpen: false,
 
   loadingSections: false,
   loadingForms: false,
@@ -154,7 +149,6 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
           forms: [],
           trashedForms: [],
           activeFormId: null,
-          formBuilderOpen: false,
         });
       }
     } catch (error) {
@@ -180,7 +174,7 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
     set({
       activeSectionId: sectionId,
       ...(changed
-        ? { activeFormId: null, formBuilderOpen: false }
+        ? { activeFormId: null }
         : {}),
     });
     await get().loadForms(sectionId);
@@ -215,7 +209,7 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
   softDeleteSection: async (id) => {
     await sectionsRepository.softDelete(id);
     if (get().activeSectionId === id) {
-      set({ activeSectionId: null, forms: [], trashedForms: [], activeFormId: null, formBuilderOpen: false });
+      set({ activeSectionId: null, forms: [], trashedForms: [], activeFormId: null });
     }
     await get().loadSections();
   },
@@ -228,7 +222,7 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
   hardDeleteSection: async (id) => {
     await sectionsRepository.hardDelete(id);
     if (get().activeSectionId === id) {
-      set({ activeSectionId: null, forms: [], trashedForms: [], activeFormId: null, formBuilderOpen: false });
+      set({ activeSectionId: null, forms: [], trashedForms: [], activeFormId: null });
     }
     await get().loadSections();
   },
@@ -253,7 +247,7 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
       set({ forms, trashedForms, loadingForms: false, error: null });
       const active = get().activeFormId;
       if (active !== null && !forms.some((form) => form.id === active)) {
-        set({ activeFormId: null, formBuilderOpen: false });
+        set({ activeFormId: null });
       }
     } catch (error) {
       set({ loadingForms: false, error: toMessage(error) });
@@ -261,7 +255,7 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
   },
 
   selectForm: (formId) => {
-    set({ activeFormId: formId, formBuilderOpen: false });
+    set({ activeFormId: formId });
   },
 
   createForm: async (input) => {
@@ -290,7 +284,7 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
   softDeleteForm: async (id) => {
     await formsRepository.softDelete(id);
     if (get().activeFormId === id) {
-      set({ activeFormId: null, formBuilderOpen: false });
+      set({ activeFormId: null });
     }
     await get().loadForms(get().activeSectionId ?? "");
     void get().loadFormCounts();
@@ -305,7 +299,7 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
   hardDeleteForm: async (id) => {
     await formsRepository.hardDelete(id);
     if (get().activeFormId === id) {
-      set({ activeFormId: null, formBuilderOpen: false });
+      set({ activeFormId: null });
     }
     await get().loadForms(get().activeSectionId ?? "");
     void get().loadFormCounts();
@@ -324,11 +318,5 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
     await get().loadForms(get().activeSectionId ?? "");
   },
 
-  openBuilder: () => {
-    set({ formBuilderOpen: true });
-  },
 
-  closeBuilder: () => {
-    set({ formBuilderOpen: false });
-  },
 }));

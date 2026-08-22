@@ -7,12 +7,10 @@ import { useRecordStore, useSectionStore, useUiStore } from "./stores";
 
 /**
  * Sincroniza el formulario activo entre useSectionStore y useRecordStore:
- * - Al seleccionar un formulario se cargan sus campos y registros.
- * - Al cerrar el constructor se recargan (pueden haber cambiado los campos).
+ * al seleccionar un formulario se cargan sus campos y registros.
  */
 function useFormSync(): void {
   const activeFormId = useSectionStore((store) => store.activeFormId);
-  const formBuilderOpen = useSectionStore((store) => store.formBuilderOpen);
 
   useEffect(() => {
     const records = useRecordStore.getState();
@@ -22,10 +20,10 @@ function useFormSync(): void {
       }
       return;
     }
-    if (records.formId !== activeFormId || !formBuilderOpen) {
+    if (records.formId !== activeFormId) {
       void useRecordStore.getState().openForm(activeFormId);
     }
-  }, [activeFormId, formBuilderOpen]);
+  }, [activeFormId]);
 }
 
 /** Atajo global Ctrl+K para abrir el buscador. */
