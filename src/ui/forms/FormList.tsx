@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -271,6 +271,23 @@ export function FormList() {
   const [modal, setModal] = useState<ModalState>(null);
   const [menuFormId, setMenuFormId] = useState<string | null>(null);
   const [showTrash, setShowTrash] = useState(false);
+
+  // Esc cierra el menú contextual o el modal de formulario.
+  useEffect(() => {
+    if (modal === null && menuFormId === null) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setModal(null);
+        setMenuFormId(null);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [modal, menuFormId]);
 
   function handleSelectForm(formId: string): void {
     selectForm(formId);

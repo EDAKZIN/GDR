@@ -406,6 +406,23 @@ export function SectionSidebar() {
     void loadSections();
   }, [loadSections]);
 
+  // Esc cierra el menú contextual o el modal de sección.
+  useEffect(() => {
+    if (menu === null && modal === null) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setMenu(null);
+        setModal(null);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menu, modal]);
+
   const enabledSections = sections.filter((section) => section.enabled);
   const disabledSections = sections.filter((section) => !section.enabled);
   const menuSection =
