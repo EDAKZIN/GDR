@@ -85,7 +85,7 @@ export function useBreadcrumb(): BreadcrumbItem[] {
     },
   ];
 
-  if (route === undefined || route.view === "home") {
+  if (route.view === "home") {
     return items;
   }
 

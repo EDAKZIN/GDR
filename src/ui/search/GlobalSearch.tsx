@@ -3,7 +3,7 @@ import { Loader2, Search, SearchX, X } from "lucide-react";
 import type { SearchResult } from "../../core/search";
 import { createSearchRepository } from "../../database/repositories";
 import { getDb } from "../../database/client";
-import { useRecordStore, useSectionStore } from "../../stores";
+import { useRecordStore, useSectionStore, useUiStore } from "../../stores";
 
 const searchRepository = createSearchRepository(getDb);
 const DEBOUNCE_MS = 250;
@@ -62,6 +62,8 @@ async function navigateToResult(result: SearchResult): Promise<void> {
   const sections = useSectionStore.getState();
   await sections.selectSection(result.sectionId);
   sections.selectForm(result.formId);
+  // Navegar a la pantalla del formulario seleccionado.
+  useUiStore.getState().navigate("form", result.formId);
 
   // El efecto useFormSync de App abre el formulario en useRecordStore;
   // si por timing no llegara a hacerlo, se abre manualmente.

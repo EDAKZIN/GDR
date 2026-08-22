@@ -30,7 +30,10 @@ export function FormWorkspaceScreen() {
             className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm text-zinc-400"
           >
             {breadcrumb.map((item, index) => (
-              <span key={`${item.label}:${index}`} className="flex items-center gap-1.5">
+              <span
+                key={`${item.label}:${String(index)}`}
+                className="flex items-center gap-1.5"
+              >
                 {index > 0 ? (
                   <span aria-hidden className="text-zinc-600">
                     /

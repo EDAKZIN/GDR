@@ -1,13 +1,9 @@
-import { useEffect, useState } from "react";
-import { MousePointerClick, Search } from "lucide-react";
-import { FormBuilder } from "./ui/forms/FormBuilder";
-import { FormList } from "./ui/forms/FormList";
+import { useEffect } from "react";
 import { GlobalSearch } from "./ui/search/GlobalSearch";
-import { RecordDetail } from "./ui/records/RecordDetail";
-import { RecordEditor } from "./ui/records/RecordEditor";
-import { RecordList } from "./ui/records/RecordList";
-import { SectionSidebar } from "./ui/sections/SectionSidebar";
-import { useRecordStore, useSectionStore } from "./stores";
+import { FormWorkspaceScreen } from "./ui/screens/FormWorkspaceScreen";
+import { SectionFormsScreen } from "./ui/screens/SectionFormsScreen";
+import { SectionsScreen } from "./ui/screens/SectionsScreen";
+import { useRecordStore, useSectionStore, useUiStore } from "./stores";
 
 /**
  * Sincroniza el formulario activo entre useSectionStore y useRecordStore:
@@ -48,78 +44,32 @@ function useSearchShortcut(onOpen: () => void): void {
   }, [onOpen]);
 }
 
-function RecordsPlaceholder({ withForm }: { withForm: boolean }) {
-  return (
-    <section className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-      <MousePointerClick className="h-10 w-10 text-zinc-700" />
-      <div>
-        <h2 className="text-lg font-semibold text-zinc-300">
-          {withForm ? "Ningún registro abierto" : "Sin formulario activo"}
-        </h2>
-        <p className="mt-1 max-w-xs text-sm leading-relaxed text-zinc-500">
-          {withForm
-            ? "Selecciona un registro de la lista para verlo aquí, o crea uno nuevo."
-            : "Selecciona o crea un formulario en esta sección para gestionar sus registros."}
-        </p>
-      </div>
-    </section>
-  );
-}
+/** Router mínimo: una pantalla enfocada a la vez según useUiStore. */
+function CurrentScreen() {
+  const view = useUiStore((store) => store.view);
 
-/** Columna derecha: constructor de formularios o detalle/edición del registro. */
-function DetailColumn() {
-  const activeFormId = useSectionStore((store) => store.activeFormId);
-  const formBuilderOpen = useSectionStore((store) => store.formBuilderOpen);
-  const activeMode = useRecordStore((store) => store.activeMode);
-
-  if (activeFormId !== null && formBuilderOpen) {
-    return <FormBuilder key={activeFormId} />;
+  if (view === "section") {
+    return <SectionFormsScreen />;
   }
-  if (activeMode === "edit" || activeMode === "create") {
-    return <RecordEditor />;
+  if (view === "form") {
+    return <FormWorkspaceScreen />;
   }
-  if (activeMode === "view" && activeFormId !== null) {
-    return <RecordDetail />;
-  }
-  return <RecordsPlaceholder withForm={activeFormId !== null} />;
+  return <SectionsScreen />;
 }
 
 function App() {
-  const activeFormId = useSectionStore((store) => store.activeFormId);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const searchOpen = useUiStore((store) => store.searchOpen);
+  const setSearchOpen = useUiStore((store) => store.setSearchOpen);
   useFormSync();
   useSearchShortcut(() => {
     setSearchOpen(true);
   });
 
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-950 text-zinc-100">
-      <SectionSidebar />
-
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden p-4">
-        <div className="flex items-center justify-between gap-2">
-          <button
-            onClick={() => {
-              setSearchOpen(true);
-            }}
-            className="flex w-full max-w-sm items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-500 transition-colors hover:border-amber-400 hover:text-zinc-300"
-          >
-            <Search className="h-4 w-4 shrink-0" />
-            <span className="flex-1 text-left">Buscar en todo…</span>
-            <kbd className="rounded border border-zinc-700 bg-zinc-950 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-600">
-              Ctrl K
-            </kbd>
-          </button>
-        </div>
-        <FormList />
-        <div className="flex min-h-0 flex-1 flex-col">
-          {activeFormId !== null ? <RecordList /> : <RecordsPlaceholder withForm={false} />}
-        </div>
+    <div className="flex h-screen flex-col overflow-hidden bg-zinc-950 text-zinc-100">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <CurrentScreen />
       </main>
-
-      <aside className="flex min-h-0 w-[19rem] shrink-0 flex-col border-l border-zinc-800 bg-zinc-950/60 p-3 lg:w-[22rem] xl:w-[26rem] xl:p-4">
-        <DetailColumn />
-      </aside>
 
       {searchOpen ? (
         <GlobalSearch

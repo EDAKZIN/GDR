@@ -188,7 +188,9 @@ function SectionCard({
 
       <footer className="flex items-center justify-between text-[11px]">
         <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-zinc-400">
-          {formCount === 1 ? "1 formulario" : `${formCount} formularios`}
+          {formCount === 1
+            ? "1 formulario"
+            : `${String(formCount)} formularios`}
         </span>
         {!section.enabled ? (
           <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-zinc-500">
