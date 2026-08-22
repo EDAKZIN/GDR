@@ -215,6 +215,7 @@ function FormCard({
 export function SectionFormsScreen() {
   const activeSectionId = useSectionStore((store) => store.activeSectionId);
   const sections = useSectionStore((store) => store.sections);
+  const loadingSections = useSectionStore((store) => store.loadingSections);
   const forms = useSectionStore((store) => store.forms);
   const trashedForms = useSectionStore((store) => store.trashedForms);
   const loadingForms = useSectionStore((store) => store.loadingForms);
@@ -238,8 +239,13 @@ export function SectionFormsScreen() {
     if (activeSectionId === null) {
       // Sección eliminada o inexistente: volver al inicio.
       navigate("home");
+      return;
     }
-  }, [activeSectionId, navigate]);
+    // Sección activa apuntando a un id inexistente/eliminado: nunca quedarse cargando.
+    if (!loadingSections && activeSection === undefined) {
+      navigate("home");
+    }
+  }, [activeSectionId, activeSection, loadingSections, navigate]);
 
   // Esc cierra el menú contextual, los modales o la papelera.
   useEffect(() => {

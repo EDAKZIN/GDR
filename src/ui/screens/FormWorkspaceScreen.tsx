@@ -68,9 +68,9 @@ export function FormWorkspaceScreen() {
     }
   }, [activeSectionId, navigate]);
 
-  // Formulario eliminado desde el propio workspace: volver a la sección.
+  // Formulario borrado/inexistente (id nulo o id sin recurso cargado): volver a la sección.
   useEffect(() => {
-    if (!loadingForms && activeFormId !== null && form === undefined) {
+    if (!loadingForms && (activeFormId === null || form === undefined)) {
       goBack();
     }
   }, [loadingForms, activeFormId, form, goBack]);

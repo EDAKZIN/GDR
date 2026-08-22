@@ -14,6 +14,7 @@ import {
   createFormsRepository,
   createSectionsRepository,
 } from "../database/repositories";
+import { useUiStore } from "./useUiStore";
 
 const sectionsRepository = createSectionsRepository(getDb);
 const formsRepository = createFormsRepository(getDb);
@@ -210,6 +211,8 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
     await sectionsRepository.softDelete(id);
     if (get().activeSectionId === id) {
       set({ activeSectionId: null, forms: [], trashedForms: [], activeFormId: null });
+      // La sección activa ya no existe: volver al nivel superior siempre.
+      useUiStore.getState().navigate("home");
     }
     await get().loadSections();
   },
@@ -223,6 +226,8 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
     await sectionsRepository.hardDelete(id);
     if (get().activeSectionId === id) {
       set({ activeSectionId: null, forms: [], trashedForms: [], activeFormId: null });
+      // La sección activa ya no existe: volver al nivel superior siempre.
+      useUiStore.getState().navigate("home");
     }
     await get().loadSections();
   },
@@ -285,6 +290,10 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
     await formsRepository.softDelete(id);
     if (get().activeFormId === id) {
       set({ activeFormId: null });
+      // Si el formulario borrado era el visible en su workspace, volver a la sección.
+      if (useUiStore.getState().view === "form") {
+        useUiStore.getState().goBack();
+      }
     }
     await get().loadForms(get().activeSectionId ?? "");
     void get().loadFormCounts();
@@ -300,6 +309,10 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
     await formsRepository.hardDelete(id);
     if (get().activeFormId === id) {
       set({ activeFormId: null });
+      // Si el formulario borrado era el visible en su workspace, volver a la sección.
+      if (useUiStore.getState().view === "form") {
+        useUiStore.getState().goBack();
+      }
     }
     await get().loadForms(get().activeSectionId ?? "");
     void get().loadFormCounts();
