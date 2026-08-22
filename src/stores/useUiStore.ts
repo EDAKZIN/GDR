@@ -34,19 +34,19 @@ export const useUiStore = create<UiState>()((set, get) => ({
   navigate: (view, id) => {
     const sectionStore = useSectionStore.getState();
     if (view === "home") {
-      set({ routes: [{ view: "home" }] });
+      set({ routes: [{ view: "home" }], view: "home" });
       return;
     }
     if (view === "section") {
       // Entrar a una sección siempre parte del nivel 2.
-      set({ routes: [{ view: "home" }, { view: "section", id }] });
+      set({ routes: [{ view: "home" }, { view: "section", id }], view: "section" });
       if (id !== undefined && sectionStore.activeSectionId !== id) {
         void sectionStore.selectSection(id);
       }
       return;
     }
     const withoutForms = get().routes.filter((route) => route.view !== "form");
-    set({ routes: [...withoutForms, { view: "form", id }] });
+    set({ routes: [...withoutForms, { view: "form", id }], view: "form" });
     if (id !== undefined && sectionStore.activeFormId !== id) {
       sectionStore.selectForm(id);
     }
@@ -57,7 +57,8 @@ export const useUiStore = create<UiState>()((set, get) => ({
     if (routes.length <= 1) {
       return;
     }
-    set({ routes: routes.slice(0, -1) });
+    const remaining = routes.slice(0, -1);
+    set({ routes: remaining, view: remaining[remaining.length - 1].view });
   },
 
   setSearchOpen: (open) => {
