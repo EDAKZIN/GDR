@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "GDR",
   "version": "0.1.0",
-  "identifier": "com.gdr.app",
+  "identifier": "com.edakzin.gdr",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -23,6 +23,7 @@
   },
   "bundle": {
     "active": true,
+    "publisher": "EDAKZIN",
     "targets": "all",
     "icon": [
       "icons/32x32.png",
