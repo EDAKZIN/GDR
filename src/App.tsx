@@ -102,7 +102,7 @@ function App() {
             onClick={() => {
               setSearchOpen(true);
             }}
-            className="flex w-full max-w-sm items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-500 transition-colors hover:border-teal-400 hover:text-zinc-300"
+            className="flex w-full max-w-sm items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-500 transition-colors hover:border-amber-400 hover:text-zinc-300"
           >
             <Search className="h-4 w-4 shrink-0" />
             <span className="flex-1 text-left">Buscar en todo…</span>
@@ -117,7 +117,7 @@ function App() {
         </div>
       </main>
 
-      <aside className="flex min-h-0 w-[26rem] shrink-0 flex-col border-l border-zinc-800 bg-zinc-950/60 p-4">
+      <aside className="flex min-h-0 w-[19rem] shrink-0 flex-col border-l border-zinc-800 bg-zinc-950/60 p-3 lg:w-[22rem] xl:w-[26rem] xl:p-4">
         <DetailColumn />
       </aside>
 
