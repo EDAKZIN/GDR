@@ -128,6 +128,15 @@ export function createFormsRepository(db: DbHandle): FormRepository {
       const data = createFormInputSchema.parse(input);
       const id = randomUUID();
       const database = await db();
+      let position = data.position;
+      if (position === undefined) {
+        // Sin posición explícita, el formulario se añade al FINAL del orden.
+        const rows = await database.select<Array<{ next: number }>>(
+          "SELECT COALESCE(MAX(position) + 1, 0) AS next FROM forms WHERE section_id = $1",
+          [data.sectionId],
+        );
+        position = rows[0]?.next ?? 0;
+      }
       await database.execute(
         "INSERT INTO forms (id, section_id, name, description, position) VALUES ($1, $2, $3, $4, $5)",
         [
@@ -135,7 +144,7 @@ export function createFormsRepository(db: DbHandle): FormRepository {
           data.sectionId,
           data.name,
           data.description ?? null,
-          data.position ?? 0,
+          position,
         ],
       );
       return requireRow(database, id);
