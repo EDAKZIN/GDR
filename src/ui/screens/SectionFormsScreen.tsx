@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowUp,
   FileStack,
+  FolderOpen,
   LayoutList,
   MoreVertical,
   Pencil,
@@ -215,6 +216,7 @@ function FormCard({
 export function SectionFormsScreen() {
   const activeSectionId = useSectionStore((store) => store.activeSectionId);
   const sections = useSectionStore((store) => store.sections);
+  const formCounts = useSectionStore((store) => store.formCounts);
   const loadingSections = useSectionStore((store) => store.loadingSections);
   const forms = useSectionStore((store) => store.forms);
   const trashedForms = useSectionStore((store) => store.trashedForms);
@@ -233,6 +235,11 @@ export function SectionFormsScreen() {
 
   const activeSection = sections.find(
     (section) => section.id === activeSectionId && !section.deletedAt,
+  );
+
+  // Sub-secciones hijas directas de la sección activa.
+  const childSections = sections.filter(
+    (section) => section.parentId === activeSectionId,
   );
 
   useEffect(() => {
@@ -289,7 +296,7 @@ export function SectionFormsScreen() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10">
         {/* Header con navegación de vuelta */}
         <header className="flex flex-wrap items-center gap-3">
           <button
@@ -356,6 +363,44 @@ export function SectionFormsScreen() {
           <p className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
             {error}
           </p>
+        ) : null}
+
+        {/* Sub-secciones hijas */}
+        {!showTrash && childSections.length > 0 ? (
+          <section className="flex flex-col gap-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              Subsecciones ({String(childSections.length)})
+            </h2>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
+              {childSections.map((child) => (
+                <button
+                  key={child.id}
+                  type="button"
+                  className={`group flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/70 p-3 text-left transition-colors duration-150 hover:border-sky-500/50 hover:bg-zinc-900 ${
+                    child.enabled ? "" : "opacity-50"
+                  }`}
+                  onClick={() => {
+                    navigate("section", child.id);
+                  }}
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-800 bg-sky-500/10 text-sky-300">
+                    <IconRenderer icon={child.icon} className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-zinc-100">
+                      {child.name}
+                    </span>
+                    <span className="block truncate text-[11px] text-zinc-500">
+                      {(formCounts[child.id] ?? 0) === 1
+                        ? "1 formulario"
+                        : `${String(formCounts[child.id] ?? 0)} formularios`}
+                    </span>
+                  </span>
+                  <FolderOpen className="h-4 w-4 shrink-0 text-zinc-700 transition-colors duration-150 group-hover:text-sky-400" />
+                </button>
+              ))}
+            </div>
+          </section>
         ) : null}
 
         {/* Papelera */}
@@ -435,8 +480,8 @@ export function SectionFormsScreen() {
             </button>
           </div>
         ) : (
-          /* Grid de tarjetas + botón destacado */
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          /* Grid fluido de tarjetas + botón destacado */
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
             {orderedCards.map((form) => (
               <FormCard
                 key={form.id}

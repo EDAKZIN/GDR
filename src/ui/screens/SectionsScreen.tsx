@@ -286,17 +286,9 @@ export function SectionsScreen() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-        {/* Hero */}
-        <header className="flex flex-col gap-5">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-50">GDR</h1>
-            <p className="mt-1 text-sm text-zinc-400">
-              Organiza tus datos en secciones y formularios.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
+      <div className="flex w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10">
+        {/* Barra de acciones (sin hero: la marca vive en el drawer del menú) */}
+        <header className="flex flex-wrap items-center gap-2">
             <label className="flex min-w-56 flex-1 items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm transition-colors focus-within:border-sky-400">
               <Search className="h-4 w-4 shrink-0 text-zinc-500" />
               <input
@@ -355,7 +347,6 @@ export function SectionsScreen() {
               <Plus className="h-4 w-4" />
               Nueva sección
             </button>
-          </div>
         </header>
 
         {error !== null ? (
@@ -454,8 +445,8 @@ export function SectionsScreen() {
             </p>
           </div>
         ) : (
-          /* Grid de tarjetas */
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          /* Grid fluido de tarjetas */
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
             {orderedCards.map((section) => (
               <SectionCard
                 key={section.id}
