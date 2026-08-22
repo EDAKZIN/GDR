@@ -8,6 +8,44 @@ const MIGRATIONS_TABLE_SQL = `
   );
 `;
 
+/**
+ * Divide un script SQL en sentencias individuales.
+ * El plugin-sql (sqlx) no admite ejecutar varias sentencias en una sola llamada,
+ * por lo que cada migración debe enviarse sentencia por sentencia.
+ * Ignora comentarios de línea (`--`) y respeta literales entre comillas simples.
+ */
+export function splitSqlStatements(script: string): string[] {
+  const withoutComments = script
+    .split("\n")
+    .map((line) => line.replace(/(^|\s)--.*$/, "$1"))
+    .join("\n");
+
+  const statements: string[] = [];
+  let current = "";
+  let insideString = false;
+
+  for (const char of withoutComments) {
+    if (char === "'") {
+      insideString = !insideString;
+    }
+    if (char === ";" && !insideString) {
+      const trimmed = current.trim();
+      if (trimmed.length > 0) {
+        statements.push(trimmed);
+      }
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+
+  const tail = current.trim();
+  if (tail.length > 0) {
+    statements.push(tail);
+  }
+  return statements;
+}
+
 export async function runMigrations(db: Database): Promise<string[]> {
   await db.execute(MIGRATIONS_TABLE_SQL);
 
@@ -18,7 +56,9 @@ export async function runMigrations(db: Database): Promise<string[]> {
   const appliedNow: string[] = [];
 
   for (const migration of pending) {
-    await db.execute(migration.sql);
+    for (const statement of splitSqlStatements(migration.sql)) {
+      await db.execute(statement);
+    }
     await db.execute("INSERT INTO _migrations (id) VALUES ($1)", [migration.id]);
     appliedNow.push(migration.id);
   }
