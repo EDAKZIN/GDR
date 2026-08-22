@@ -1,7 +1,8 @@
-import { useEffect } from "react";
-import { MousePointerClick } from "lucide-react";
+import { useEffect, useState } from "react";
+import { MousePointerClick, Search } from "lucide-react";
 import { FormBuilder } from "./ui/forms/FormBuilder";
 import { FormList } from "./ui/forms/FormList";
+import { GlobalSearch } from "./ui/search/GlobalSearch";
 import { RecordDetail } from "./ui/records/RecordDetail";
 import { RecordEditor } from "./ui/records/RecordEditor";
 import { RecordList } from "./ui/records/RecordList";
@@ -29,6 +30,22 @@ function useFormSync(): void {
       void useRecordStore.getState().openForm(activeFormId);
     }
   }, [activeFormId, formBuilderOpen]);
+}
+
+/** Atajo global Ctrl+K para abrir el buscador. */
+function useSearchShortcut(onOpen: () => void): void {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent): void {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        onOpen();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onOpen]);
 }
 
 function RecordsPlaceholder({ withForm }: { withForm: boolean }) {
@@ -69,13 +86,31 @@ function DetailColumn() {
 
 function App() {
   const activeFormId = useSectionStore((store) => store.activeFormId);
+  const [searchOpen, setSearchOpen] = useState(false);
   useFormSync();
+  useSearchShortcut(() => {
+    setSearchOpen(true);
+  });
 
   return (
     <div className="flex h-screen overflow-hidden bg-zinc-950 text-zinc-100">
       <SectionSidebar />
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden p-4">
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={() => {
+              setSearchOpen(true);
+            }}
+            className="flex w-full max-w-sm items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-500 transition-colors hover:border-teal-400 hover:text-zinc-300"
+          >
+            <Search className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left">Buscar en todo…</span>
+            <kbd className="rounded border border-zinc-700 bg-zinc-950 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-600">
+              Ctrl K
+            </kbd>
+          </button>
+        </div>
         <FormList />
         <div className="flex min-h-0 flex-1 flex-col">
           {activeFormId !== null ? <RecordList /> : <RecordsPlaceholder withForm={false} />}
@@ -85,6 +120,14 @@ function App() {
       <aside className="flex min-h-0 w-[26rem] shrink-0 flex-col border-l border-zinc-800 bg-zinc-950/60 p-4">
         <DetailColumn />
       </aside>
+
+      {searchOpen ? (
+        <GlobalSearch
+          onClose={() => {
+            setSearchOpen(false);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
