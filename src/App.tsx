@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { GlobalSearch } from "./ui/search/GlobalSearch";
+import { MenuSidebar } from "./ui/menu/MenuSidebar";
 import { FormWorkspaceScreen } from "./ui/screens/FormWorkspaceScreen";
 import { SectionFormsScreen } from "./ui/screens/SectionFormsScreen";
 import { SectionsScreen } from "./ui/screens/SectionsScreen";
@@ -65,9 +66,9 @@ function App() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-zinc-950 text-zinc-100">
-      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <MenuSidebar>
         <CurrentScreen />
-      </main>
+      </MenuSidebar>
 
       {searchOpen ? (
         <GlobalSearch
