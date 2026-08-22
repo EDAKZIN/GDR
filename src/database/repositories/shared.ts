@@ -23,8 +23,8 @@ export interface ListOptions {
   includeDeleted?: boolean;
 }
 
-/** Cláusula WHERE estándar para listados según filtros de enabled/deleted. */
-export function listWhere(options: ListOptions = {}): string {
+/** Cláusulas estándar para listados según filtros de enabled/deleted. */
+export function listClauses(options: ListOptions = {}): string[] {
   const clauses: string[] = [];
   if (options.includeDeleted !== true) {
     clauses.push("deleted_at IS NULL");
@@ -32,6 +32,12 @@ export function listWhere(options: ListOptions = {}): string {
   if (options.includeDisabled !== true) {
     clauses.push("enabled = 1");
   }
+  return clauses;
+}
+
+/** Cláusula WHERE estándar para listados según filtros de enabled/deleted. */
+export function listWhere(options: ListOptions = {}): string {
+  const clauses = listClauses(options);
   return clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
 }
 

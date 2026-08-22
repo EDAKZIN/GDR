@@ -253,13 +253,18 @@ export function SectionsScreen() {
     };
   }, [menuSectionId, modal, showTrash]);
 
-  const enabledSections = useMemo(
-    () => sections.filter((section) => section.enabled),
+  // Con la jerarquía opcional de secciones, el HOME lista solo las raíces.
+  const rootSections = useMemo(
+    () => sections.filter((section) => section.parentId === null),
     [sections],
   );
+  const enabledSections = useMemo(
+    () => rootSections.filter((section) => section.enabled),
+    [rootSections],
+  );
   const disabledSections = useMemo(
-    () => sections.filter((section) => !section.enabled),
-    [sections],
+    () => rootSections.filter((section) => !section.enabled),
+    [rootSections],
   );
 
   const trimmedQuery = query.trim().toLowerCase();

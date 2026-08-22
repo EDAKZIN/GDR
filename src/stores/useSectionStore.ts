@@ -65,6 +65,8 @@ export interface SectionState {
   loadSections: () => Promise<void>;
   loadFormCounts: () => Promise<void>;
   selectSection: (sectionId: string) => Promise<void>;
+  /** Hijas directas (no eliminadas) de un padre; null = raíces. */
+  childrenOf: (parentId: string | null) => Section[];
 
   createSection: (input: CreateSectionInput) => Promise<Section>;
   updateSection: (id: string, input: UpdateSectionInput) => Promise<void>;
@@ -74,6 +76,8 @@ export interface SectionState {
   restoreSection: (id: string) => Promise<void>;
   hardDeleteSection: (id: string) => Promise<void>;
   moveSection: (id: string, delta: -1 | 1) => Promise<void>;
+  /** Reubica una sección bajo otro padre (null = raíz), sin ciclos. */
+  moveSectionTo: (id: string, newParentId: string | null) => Promise<void>;
 
   loadForms: (sectionId: string) => Promise<void>;
   selectForm: (formId: string) => void;
@@ -181,6 +185,12 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
     await get().loadForms(sectionId);
   },
 
+  childrenOf: (parentId) =>
+    get()
+      .sections.filter(
+        (section) => (section.parentId ?? null) === parentId,
+      ),
+
   createSection: async (input) => {
     const total =
       get().sections.length + get().trashedSections.length;
@@ -233,15 +243,25 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
   },
 
   moveSection: async (id, delta) => {
-    const orderedIds = moveIdInList(
-      get().sections.map((section) => section.id),
-      id,
-      delta,
-    );
+    // El reordenamiento por delta ocurre SOLO entre hermanas del mismo padre.
+    const current = get().sections.find((section) => section.id === id);
+    if (current === undefined) {
+      return;
+    }
+    const parentId = current.parentId ?? null;
+    const siblingIds = get()
+      .sections.filter((section) => (section.parentId ?? null) === parentId)
+      .map((section) => section.id);
+    const orderedIds = moveIdInList(siblingIds, id, delta);
     if (orderedIds === null) {
       return;
     }
     await sectionsRepository.reorder(orderedIds);
+    await get().loadSections();
+  },
+
+  moveSectionTo: async (id, newParentId) => {
+    await sectionsRepository.move(id, newParentId);
     await get().loadSections();
   },
 
@@ -333,3 +353,35 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
 
 
 }));
+
+export interface SectionNode {
+  section: Section;
+  children: SectionNode[];
+}
+
+/**
+ * Árbol jerárquico derivado de una lista plana de secciones.
+ * `parentId` fija la raíz del árbol (null = secciones raíz).
+ */
+export function buildSectionTree(
+  sections: readonly Section[],
+  parentId: string | null = null,
+): SectionNode[] {
+  const byParent = new Map<string | null, Section[]>();
+  for (const section of sections) {
+    const key = section.parentId ?? null;
+    const bucket = byParent.get(key);
+    if (bucket !== undefined) {
+      bucket.push(section);
+    } else {
+      byParent.set(key, [section]);
+    }
+  }
+  function build(key: string | null): SectionNode[] {
+    return (byParent.get(key) ?? []).map((section) => ({
+      section,
+      children: build(section.id),
+    }));
+  }
+  return build(parentId);
+}
