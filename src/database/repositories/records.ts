@@ -15,6 +15,7 @@ import {
   type UpdateValuesInput,
 } from "../../core/records";
 import { randomUUID } from "../../core/utils/uuid";
+import { createSearchRepository } from "./search";
 import {
   appendSet,
   boolToDb,
@@ -86,6 +87,9 @@ export interface RecordRepository {
 }
 
 export function createRecordsRepository(db: DbHandle): RecordRepository {
+  // Mantenimiento del índice FTS5 en cada mutación de registros.
+  const searchRepository = createSearchRepository(db);
+
   async function getRow(
     database: Database,
     id: string,
@@ -180,7 +184,9 @@ export function createRecordsRepository(db: DbHandle): RecordRepository {
       if (data.values !== undefined) {
         await upsertValues(database, id, data.values);
       }
-      return requireRow(database, id);
+      const created = await requireRow(database, id);
+      await searchRepository.indexRecord(id);
+      return created;
     },
 
     async get(id): Promise<RecordDetail | null> {
@@ -197,20 +203,26 @@ export function createRecordsRepository(db: DbHandle): RecordRepository {
       const database = await db();
       await requireRow(database, z.uuid().parse(recordId));
       await upsertValues(database, z.uuid().parse(recordId), values);
+      await searchRepository.indexRecord(recordId);
     },
 
     async softDelete(id): Promise<RecordEntity> {
       const database = await db();
-      return setFlags(database, z.uuid().parse(id), { deleted: true });
+      const deleted = await setFlags(database, z.uuid().parse(id), { deleted: true });
+      await searchRepository.deindexRecord(id);
+      return deleted;
     },
 
     async restore(id): Promise<RecordEntity> {
       const database = await db();
-      return setFlags(database, z.uuid().parse(id), { deleted: false });
+      const restored = await setFlags(database, z.uuid().parse(id), { deleted: false });
+      await searchRepository.indexRecord(id);
+      return restored;
     },
 
     async hardDelete(id): Promise<boolean> {
       const database = await db();
+      await searchRepository.deindexRecord(id);
       const result = await database.execute("DELETE FROM records WHERE id = $1", [
         z.uuid().parse(id),
       ]);

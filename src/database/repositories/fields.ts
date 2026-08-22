@@ -10,6 +10,7 @@ import {
   type UpdateFieldInput,
 } from "../../core/fields";
 import { randomUUID } from "../../core/utils/uuid";
+import { createSearchRepository } from "./search";
 import {
   appendSet,
   boolToDb,
@@ -89,6 +90,9 @@ export interface FieldRepository {
 }
 
 export function createFieldsRepository(db: DbHandle): FieldRepository {
+  // Mantenimiento del índice FTS5 cuando cambian searchable/enabled/deleted/type.
+  const searchRepository = createSearchRepository(db);
+
   async function getRow(database: Database, id: string): Promise<Field | null> {
     const rows = await database.select<FieldRow[]>(
       `SELECT ${FIELD_COLUMNS} FROM fields WHERE id = $1`,
@@ -210,31 +214,45 @@ export function createFieldsRepository(db: DbHandle): FieldRepository {
         `UPDATE fields SET ${sets.join(", ")} WHERE id = $${String(params.length)}`,
         params,
       );
-      return requireRow(database, z.uuid().parse(id));
+      const updated = await requireRow(database, z.uuid().parse(id));
+      // searchable o type afectan a qué entra en el índice: resincronizar.
+      if (data.searchable !== undefined || data.type !== undefined) {
+        await searchRepository.syncField(id);
+      }
+      return updated;
     },
 
     async disable(id: string): Promise<Field> {
       const database = await db();
-      return setFlags(database, z.uuid().parse(id), { enabled: false });
+      const field = await setFlags(database, z.uuid().parse(id), { enabled: false });
+      await searchRepository.syncField(id);
+      return field;
     },
 
     async enable(id: string): Promise<Field> {
       const database = await db();
-      return setFlags(database, z.uuid().parse(id), { enabled: true });
+      const field = await setFlags(database, z.uuid().parse(id), { enabled: true });
+      await searchRepository.syncField(id);
+      return field;
     },
 
     async softDelete(id: string): Promise<Field> {
       const database = await db();
-      return setFlags(database, z.uuid().parse(id), { deleted: true });
+      const field = await setFlags(database, z.uuid().parse(id), { deleted: true });
+      await searchRepository.syncField(id);
+      return field;
     },
 
     async restore(id: string): Promise<Field> {
       const database = await db();
-      return setFlags(database, z.uuid().parse(id), { deleted: false });
+      const field = await setFlags(database, z.uuid().parse(id), { deleted: false });
+      await searchRepository.syncField(id);
+      return field;
     },
 
     async hardDelete(id: string): Promise<boolean> {
       const database = await db();
+      await searchRepository.syncField(id);
       const result = await database.execute("DELETE FROM fields WHERE id = $1", [
         z.uuid().parse(id),
       ]);
