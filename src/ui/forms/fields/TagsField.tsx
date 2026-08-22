@@ -32,12 +32,12 @@ export function TagsField({ value, onChange, disabled }: FieldInputProps) {
       {tags.map((tag) => (
         <span
           key={tag}
-          className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-300"
+          className="inline-flex items-center gap-1 rounded bg-sky-500/15 px-2 py-0.5 text-xs font-medium text-sky-300"
         >
           {tag}
           <button
             type="button"
-            className="text-amber-400/70 transition-colors hover:text-rose-400"
+            className="text-sky-400/70 transition-colors hover:text-rose-400"
             onClick={() => {
               removeTag(tag);
             }}

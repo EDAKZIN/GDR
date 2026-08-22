@@ -5,7 +5,7 @@ export function BooleanField({ value, onChange, disabled }: FieldInputProps) {
     <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-200">
       <input
         type="checkbox"
-        className="h-4 w-4 rounded border-zinc-600 bg-zinc-900 accent-amber-500"
+        className="h-4 w-4 rounded border-zinc-600 bg-zinc-900 accent-sky-500"
         checked={value === true}
         onChange={(event) => {
           onChange(event.target.checked);

@@ -23,7 +23,7 @@ function Snippet({ text }: { text: string }) {
         index % 2 === 1 ? (
           <mark
             key={index}
-            className="rounded-sm bg-amber-500/20 px-0.5 text-amber-300"
+            className="rounded-sm bg-sky-500/20 px-0.5 text-sky-300"
           >
             {part}
           </mark>

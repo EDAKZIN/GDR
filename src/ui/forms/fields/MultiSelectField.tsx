@@ -37,7 +37,7 @@ export function MultiSelectField({ field, value, onChange, disabled }: FieldInpu
         >
           <input
             type="checkbox"
-            className="h-4 w-4 rounded border-zinc-600 bg-zinc-900 accent-amber-500"
+            className="h-4 w-4 rounded border-zinc-600 bg-zinc-900 accent-sky-500"
             checked={selected.has(option.value)}
             onChange={(event) => {
               toggle(option.value, event.target.checked);

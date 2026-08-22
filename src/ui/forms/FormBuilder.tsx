@@ -91,9 +91,9 @@ function getFieldTypeLabel(type: string): string {
 }
 
 const inputClass =
-  "w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-amber-400";
+  "w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-sky-400";
 const labelClass = "flex flex-col gap-1 text-xs font-medium text-zinc-400";
-const checkboxClass = "h-3.5 w-3.5 accent-amber-500";
+const checkboxClass = "h-3.5 w-3.5 accent-sky-500";
 
 export function FormBuilder() {
   const forms = useSectionStore((store) => store.forms);
@@ -310,7 +310,7 @@ export function FormBuilder() {
                 key={field.id}
                 className={`rounded-lg border bg-zinc-900/60 px-3 py-2 ${
                   editor.fieldId === field.id
-                    ? "border-amber-500/50"
+                    ? "border-sky-500/50"
                     : "border-zinc-800"
                 }`}
               >
@@ -324,7 +324,7 @@ export function FormBuilder() {
                         {getFieldTypeLabel(field.type)}
                       </span>
                       {field.required ? (
-                        <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-300">
+                        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-sky-300">
                           Obligatorio
                         </span>
                       ) : null}
@@ -363,7 +363,7 @@ export function FormBuilder() {
                     type="button"
                     aria-label={`Editar ${field.name}`}
                     title="Editar"
-                    className="rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-amber-300"
+                    className="rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-sky-300"
                     onClick={() => {
                       startEdit(field);
                     }}
@@ -415,7 +415,7 @@ export function FormBuilder() {
                       type="button"
                       title="Habilitar"
                       aria-label={`Habilitar ${field.name}`}
-                      className="rounded-md p-1 text-zinc-500 transition-colors hover:text-amber-300"
+                      className="rounded-md p-1 text-zinc-500 transition-colors hover:text-sky-300"
                       onClick={() => {
                         void runFieldAction(() => fieldsRepository.enable(field.id));
                       }}
@@ -457,7 +457,7 @@ export function FormBuilder() {
                       type="button"
                       title="Restaurar"
                       aria-label={`Restaurar ${field.name}`}
-                      className="shrink-0 rounded-md border border-zinc-700 px-1.5 py-0.5 text-[11px] text-zinc-300 transition-colors hover:border-amber-400 hover:text-amber-300"
+                      className="shrink-0 rounded-md border border-zinc-700 px-1.5 py-0.5 text-[11px] text-zinc-300 transition-colors hover:border-sky-400 hover:text-sky-300"
                       onClick={() => {
                         void runFieldAction(() => fieldsRepository.restore(field.id));
                       }}
@@ -604,7 +604,7 @@ export function FormBuilder() {
           </div>
           <button
             type="submit"
-            className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={saving || editor.name.trim() === ""}
           >
             <Plus className="h-3.5 w-3.5" />

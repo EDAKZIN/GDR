@@ -3,7 +3,7 @@ import { useRecordStore } from "../../stores";
 import type { RecordOrderBy } from "../../core/records";
 
 const selectClass =
-  "rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-200 outline-none focus:border-amber-400";
+  "rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-200 outline-none focus:border-sky-400";
 
 export function RecordList() {
   const items = useRecordStore((state) => state.items);
@@ -35,7 +35,7 @@ export function RecordList() {
           </select>
           <button
             type="button"
-            className="rounded-md border border-zinc-700 bg-zinc-900 p-1.5 text-zinc-300 transition-colors hover:border-amber-400 hover:text-amber-300"
+            className="rounded-md border border-zinc-700 bg-zinc-900 p-1.5 text-zinc-300 transition-colors hover:border-sky-400 hover:text-sky-300"
             onClick={() => {
               setSorting({
                 direction: direction === "desc" ? "asc" : "desc",
@@ -54,7 +54,7 @@ export function RecordList() {
           <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-zinc-400">
             <input
               type="checkbox"
-              className="h-3.5 w-3.5 accent-amber-500"
+              className="h-3.5 w-3.5 accent-sky-500"
               checked={showDeleted}
               onChange={(event) => {
                 setShowDeleted(event.target.checked);
@@ -65,7 +65,7 @@ export function RecordList() {
           {showDeleted ? null : (
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-500"
+              className="inline-flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-500"
               onClick={() => {
                 openCreate();
               }}
@@ -104,7 +104,7 @@ export function RecordList() {
                   className={`group flex items-center justify-between gap-2 rounded-md border px-3 py-2 transition-colors ${
                     deleted
                       ? "border-zinc-800 bg-zinc-900/50 opacity-70"
-                      : "cursor-pointer border-zinc-800 bg-zinc-900 hover:border-amber-500/50"
+                      : "cursor-pointer border-zinc-800 bg-zinc-900 hover:border-sky-500/50"
                   }`}
                   onClick={() => {
                     if (!deleted) {
@@ -129,7 +129,7 @@ export function RecordList() {
                   {deleted ? (
                     <button
                       type="button"
-                      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-zinc-700 px-2 py-1 text-xs text-zinc-300 transition-colors hover:border-amber-400 hover:text-amber-300"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-zinc-700 px-2 py-1 text-xs text-zinc-300 transition-colors hover:border-sky-400 hover:text-sky-300"
                       onClick={(event) => {
                         event.stopPropagation();
                         void restoreItem(record.id);
