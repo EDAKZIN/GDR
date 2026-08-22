@@ -1,13 +1,14 @@
 import type Database from "@tauri-apps/plugin-sql";
+import { z } from "zod";
 import {
-  createSectionInputSchema,
+  createFormInputSchema,
   reorderInputSchema,
-  updateSectionInputSchema,
-  type CreateSectionInput,
+  updateFormInputSchema,
+  type CreateFormInput,
+  type Form,
   type ReorderInput,
-  type Section,
-  type UpdateSectionInput,
-} from "../../core/sections";
+  type UpdateFormInput,
+} from "../../core/forms";
 import { randomUUID } from "../../core/utils/uuid";
 import {
   appendSet,
@@ -18,37 +19,36 @@ import {
   type DbHandle,
   type ListOptions,
 } from "./shared";
-import { z } from "zod";
 
-interface SectionRow {
+interface FormRow {
   id: string;
+  sectionId: string;
   name: string;
   description: string | null;
-  icon: string | null;
   position: number;
   enabled: number;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
-const sectionRowSchema = z
+const formRowSchema = z
   .object({
     id: z.uuid(),
+    sectionId: z.uuid(),
     name: z.string(),
     description: z.string().nullable(),
-    icon: z.string().nullable(),
     position: z.number().int(),
     enabled: dbEnabled,
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
     deletedAt: z.iso.datetime().nullable(),
   })
-  .transform((row): Section => ({
+  .transform((row): Form => ({
     id: row.id,
+    sectionId: row.sectionId,
     name: row.name,
     description: row.description,
-    icon: row.icon,
     position: row.position,
     enabled: row.enabled,
     createdAt: row.createdAt,
@@ -56,55 +56,53 @@ const sectionRowSchema = z
     deletedAt: row.deletedAt,
   }));
 
-const SECTION_COLUMNS =
-  "id, name, description, icon, position, enabled, created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt";
+const FORM_COLUMNS =
+  "id, section_id AS sectionId, name, description, position, enabled, created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt";
 
-function parseSections(rows: SectionRow[]): Section[] {
-  return z.array(sectionRowSchema).parse(rows);
+function parseForms(rows: FormRow[]): Form[] {
+  return z.array(formRowSchema).parse(rows);
 }
 
-export interface SectionRepository {
-  create(input: CreateSectionInput): Promise<Section>;
-  get(id: string): Promise<Section | null>;
-  list(options?: ListOptions): Promise<Section[]>;
-  update(id: string, input: UpdateSectionInput): Promise<Section>;
-  disable(id: string): Promise<Section>;
-  enable(id: string): Promise<Section>;
-  softDelete(id: string): Promise<Section>;
-  restore(id: string): Promise<Section>;
+export interface FormRepository {
+  create(input: CreateFormInput): Promise<Form>;
+  get(id: string): Promise<Form | null>;
+  list(options?: ListOptions): Promise<Form[]>;
+  listBySection(sectionId: string, options?: ListOptions): Promise<Form[]>;
+  update(id: string, input: UpdateFormInput): Promise<Form>;
+  disable(id: string): Promise<Form>;
+  enable(id: string): Promise<Form>;
+  softDelete(id: string): Promise<Form>;
+  restore(id: string): Promise<Form>;
   hardDelete(id: string): Promise<boolean>;
-  /** Fija position = índice para cada id, en el orden dado. */
+  /** Fija position = índice para cada id, en el orden dado (dentro de su sección). */
   reorder(orderedIds: ReorderInput): Promise<void>;
 }
 
-export function createSectionsRepository(db: DbHandle): SectionRepository {
-  async function getRow(
-    database: Database,
-    id: string,
-  ): Promise<Section | null> {
-    const rows = await database.select<SectionRow[]>(
-      `SELECT ${SECTION_COLUMNS} FROM sections WHERE id = $1`,
+export function createFormsRepository(db: DbHandle): FormRepository {
+  async function getRow(database: Database, id: string): Promise<Form | null> {
+    const rows = await database.select<FormRow[]>(
+      `SELECT ${FORM_COLUMNS} FROM forms WHERE id = $1`,
       [z.uuid().parse(id)],
     );
     if (rows.length === 0) {
       return null;
     }
-    return sectionRowSchema.parse(rows[0]);
+    return formRowSchema.parse(rows[0]);
   }
 
-  async function requireRow(database: Database, id: string): Promise<Section> {
-    const section = await getRow(database, id);
-    if (section === null) {
-      throw new Error(`Sección no encontrada: ${id}`);
+  async function requireRow(database: Database, id: string): Promise<Form> {
+    const form = await getRow(database, id);
+    if (form === null) {
+      throw new Error(`Formulario no encontrado: ${id}`);
     }
-    return section;
+    return form;
   }
 
   async function setFlags(
     database: Database,
     id: string,
     flags: { enabled?: boolean; deleted?: boolean },
-  ): Promise<Section> {
+  ): Promise<Form> {
     const sets: string[] = [];
     const params: unknown[] = [];
     if (flags.enabled !== undefined) {
@@ -119,44 +117,58 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
     appendSet(sets, params, "updated_at", nowIso());
     params.push(id);
     await database.execute(
-      `UPDATE sections SET ${sets.join(", ")} WHERE id = $${String(params.length)}`,
+      `UPDATE forms SET ${sets.join(", ")} WHERE id = $${String(params.length)}`,
       params,
     );
     return requireRow(database, id);
   }
 
   return {
-    async create(input: CreateSectionInput): Promise<Section> {
-      const data = createSectionInputSchema.parse(input);
+    async create(input: CreateFormInput): Promise<Form> {
+      const data = createFormInputSchema.parse(input);
       const id = randomUUID();
       const database = await db();
       await database.execute(
-        "INSERT INTO sections (id, name, description, icon, position) VALUES ($1, $2, $3, $4, $5)",
+        "INSERT INTO forms (id, section_id, name, description, position) VALUES ($1, $2, $3, $4, $5)",
         [
           id,
+          data.sectionId,
           data.name,
           data.description ?? null,
-          data.icon ?? null,
           data.position ?? 0,
         ],
       );
       return requireRow(database, id);
     },
 
-    async get(id: string): Promise<Section | null> {
+    async get(id: string): Promise<Form | null> {
       return getRow(await db(), z.uuid().parse(id));
     },
 
-    async list(options?: ListOptions): Promise<Section[]> {
+    async list(options?: ListOptions): Promise<Form[]> {
       const database = await db();
-      const rows = await database.select<SectionRow[]>(
-        `SELECT ${SECTION_COLUMNS} FROM sections ${listWhere(options)} ORDER BY position, name`,
+      const rows = await database.select<FormRow[]>(
+        `SELECT ${FORM_COLUMNS} FROM forms ${listWhere(options)} ORDER BY position, name`,
       );
-      return parseSections(rows);
+      return parseForms(rows);
     },
 
-    async update(id: string, input: UpdateSectionInput): Promise<Section> {
-      const data = updateSectionInputSchema.parse(input);
+    async listBySection(sectionId: string, options?: ListOptions): Promise<Form[]> {
+      const database = await db();
+      const baseWhere = listWhere(options);
+      const where =
+        baseWhere.length > 0
+          ? `${baseWhere} AND section_id = $1`
+          : "WHERE section_id = $1";
+      const rows = await database.select<FormRow[]>(
+        `SELECT ${FORM_COLUMNS} FROM forms ${where} ORDER BY position, name`,
+        [z.uuid().parse(sectionId)],
+      );
+      return parseForms(rows);
+    },
+
+    async update(id: string, input: UpdateFormInput): Promise<Form> {
+      const data = updateFormInputSchema.parse(input);
       const database = await db();
       const sets: string[] = [];
       const params: unknown[] = [];
@@ -165,9 +177,6 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
       }
       if (data.description !== undefined) {
         appendSet(sets, params, "description", data.description ?? null);
-      }
-      if (data.icon !== undefined) {
-        appendSet(sets, params, "icon", data.icon ?? null);
       }
       if (data.position !== undefined) {
         appendSet(sets, params, "position", data.position);
@@ -178,35 +187,35 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
       appendSet(sets, params, "updated_at", nowIso());
       params.push(z.uuid().parse(id));
       await database.execute(
-        `UPDATE sections SET ${sets.join(", ")} WHERE id = $${String(params.length)}`,
+        `UPDATE forms SET ${sets.join(", ")} WHERE id = $${String(params.length)}`,
         params,
       );
       return requireRow(database, z.uuid().parse(id));
     },
 
-    async disable(id: string): Promise<Section> {
+    async disable(id: string): Promise<Form> {
       const database = await db();
       return setFlags(database, z.uuid().parse(id), { enabled: false });
     },
 
-    async enable(id: string): Promise<Section> {
+    async enable(id: string): Promise<Form> {
       const database = await db();
       return setFlags(database, z.uuid().parse(id), { enabled: true });
     },
 
-    async softDelete(id: string): Promise<Section> {
+    async softDelete(id: string): Promise<Form> {
       const database = await db();
       return setFlags(database, z.uuid().parse(id), { deleted: true });
     },
 
-    async restore(id: string): Promise<Section> {
+    async restore(id: string): Promise<Form> {
       const database = await db();
       return setFlags(database, z.uuid().parse(id), { deleted: false });
     },
 
     async hardDelete(id: string): Promise<boolean> {
       const database = await db();
-      const result = await database.execute("DELETE FROM sections WHERE id = $1", [
+      const result = await database.execute("DELETE FROM forms WHERE id = $1", [
         z.uuid().parse(id),
       ]);
       return result.rowsAffected > 0;
@@ -217,7 +226,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
       const database = await db();
       for (const [index, id] of ids.entries()) {
         await database.execute(
-          "UPDATE sections SET position = $1, updated_at = $2 WHERE id = $3",
+          "UPDATE forms SET position = $1, updated_at = $2 WHERE id = $3",
           [index, nowIso(), id],
         );
       }
