@@ -1,7 +1,38 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { PanelLeft, Search } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronRight,
+  FilePlus2,
+  FileText,
+  FolderPlus,
+  MoreVertical,
+  Move,
+  PanelLeft,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+import type { Form } from "../../core/forms";
+import type { Section } from "../../core/sections";
+import { getDb } from "../../database/client";
+import { createFormsRepository } from "../../database/repositories";
+import {
+  buildSectionTree,
+  useSectionStore,
+  type SectionNode,
+} from "../../stores/useSectionStore";
 import { useBreadcrumb, useUiStore } from "../../stores/useUiStore";
+import { ConfirmModal } from "../components/ConfirmModal";
+import { IconRenderer } from "../components/IconRenderer";
+import { FormModal } from "../screens/FormModal";
+import { SectionModal } from "../screens/SectionModal";
+
+const formsRepository = createFormsRepository(getDb);
 
 const DRAWER_KEY = "gdr.menuDrawerOpen";
 
@@ -13,15 +44,544 @@ function readInitialDrawerOpen(): boolean {
   }
 }
 
+/** Ids de la sección y de todo su subárbol (excluidos como destino al mover). */
+function collectDescendantIds(
+  sections: readonly Section[],
+  rootId: string,
+): Set<string> {
+  const childrenByParent = new Map<string, string[]>();
+  for (const section of sections) {
+    if (section.parentId === null) continue;
+    const bucket = childrenByParent.get(section.parentId);
+    if (bucket !== undefined) {
+      bucket.push(section.id);
+    } else {
+      childrenByParent.set(section.parentId, [section.id]);
+    }
+  }
+  const ids = new Set<string>([rootId]);
+  const queue = [rootId];
+  while (queue.length > 0) {
+    const current = queue.pop();
+    if (current === undefined) break;
+    for (const child of childrenByParent.get(current) ?? []) {
+      if (!ids.has(child)) {
+        ids.add(child);
+        queue.push(child);
+      }
+    }
+  }
+  return ids;
+}
+
+/** Ruta legible «A / B / C» para listar destinos de movimiento. */
+function sectionPathLabel(sections: readonly Section[], id: string): string {
+  const byId = new Map(sections.map((section) => [section.id, section]));
+  const parts: string[] = [];
+  let cursor = byId.get(id);
+  while (cursor !== undefined) {
+    parts.unshift(cursor.name);
+    cursor = cursor.parentId !== null ? byId.get(cursor.parentId) : undefined;
+  }
+  return parts.join(" / ");
+}
+
+interface MenuAction {
+  label: string;
+  icon: typeof Pencil;
+  run: () => void;
+  danger?: boolean;
+  disabled?: boolean;
+}
+
+type SidebarModal =
+  | { kind: "sectionCreate"; parentId: string | null }
+  | { kind: "sectionEdit"; section: Section }
+  | { kind: "formCreate"; sectionId: string }
+  | null;
+
+/** Menú contextual flotante reutilizable. */
+function ActionMenu({
+  actions,
+  onClose,
+}: {
+  actions: readonly MenuAction[];
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div className="absolute left-7 top-7 z-50 flex w-52 flex-col overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-2xl">
+        {actions.map((action) => (
+          <button
+            key={action.label}
+            type="button"
+            className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors duration-150 ${
+              action.danger === true
+                ? "text-rose-300 hover:bg-rose-500/10"
+                : "text-zinc-200 hover:bg-zinc-800"
+            } disabled:pointer-events-none disabled:opacity-40`}
+            disabled={action.disabled === true}
+            onClick={() => {
+              onClose();
+              action.run();
+            }}
+          >
+            <action.icon className="h-3.5 w-3.5" />
+            {action.label}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+interface TreeHandlers {
+  onToggleExpanded(id: string): void;
+  onSelectSection(id: string): void;
+  onSelectForm(id: string): void;
+  onAddSubsection(section: Section): void;
+  onAddForm(section: Section): void;
+  onEditSection(section: Section): void;
+  onMoveTo(section: Section): void;
+  onMoveDelta(section: Section, delta: -1 | 1): void;
+  onToggleEnabled(section: Section): void;
+  onDelete(section: Section): void;
+}
+
+const badgeClass =
+  "shrink-0 rounded bg-zinc-800 px-1 py-px text-[9px] tabular-nums text-zinc-500";
+
+/** Nodo del árbol: fila navegable + acciones contextuales + hijos y formularios. */
+function SectionTreeNode({
+  node,
+  depth,
+  isFirst,
+  isLast,
+  expandedIds,
+  activeSectionId,
+  formsBySection,
+  handlers,
+}: {
+  node: SectionNode;
+  depth: number;
+  isFirst: boolean;
+  isLast: boolean;
+  expandedIds: ReadonlySet<string>;
+  activeSectionId: string | null;
+  formsBySection: ReadonlyMap<string, Form[]>;
+  handlers: TreeHandlers;
+}) {
+  const section = node.section;
+  const expanded = expandedIds.has(section.id);
+  const isActive = activeSectionId === section.id;
+  const sectionForms = formsBySection.get(section.id) ?? [];
+
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Esc cierra el menú contextual del nodo.
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
+
+  const actions: MenuAction[] = [
+    {
+      label: "Añadir subsección",
+      icon: FolderPlus,
+      run: () => {
+        handlers.onAddSubsection(section);
+      },
+    },
+    {
+      label: "Añadir formulario",
+      icon: FilePlus2,
+      run: () => {
+        handlers.onAddForm(section);
+      },
+    },
+    {
+      label: "Editar",
+      icon: Pencil,
+      run: () => {
+        handlers.onEditSection(section);
+      },
+    },
+    {
+      label: "Mover a…",
+      icon: Move,
+      run: () => {
+        handlers.onMoveTo(section);
+      },
+    },
+    {
+      label: "Subir",
+      icon: ArrowUp,
+      disabled: isFirst || !section.enabled,
+      run: () => {
+        handlers.onMoveDelta(section, -1);
+      },
+    },
+    {
+      label: "Bajar",
+      icon: ArrowDown,
+      disabled: isLast || !section.enabled,
+      run: () => {
+        handlers.onMoveDelta(section, 1);
+      },
+    },
+    section.enabled
+      ? {
+          label: "Deshabilitar",
+          icon: X,
+          run: () => {
+            handlers.onToggleEnabled(section);
+          },
+        }
+      : {
+          label: "Habilitar",
+          icon: RotateCcw,
+          run: () => {
+            handlers.onToggleEnabled(section);
+          },
+        },
+    {
+      label: "Eliminar",
+      icon: Trash2,
+      danger: true,
+      run: () => {
+        handlers.onDelete(section);
+      },
+    },
+  ];
+
+  return (
+    <div>
+      <div className="relative">
+        <div
+          role="button"
+          tabIndex={0}
+          style={{ paddingLeft: 6 + depth * 12 }}
+          className={`group flex items-center gap-1 rounded-md py-1 pr-1 text-xs transition-colors duration-150 ${
+            isActive
+              ? "bg-sky-500/15 text-sky-200"
+              : "text-zinc-300 hover:bg-zinc-900"
+          } ${section.enabled ? "" : "opacity-50"}`}
+          onClick={() => {
+            handlers.onSelectSection(section.id);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handlers.onSelectSection(section.id);
+            }
+          }}
+        >
+          {node.children.length > 0 ? (
+            <button
+              type="button"
+              aria-label={
+                expanded ? `Contraer ${section.name}` : `Expandir ${section.name}`
+              }
+              aria-expanded={expanded}
+              className="shrink-0 rounded p-0.5 text-zinc-500 transition-colors duration-150 hover:text-zinc-100"
+              onClick={(event) => {
+                event.stopPropagation();
+                handlers.onToggleExpanded(section.id);
+              }}
+            >
+              <ChevronRight
+                className={`h-3 w-3 transition-transform duration-150 ${
+                  expanded ? "rotate-90" : ""
+                }`}
+              />
+            </button>
+          ) : (
+            <span className="w-4 shrink-0" />
+          )}
+
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-800 bg-sky-500/10 text-sky-300">
+            <IconRenderer icon={section.icon} className="h-3.5 w-3.5" />
+          </span>
+
+          <span className="min-w-0 flex-1 truncate">{section.name}</span>
+
+          {!section.enabled ? (
+            <span className="shrink-0 rounded bg-zinc-800 px-1 py-px text-[9px] uppercase tracking-wide text-zinc-500">
+              Off
+            </span>
+          ) : null}
+          {node.children.length > 0 ? (
+            <span className={badgeClass} title="Subsecciones">
+              {node.children.length}
+            </span>
+          ) : null}
+          {sectionForms.length > 0 ? (
+            <span className={badgeClass} title="Formularios">
+              {sectionForms.length}
+            </span>
+          ) : null}
+
+          <button
+            type="button"
+            aria-label={`Acciones de ${section.name}`}
+            className={`shrink-0 rounded p-0.5 text-zinc-500 transition-colors duration-150 hover:bg-zinc-800 hover:text-zinc-100 ${
+              menuOpen ? "" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+            }`}
+            onClick={(event) => {
+              event.stopPropagation();
+              setMenuOpen((previous) => !previous);
+            }}
+          >
+            <MoreVertical className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {menuOpen ? (
+          <ActionMenu
+            actions={actions}
+            onClose={() => {
+              setMenuOpen(false);
+            }}
+          />
+        ) : null}
+      </div>
+
+      {expanded ? (
+        <div>
+          {node.children.map((child, index) => (
+            <SectionTreeNode
+              key={child.section.id}
+              node={child}
+              depth={depth + 1}
+              isFirst={index === 0}
+              isLast={index === node.children.length - 1}
+              expandedIds={expandedIds}
+              activeSectionId={activeSectionId}
+              formsBySection={formsBySection}
+              handlers={handlers}
+            />
+          ))}
+          {sectionForms.map((form) => (
+            <div
+              key={form.id}
+              role="button"
+              tabIndex={0}
+              style={{ paddingLeft: 18 + depth * 12 }}
+              className={`flex items-center gap-1.5 rounded-md py-1 pr-2 text-xs transition-colors duration-150 ${
+                form.enabled
+                  ? "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+                  : "text-zinc-600 opacity-60 hover:bg-zinc-900"
+              }`}
+              onClick={() => {
+                handlers.onSelectForm(form.id);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handlers.onSelectForm(form.id);
+                }
+              }}
+            >
+              <FileText className="h-3 w-3 shrink-0 text-zinc-600" />
+              <span className="min-w-0 truncate">{form.name}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Modal «Mover a…»: elige nueva sección padre (o raíz) para una sección. */
+function MoveSectionModal({
+  section,
+  onClose,
+}: {
+  section: Section;
+  onClose: () => void;
+}) {
+  const sections = useSectionStore((store) => store.sections);
+  const moveSectionTo = useSectionStore((store) => store.moveSectionTo);
+
+  const excludedIds = useMemo(
+    () => collectDescendantIds(sections, section.id),
+    [sections, section.id],
+  );
+  const candidates = useMemo(
+    () => sections.filter((candidate) => !excludedIds.has(candidate.id)),
+    [sections, excludedIds],
+  );
+  // Precarga la ubicación actual como opción marcada.
+  const [target, setTarget] = useState<string | null>(section.parentId ?? null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (busy) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [busy, onClose]);
+
+  async function submit(): Promise<void> {
+    setBusy(true);
+    setError(null);
+    try {
+      await moveSectionTo(section.id, target);
+      onClose();
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error ? submitError.message : String(submitError),
+      );
+      setBusy(false);
+    }
+  }
+
+  function optionClass(active: boolean): string {
+    return `flex w-full cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-left text-xs transition-colors duration-150 ${
+      active
+        ? "border-sky-500/40 bg-sky-500/10 text-sky-100"
+        : "border-transparent text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800/60"
+    }`;
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={() => {
+        if (!busy) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mover sección"
+        className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl"
+        onClick={(event) => {
+          event.stopPropagation();
+        }}
+      >
+        <h2 className="text-sm font-semibold text-zinc-100">
+          Mover{" "}
+          <span className="text-sky-300">«{section.name}»</span> a…
+        </h2>
+
+        <div className="flex max-h-64 flex-col gap-1 overflow-y-auto pr-1">
+          <label className={optionClass(target === null)}>
+            <input
+              type="radio"
+              name="move-target"
+              className="shrink-0 accent-sky-500"
+              checked={target === null}
+              onChange={() => {
+                setTarget(null);
+              }}
+            />
+            Raíz (sin sección padre)
+          </label>
+          {candidates.map((candidate) => (
+            <label key={candidate.id} className={optionClass(target === candidate.id)}>
+              <input
+                type="radio"
+                name="move-target"
+                className="shrink-0 accent-sky-500"
+                checked={target === candidate.id}
+                onChange={() => {
+                  setTarget(candidate.id);
+                }}
+              />
+              <span className="min-w-0 flex-1 truncate">
+                {sectionPathLabel(sections, candidate.id)}
+              </span>
+              {!candidate.enabled ? (
+                <span className="shrink-0 rounded bg-zinc-800 px-1 text-[9px] uppercase tracking-wide text-zinc-500">
+                  Off
+                </span>
+              ) : null}
+            </label>
+          ))}
+        </div>
+
+        {error !== null ? (
+          <p className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+            {error}
+          </p>
+        ) : null}
+
+        <footer className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300 transition-colors hover:text-zinc-100 disabled:opacity-50"
+            onClick={onClose}
+            disabled={busy}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={busy || target === section.parentId}
+            onClick={() => {
+              void submit();
+            }}
+          >
+            {busy ? "Moviendo…" : "Mover"}
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Manejador de menús: barra superior compacta siempre visible (hamburguesa,
- * migas y buscador) + drawer lateral colapsable con el árbol de secciones.
- * La preferencia abrir/cerrar persiste en localStorage.
+ * migas y buscador) + drawer lateral colapsable con el árbol de secciones,
+ * acciones de configuración por nodo y papelera de secciones.
  */
 export function MenuSidebar({ children }: { children: ReactNode }) {
   const setSearchOpen = useUiStore((store) => store.setSearchOpen);
+  const navigate = useUiStore((store) => store.navigate);
+  const routes = useUiStore((store) => store.routes);
   const breadcrumb = useBreadcrumb();
+
+  const sections = useSectionStore((store) => store.sections);
+  const trashedSections = useSectionStore((store) => store.trashedSections);
+  const formCounts = useSectionStore((store) => store.formCounts);
+  const moveSection = useSectionStore((store) => store.moveSection);
+  const enableSection = useSectionStore((store) => store.enableSection);
+  const disableSection = useSectionStore((store) => store.disableSection);
+  const softDeleteSection = useSectionStore((store) => store.softDeleteSection);
+  const restoreSection = useSectionStore((store) => store.restoreSection);
+  const hardDeleteSection = useSectionStore((store) => store.hardDeleteSection);
+
   const [open, setOpen] = useState(readInitialDrawerOpen);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const [modal, setModal] = useState<SidebarModal>(null);
+  const [moveTarget, setMoveTarget] = useState<Section | null>(null);
+  const [confirmHardDelete, setConfirmHardDelete] = useState<Section | null>(null);
+  const [showTrash, setShowTrash] = useState(false);
+  const [allForms, setAllForms] = useState<Form[]>([]);
 
   useEffect(() => {
     try {
@@ -30,6 +590,153 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
       // localStorage no disponible: la preferencia simplemente no persiste.
     }
   }, [open]);
+
+  // Formularios vivos agrupables por sección (para el árbol).
+  useEffect(() => {
+    let cancelled = false;
+    void formsRepository
+      .list({ includeDisabled: true })
+      .then((loaded) => {
+        if (!cancelled) {
+          setAllForms(loaded);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAllForms([]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sections, formCounts]);
+
+  const currentRoute = routes[routes.length - 1];
+  const routeSectionId =
+    currentRoute.view === "section" ? (currentRoute.id ?? null) : null;
+  const routeFormId = currentRoute.view === "form" ? (currentRoute.id ?? null) : null;
+  const formOwnerSectionId =
+    routeFormId !== null
+      ? (allForms.find((form) => form.id === routeFormId)?.sectionId ?? null)
+      : null;
+  // Nodo activo: la sección en ruta o la dueña del formulario en ruta.
+  const activeSectionId = routeSectionId ?? formOwnerSectionId;
+
+  const tree = useMemo(() => buildSectionTree(sections), [sections]);
+
+  const formsBySection = useMemo(() => {
+    const map = new Map<string, Form[]>();
+    for (const form of allForms) {
+      const bucket = map.get(form.sectionId);
+      if (bucket !== undefined) {
+        bucket.push(form);
+      } else {
+        map.set(form.sectionId, [form]);
+      }
+    }
+    return map;
+  }, [allForms]);
+
+  // Auto-expandir los ancestros del nodo activo para que siempre sea visible.
+  // Ajuste de estado durante el render (patrón oficial de React): si cambió el
+  // nodo activo y aún no se expandió su cadena de ancestros, se hace aquí.
+  const [expandedFor, setExpandedFor] = useState<string | null>(null);
+  if (activeSectionId !== null && expandedFor !== activeSectionId) {
+    const byId = new Map(sections.map((section) => [section.id, section]));
+    let cursor = byId.get(activeSectionId);
+    if (cursor === undefined) {
+      setExpandedFor(activeSectionId);
+    } else {
+      const next = new Set(expandedIds);
+      while (cursor !== undefined && cursor.parentId !== null) {
+        next.add(cursor.parentId);
+        cursor = byId.get(cursor.parentId);
+      }
+      if (next.size !== expandedIds.size) {
+        setExpandedIds(next);
+      }
+      setExpandedFor(activeSectionId);
+    }
+  }
+
+  // Esc cierra dropdowns/modales/papelera del drawer (el ConfirmModal gestiona el suyo).
+  useEffect(() => {
+    if (
+      modal === null &&
+      moveTarget === null &&
+      confirmHardDelete === null &&
+      !showTrash
+    ) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape" && confirmHardDelete === null) {
+        setModal(null);
+        setMoveTarget(null);
+        setShowTrash(false);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [modal, moveTarget, confirmHardDelete, showTrash]);
+
+  function toggleExpanded(id: string): void {
+    setExpandedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function openCreateSubsection(parentId: string | null): void {
+    if (parentId !== null) {
+      // Que la nueva subsección se vea al crearse.
+      setExpandedIds((previous) => new Set(previous).add(parentId));
+    }
+    setModal({ kind: "sectionCreate", parentId });
+  }
+
+  const handlers: TreeHandlers = {
+    onToggleExpanded: toggleExpanded,
+    onSelectSection: (id) => {
+      navigate("section", id);
+    },
+    onSelectForm: (id) => {
+      navigate("form", id);
+    },
+    onAddSubsection: (section) => {
+      openCreateSubsection(section.id);
+    },
+    onAddForm: (section) => {
+      setModal({ kind: "formCreate", sectionId: section.id });
+    },
+    onEditSection: (section) => {
+      setModal({ kind: "sectionEdit", section });
+    },
+    onMoveTo: (section) => {
+      setMoveTarget(section);
+    },
+    onMoveDelta: (section, delta) => {
+      void moveSection(section.id, delta);
+    },
+    onToggleEnabled: (section) => {
+      if (section.enabled) {
+        void disableSection(section.id);
+      } else {
+        void enableSection(section.id);
+      }
+    },
+    onDelete: (section) => {
+      // Soft delete: recuperable desde la papelera del drawer.
+      void softDeleteSection(section.id);
+    },
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -103,10 +810,122 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
             open ? "w-72" : "w-0 border-r-0"
           }`}
         >
-          <div className="flex h-full w-72 flex-col">
+          <div inert={!open} className="flex h-full w-72 flex-col">
+            {/* Marca discreta */}
             <p className="px-4 pt-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-600">
-              GDR
+              GDR · Organizador
             </p>
+
+            <div className="px-3 pb-1 pt-2">
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-sky-500"
+                onClick={() => {
+                  openCreateSubsection(null);
+                }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Nueva sección
+              </button>
+            </div>
+
+            {/* Árbol de secciones */}
+            <nav
+              aria-label="Secciones"
+              className="min-h-0 flex-1 overflow-y-auto px-2 pb-2"
+            >
+              {tree.length === 0 ? (
+                <p className="px-2 py-6 text-center text-xs leading-relaxed text-zinc-600">
+                  Aún no hay secciones.
+                  <br />
+                  Crea la primera con el botón de arriba.
+                </p>
+              ) : (
+                tree.map((node, index) => (
+                  <SectionTreeNode
+                    key={node.section.id}
+                    node={node}
+                    depth={0}
+                    isFirst={index === 0}
+                    isLast={index === tree.length - 1}
+                    expandedIds={expandedIds}
+                    activeSectionId={activeSectionId}
+                    formsBySection={formsBySection}
+                    handlers={handlers}
+                  />
+                ))
+              )}
+            </nav>
+
+            {/* Papelera de secciones */}
+            <div className="border-t border-zinc-800">
+              {showTrash ? (
+                <div className="max-h-52 overflow-y-auto px-2 py-2">
+                  <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
+                    Secciones eliminadas
+                  </p>
+                  {trashedSections.length === 0 ? (
+                    <p className="px-2 py-2 text-center text-xs text-zinc-600">
+                      La papelera está vacía.
+                    </p>
+                  ) : (
+                    <ul className="flex flex-col gap-1">
+                      {trashedSections.map((section) => (
+                        <li
+                          key={section.id}
+                          className="flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-1.5"
+                        >
+                          <IconRenderer
+                            icon={section.icon}
+                            className="h-3 w-3 shrink-0 text-zinc-600"
+                          />
+                          <span className="min-w-0 flex-1 truncate text-xs text-zinc-500 line-through">
+                            {section.name}
+                          </span>
+                          <button
+                            type="button"
+                            title="Restaurar sección y su subárbol"
+                            aria-label={`Restaurar ${section.name}`}
+                            className="shrink-0 rounded p-1 text-zinc-500 transition-colors duration-150 hover:text-sky-300"
+                            onClick={() => {
+                              void restoreSection(section.id);
+                            }}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            title="Borrar definitivamente"
+                            aria-label={`Borrar ${section.name} definitivamente`}
+                            className="shrink-0 rounded p-1 text-zinc-500 transition-colors duration-150 hover:text-rose-300"
+                            onClick={() => {
+                              setConfirmHardDelete(section);
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ) : null}
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs text-zinc-400 transition-colors duration-150 hover:bg-zinc-900 hover:text-zinc-100"
+                onClick={() => {
+                  setShowTrash((previous) => !previous);
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Papelera
+                {trashedSections.length > 0 ? (
+                  <span className="ml-auto rounded bg-zinc-800 px-1.5 text-[10px] tabular-nums text-zinc-400">
+                    {trashedSections.length}
+                  </span>
+                ) : null}
+              </button>
+            </div>
           </div>
         </aside>
 
@@ -115,6 +934,61 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+
+      {modal?.kind === "sectionCreate" ? (
+        <SectionModal
+          mode={{
+            kind: "create",
+            parentId: modal.parentId,
+            parentName:
+              modal.parentId === null
+                ? undefined
+                : sections.find((section) => section.id === modal.parentId)?.name,
+          }}
+          onClose={() => {
+            setModal(null);
+          }}
+        />
+      ) : null}
+
+      {modal?.kind === "sectionEdit" ? (
+        <SectionModal
+          mode={{ kind: "edit", section: modal.section }}
+          onClose={() => {
+            setModal(null);
+          }}
+        />
+      ) : null}
+
+      {modal?.kind === "formCreate" ? (
+        <FormModal
+          mode={{ kind: "create", sectionId: modal.sectionId }}
+          onClose={() => {
+            setModal(null);
+          }}
+        />
+      ) : null}
+
+      {moveTarget !== null ? (
+        <MoveSectionModal
+          section={moveTarget}
+          onClose={() => {
+            setMoveTarget(null);
+          }}
+        />
+      ) : null}
+
+      {confirmHardDelete !== null ? (
+        <ConfirmModal
+          title="Borrar sección definitivamente"
+          message={`Se eliminarán «${confirmHardDelete.name}», todo su subárbol, formularios y registros para siempre. Esta acción no se puede deshacer.`}
+          confirmLabel="Borrar definitivo"
+          onConfirm={() => hardDeleteSection(confirmHardDelete.id)}
+          onClose={() => {
+            setConfirmHardDelete(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

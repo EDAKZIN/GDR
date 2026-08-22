@@ -6,7 +6,9 @@ import { IconRenderer } from "../components/IconRenderer";
 import { SUGGESTED_ICON_NAMES } from "../components/iconNames";
 
 export interface SectionModalProps {
-  mode: { kind: "create" } | { kind: "edit"; section: Section };
+  mode:
+    | { kind: "create"; parentId?: string | null; parentName?: string }
+    | { kind: "edit"; section: Section };
   onClose: () => void;
 }
 
@@ -37,7 +39,7 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
         icon: icon.trim() === "" ? null : icon.trim(),
       };
       if (mode.kind === "create") {
-        await createSection(payload);
+        await createSection({ ...payload, parentId: mode.parentId });
       } else {
         await updateSection(mode.section.id, payload);
       }
@@ -63,7 +65,7 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
       >
         <header className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-zinc-100">
-            {mode.kind === "create" ? "Nueva sección" : "Editar sección"}
+            {mode.kind === "edit" ? "Editar sección" : "Nueva sección"}
           </h2>
           <button
             type="button"
@@ -74,6 +76,13 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
             <X className="h-4 w-4" />
           </button>
         </header>
+
+        {mode.kind === "create" && mode.parentName !== undefined ? (
+          <p className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-500">
+            Subsección de{" "}
+            <span className="font-medium text-sky-300">{mode.parentName}</span>
+          </p>
+        ) : null}
 
         <label className="flex flex-col gap-1 text-xs font-medium text-zinc-400">
           Nombre
