@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { validateFieldValue, type Field } from "../core/fields";
 import type {
+  FieldValue,
   RecordDetail,
   RecordEntity,
   RecordOrderBy,
@@ -42,6 +43,8 @@ export function resolveRecordTitle(
 export interface RecordListItem {
   record: RecordEntity;
   title: string;
+  /** Valores deserializados (para tarjetas y búsqueda local). */
+  values: FieldValue[];
 }
 
 export type RecordViewMode = "closed" | "view" | "edit" | "create";
@@ -67,6 +70,8 @@ interface RecordState {
 
   openForm: (formId: string) => Promise<void>;
   closeForm: () => void;
+  /** Recarga campos (tras editar la plantilla) y la lista de registros. */
+  reloadFields: () => Promise<void>;
   reloadList: () => Promise<void>;
   setSorting: (sorting: {
     orderBy?: RecordOrderBy;
@@ -106,6 +111,7 @@ async function loadItems(options: LoadItemsOptions): Promise<RecordListItem[]> {
       const detail = await recordsRepository.get(record.id);
       return {
         record,
+        values: detail?.values ?? [],
         title:
           detail === null
             ? "Sin título"
@@ -165,6 +171,19 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
       errors: {},
       error: null,
     });
+  },
+
+  reloadFields: async () => {
+    const { formId } = get();
+    if (formId === null) {
+      return;
+    }
+    try {
+      set({ fields: await fieldsRepository.listByForm(formId) });
+      await get().reloadList();
+    } catch (error) {
+      set({ error: toMessage(error) });
+    }
   },
 
   reloadList: async () => {
