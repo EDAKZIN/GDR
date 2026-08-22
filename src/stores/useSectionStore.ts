@@ -48,6 +48,8 @@ export interface SectionState {
   /** Secciones eliminadas (papelera). */
   trashedSections: Section[];
   activeSectionId: string | null;
+  /** Nº de formularios (no eliminados) por id de sección. */
+  formCounts: Record<string, number>;
 
   /** Formularios de la sección activa NO eliminados. */
   forms: Form[];
@@ -61,6 +63,7 @@ export interface SectionState {
   error: string | null;
 
   loadSections: () => Promise<void>;
+  loadFormCounts: () => Promise<void>;
   selectSection: (sectionId: string) => Promise<void>;
 
   createSection: (input: CreateSectionInput) => Promise<Section>;
@@ -123,6 +126,7 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
   sections: [],
   trashedSections: [],
   activeSectionId: null,
+  formCounts: {},
 
   forms: [],
   trashedForms: [],
@@ -138,6 +142,7 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
     try {
       const { sections, trashedSections } = await loadAllSections();
       set({ sections, trashedSections, loadingSections: false, error: null });
+      void get().loadFormCounts();
       // Si la sección activa dejó de existir, se limpia la selección.
       const active = get().activeSectionId;
       if (
@@ -154,6 +159,19 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
       }
     } catch (error) {
       set({ loadingSections: false, error: toMessage(error) });
+    }
+  },
+
+  loadFormCounts: async () => {
+    try {
+      const allForms = await formsRepository.list({ includeDisabled: true });
+      const formCounts: Record<string, number> = {};
+      for (const form of allForms) {
+        formCounts[form.sectionId] = (formCounts[form.sectionId] ?? 0) + 1;
+      }
+      set({ formCounts });
+    } catch (error) {
+      set({ error: toMessage(error) });
     }
   },
 
@@ -250,6 +268,7 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
     const created = await formsRepository.create(input);
     const sectionId = created.sectionId;
     await get().loadForms(sectionId);
+    void get().loadFormCounts();
     return created;
   },
 
@@ -274,11 +293,13 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
       set({ activeFormId: null, formBuilderOpen: false });
     }
     await get().loadForms(get().activeSectionId ?? "");
+    void get().loadFormCounts();
   },
 
   restoreForm: async (id) => {
     await formsRepository.restore(id);
     await get().loadForms(get().activeSectionId ?? "");
+    void get().loadFormCounts();
   },
 
   hardDeleteForm: async (id) => {
@@ -287,6 +308,7 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
       set({ activeFormId: null, formBuilderOpen: false });
     }
     await get().loadForms(get().activeSectionId ?? "");
+    void get().loadFormCounts();
   },
 
   moveForm: async (id, delta) => {
