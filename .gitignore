@@ -43,6 +43,9 @@ src-tauri/gen/schemas
 # Test coverage
 coverage
 
+# TypeScript incremental builds
+*.tsbuildinfo
+
 # Temporales del sistema
 Thumbs.db
 Desktop.ini

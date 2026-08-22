@@ -1,9 +1,18 @@
-import { sqliteTable, text, integer, uniqueIndex, index } from "drizzle-orm/sqlite-core";
+// Espejo en TypeScript del esquema de src/database/migrations/0001_init.sql.
+// Referencia para tooling (drizzle-kit generate); la fuente de verdad en runtime
+// son las migraciones SQL aplicadas por el runner.
+import {
+  sqliteTable,
+  text,
+  integer,
+  uniqueIndex,
+  index,
+} from "drizzle-orm/sqlite-core";
 
 export const sections = sqliteTable("sections", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
+  description: text("description"),
   icon: text("icon"),
   position: integer("position").notNull().default(0),
   enabled: integer("enabled").notNull().default(1),
@@ -18,8 +27,9 @@ export const forms = sqliteTable(
     id: text("id").primaryKey(),
     sectionId: text("section_id")
       .notNull()
-      .references(() => sections.id),
+      .references(() => sections.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    description: text("description"),
     position: integer("position").notNull().default(0),
     enabled: integer("enabled").notNull().default(1),
     createdAt: text("created_at").notNull(),
@@ -35,11 +45,13 @@ export const fields = sqliteTable(
     id: text("id").primaryKey(),
     formId: text("form_id")
       .notNull()
-      .references(() => forms.id),
+      .references(() => forms.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    description: text("description"),
+    // TEXT sin CHECK rígido: la lista válida vive en FIELD_TYPES (src/core/fields).
     type: text("type").notNull(),
-    config: text("config").notNull().default("{}"),
     required: integer("required").notNull().default(0),
+    searchable: integer("searchable").notNull().default(0),
     position: integer("position").notNull().default(0),
     enabled: integer("enabled").notNull().default(1),
     createdAt: text("created_at").notNull(),
@@ -55,8 +67,7 @@ export const records = sqliteTable(
     id: text("id").primaryKey(),
     formId: text("form_id")
       .notNull()
-      .references(() => forms.id),
-    position: integer("position").notNull().default(0),
+      .references(() => forms.id, { onDelete: "cascade" }),
     enabled: integer("enabled").notNull().default(1),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
@@ -74,7 +85,8 @@ export const fieldValues = sqliteTable(
       .references(() => records.id, { onDelete: "cascade" }),
     fieldId: text("field_id")
       .notNull()
-      .references(() => fields.id),
+      .references(() => fields.id, { onDelete: "cascade" }),
+    // JSON serializado del valor según el tipo de campo.
     value: text("value"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
