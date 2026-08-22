@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { GlobalSearch } from "./ui/search/GlobalSearch";
 import { MenuSidebar } from "./ui/menu/MenuSidebar";
+import { ToastHost } from "./ui/menu/toast";
 import { FormWorkspaceScreen } from "./ui/screens/FormWorkspaceScreen";
 import { SectionFormsScreen } from "./ui/screens/SectionFormsScreen";
 import { SectionsScreen } from "./ui/screens/SectionsScreen";
@@ -77,6 +78,8 @@ function App() {
           }}
         />
       ) : null}
+
+      <ToastHost />
     </div>
   );
 }

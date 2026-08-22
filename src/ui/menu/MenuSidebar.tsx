@@ -962,7 +962,13 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
 
       {modal?.kind === "formCreate" ? (
         <FormModal
-          mode={{ kind: "create", sectionId: modal.sectionId }}
+          mode={{
+            kind: "create",
+            sectionId: modal.sectionId,
+            sectionName: sections.find(
+              (section) => section.id === modal.sectionId,
+            )?.name,
+          }}
           onClose={() => {
             setModal(null);
           }}
