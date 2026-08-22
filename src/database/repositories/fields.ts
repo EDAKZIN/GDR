@@ -142,6 +142,16 @@ export function createFieldsRepository(db: DbHandle): FieldRepository {
       const data = createFieldInputSchema.parse(input);
       const id = randomUUID();
       const database = await db();
+      let position = data.position;
+      if (position === undefined) {
+        // Sin posición explícita, el campo se añade al FINAL del orden
+        // (nunca en position 0, que lo colocaría antes que los existentes).
+        const rows = await database.select<Array<{ next: number }>>(
+          "SELECT COALESCE(MAX(position) + 1, 0) AS next FROM fields WHERE form_id = $1",
+          [data.formId],
+        );
+        position = rows[0]?.next ?? 0;
+      }
       await database.execute(
         "INSERT INTO fields (id, form_id, name, description, type, required, searchable, position) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         [
@@ -152,7 +162,7 @@ export function createFieldsRepository(db: DbHandle): FieldRepository {
           data.type,
           boolToDb(data.required ?? false),
           boolToDb(data.searchable ?? false),
-          data.position ?? 0,
+          position,
         ],
       );
       return requireRow(database, id);
@@ -252,10 +262,13 @@ export function createFieldsRepository(db: DbHandle): FieldRepository {
 
     async hardDelete(id: string): Promise<boolean> {
       const database = await db();
-      await searchRepository.syncField(id);
       const result = await database.execute("DELETE FROM fields WHERE id = $1", [
         z.uuid().parse(id),
       ]);
+      // DESPUÉS del borrado: si se hiciera antes, syncField reinsertaría las
+      // entradas de field_values (aún vivas) y quedarían huérfanas en el índice
+      // cuando el CASCADE las elimina.
+      await searchRepository.syncField(id);
       return result.rowsAffected > 0;
     },
 
