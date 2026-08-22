@@ -1,0 +1,23 @@
+/** Nombres sugeridos para el campo de icono del formulario de secciones. */
+export const SUGGESTED_ICON_NAMES = [
+  "Folder",
+  "Bookmark",
+  "Star",
+  "Heart",
+  "Home",
+  "User",
+  "Users",
+  "Briefcase",
+  "BookOpen",
+  "Calendar",
+  "Tag",
+  "Archive",
+  "Film",
+  "Music",
+  "Gamepad2",
+  "Utensils",
+  "Plane",
+  "Car",
+  "ShoppingCart",
+  "Wrench",
+] as const;
