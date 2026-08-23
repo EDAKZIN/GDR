@@ -15,7 +15,7 @@ import { useBreadcrumb, useUiStore } from "../../stores/useUiStore";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { FormModal } from "./FormModal";
 import { RecordModal } from "../workspace/RecordModal";
-import { RecordsTab } from "../workspace/RecordsTab";
+import { RecordsTable } from "../workspace/RecordsTable";
 import { TemplateTab } from "../workspace/TemplateTab";
 
 type TabKey = "records" | "template";
@@ -34,7 +34,7 @@ const tabButtonClass = (active: boolean): string =>
 
 /**
  * Pantalla FORMULARIO: workspace a pantalla completa con dos pestañas.
- * - Registros (por defecto): lista con búsqueda, y creación/edición en modal.
+ * - Registros (por defecto): tabla densa con paginación y creación/edición en modal.
  * - Plantilla: constructor de campos del formulario.
  */
 export function FormWorkspaceScreen() {
@@ -265,7 +265,8 @@ export function FormWorkspaceScreen() {
         </nav>
 
         {tab === "records" ? (
-          <RecordsTab
+          <RecordsTable
+            formName={form.name}
             onGoToTemplate={() => {
               setTab("template");
             }}

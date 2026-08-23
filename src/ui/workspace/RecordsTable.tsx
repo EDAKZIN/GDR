@@ -1,0 +1,663 @@
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  LayoutList,
+  ListFilter,
+  MoreVertical,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
+  X,
+} from "lucide-react";
+import type { Field } from "../../core/fields";
+import { useRecordStore } from "../../stores";
+import { ConfirmModal } from "../components/ConfirmModal";
+import { formatValue, valueSearchText } from "./recordValues";
+
+const PAGE_SIZE = 20;
+const VISIBLE_FIELD_LIMIT = 5;
+
+/** Tipos con comparación natural para ordenar por columna. */
+const SORTABLE_TYPES: ReadonlySet<string> = new Set([
+  "boolean",
+  "date",
+  "datetime",
+  "email",
+  "number",
+  "select",
+  "text",
+  "url",
+]);
+
+type SortKey = string;
+
+interface SortState {
+  key: SortKey;
+  direction: "asc" | "desc";
+}
+
+const DEFAULT_SORT: SortState = { key: "created_at", direction: "desc" };
+
+/**
+ * Comparador de valores crudos según el tipo del campo. Los valores vacíos
+ * quedan al final del orden ascendente.
+ */
+function compareValues(a: unknown, b: unknown, type: string): number {
+  if (type === "number") {
+    const left = typeof a === "number" ? a : Number.NaN;
+    const right = typeof b === "number" ? b : Number.NaN;
+    if (Number.isNaN(left) && Number.isNaN(right)) {
+      return 0;
+    }
+    if (Number.isNaN(left)) {
+      return 1;
+    }
+    if (Number.isNaN(right)) {
+      return -1;
+    }
+    return left - right;
+  }
+  if (type === "boolean") {
+    return (a === true ? 1 : 0) - (b === true ? 1 : 0);
+  }
+  const left = typeof a === "string" ? a : "";
+  const right = typeof b === "string" ? b : "";
+  if (left === "" || right === "") {
+    if (left === right) {
+      return 0;
+    }
+    return left === "" ? 1 : -1;
+  }
+  return left.localeCompare(right, undefined, { sensitivity: "base" });
+}
+
+/** Celda formateada según el tipo: contraseña oculta, booleano como badge… */
+function CellValue({ field, value }: { field: Field; value: unknown }) {
+  if (field.type === "password") {
+    const empty = typeof value !== "string" || value === "";
+    if (empty) {
+      return <span className="text-zinc-600">—</span>;
+    }
+    return <span className="font-mono text-zinc-500">••••••••</span>;
+  }
+  if (field.type === "boolean") {
+    const on = value === true;
+    return (
+      <span
+        className={`inline-flex items-center rounded px-1 py-0.5 ${
+          on ? "bg-sky-500/15 text-sky-300" : "bg-zinc-800 text-zinc-500"
+        }`}
+        title={on ? "Sí" : "No"}
+      >
+        {on ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+      </span>
+    );
+  }
+  if (field.type === "image" && typeof value === "string" && value !== "") {
+    return (
+      <img
+        src={value}
+        alt={field.name}
+        loading="lazy"
+        className="h-8 w-8 rounded border border-zinc-700 object-cover"
+      />
+    );
+  }
+  const text = formatValue(field, value);
+  if (text === "—") {
+    return <span className="text-zinc-600">—</span>;
+  }
+  return <span>{text}</span>;
+}
+
+interface RowMenuAction {
+  label: string;
+  icon: typeof Eye;
+  danger?: boolean;
+  run: () => void;
+}
+
+/** Menú ⋮ de fila: Ver / Editar / Eliminar (o Restaurar en la papelera). */
+function RecordRowMenu({
+  actions,
+  onClose,
+}: {
+  actions: readonly RowMenuAction[];
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div className="absolute right-1 top-8 z-50 flex min-w-32 flex-col overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-2xl">
+        {actions.map((action) => (
+          <button
+            key={action.label}
+            type="button"
+            className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
+              action.danger === true
+                ? "text-rose-300 hover:bg-rose-500/10"
+                : "text-zinc-200 hover:bg-zinc-800"
+            }`}
+            onClick={() => {
+              onClose();
+              action.run();
+            }}
+          >
+            <action.icon className="h-3.5 w-3.5" />
+            {action.label}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/**
+ * TABLA densa de registros (estilo panel administrativo): una fila por
+ * registro, columnas según los primeros campos habilitados de la plantilla,
+ * menú ⋮ por fila, filtro local pequeño, paginación y orden por columna.
+ */
+export function RecordsTable({
+  formName,
+  onGoToTemplate,
+  onOpenWorkspace,
+}: {
+  /** Nombre del formulario (encabezado de la tabla). */
+  formName: string;
+  /** Abre la pestaña Plantilla cuando el workspace la incluye. */
+  onGoToTemplate?: () => void;
+  /** Abre el workspace completo del formulario (secciones planas). */
+  onOpenWorkspace?: () => void;
+}) {
+  const items = useRecordStore((state) => state.items);
+  const fields = useRecordStore((state) => state.fields);
+  const showDeleted = useRecordStore((state) => state.showDeleted);
+  const loading = useRecordStore((state) => state.loading);
+  const error = useRecordStore((state) => state.error);
+  const setShowDeleted = useRecordStore((state) => state.setShowDeleted);
+  const openCreate = useRecordStore((state) => state.openCreate);
+  const openRecord = useRecordStore((state) => state.openRecord);
+  const restoreItem = useRecordStore((state) => state.restoreItem);
+  const deleteItem = useRecordStore((state) => state.deleteItem);
+
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
+  const [page, setPage] = useState(1);
+  const [menuRecordId, setMenuRecordId] = useState<string | null>(null);
+  const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
+
+  // Columnas: los primeros campos habilitados de la plantilla.
+  const visibleFields = useMemo(
+    () => fields.slice(0, VISIBLE_FIELD_LIMIT),
+    [fields],
+  );
+
+  const valuesByRecord = useMemo(() => {
+    const map = new Map<string, Map<string, unknown>>();
+    for (const { record, values } of items) {
+      map.set(
+        record.id,
+        new Map(values.map((entry) => [entry.fieldId, entry.value])),
+      );
+    }
+    return map;
+  }, [items]);
+
+  // Filtro local + orden por columna, ambos en cliente (la lista ya está cargada).
+  const rows = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    const matching =
+      needle === ""
+        ? items
+        : items.filter(({ title, values }) => {
+            if (title.toLowerCase().includes(needle)) {
+              return true;
+            }
+            return values.some((entry) =>
+              valueSearchText(entry.value).toLowerCase().includes(needle),
+            );
+          });
+    const result = [...matching];
+    const sortField = visibleFields.find((field) => field.id === sort.key);
+    if (sortField !== undefined) {
+      result.sort((left, right) => {
+        const leftValues = valuesByRecord.get(left.record.id);
+        const rightValues = valuesByRecord.get(right.record.id);
+        return compareValues(
+          leftValues?.get(sortField.id),
+          rightValues?.get(sortField.id),
+          sortField.type,
+        );
+      });
+    } else if (sort.key === "created_at" || sort.key === "updated_at") {
+      const timestampKey = sort.key;
+      result.sort((left, right) => {
+        const leftValue =
+          timestampKey === "created_at"
+            ? left.record.createdAt
+            : left.record.updatedAt;
+        const rightValue =
+          timestampKey === "created_at"
+            ? right.record.createdAt
+            : right.record.updatedAt;
+        return leftValue.localeCompare(rightValue);
+      });
+    }
+    return sort.direction === "desc" ? result.reverse() : result;
+  }, [items, query, sort, visibleFields, valuesByRecord]);
+
+  const totalCount = rows.length;
+  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageRows = useMemo(
+    () => rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [rows, currentPage],
+  );
+  const from = totalCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const to = Math.min(currentPage * PAGE_SIZE, totalCount);
+
+  // Cambiar filtro u orden vuelve a la primera página. Ajuste de estado
+  // durante el render (patrón oficial de React), sin efectos.
+  const [resetKey, setResetKey] = useState("");
+  const pageResetKey = `${query}\u0000${sort.key}\u0000${sort.direction}`;
+  if (pageResetKey !== resetKey) {
+    setResetKey(pageResetKey);
+    setPage(1);
+  }
+
+  // Esc cierra el menú ⋮ de fila.
+  useEffect(() => {
+    if (menuRecordId === null) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setMenuRecordId(null);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuRecordId]);
+
+  function toggleSort(key: SortKey): void {
+    setSort((previous) =>
+      previous.key === key
+        ? { key, direction: previous.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" },
+    );
+  }
+
+  /** Ver y editar de un paso: abre el detalle y entra en modo edición. */
+  function editRecord(recordId: string): void {
+    void openRecord(recordId).then(() => {
+      useRecordStore.getState().startEditing();
+    });
+  }
+
+  const hasFields = fields.length > 0;
+  const isEmpty = !loading && items.length === 0;
+
+  function sortableHeader(label: string, key: SortKey): ReactNode {
+    const active = sort.key === key;
+    return (
+      <button
+        type="button"
+        className={`inline-flex items-center gap-1 transition-colors hover:text-sky-300 ${
+          active ? "text-sky-300" : ""
+        }`}
+        onClick={() => {
+          toggleSort(key);
+        }}
+        title={active ? "Cambiar orden" : "Ordenar"}
+      >
+        {label}
+        {active ? (
+          sort.direction === "asc" ? (
+            <ArrowUp className="h-3 w-3" />
+          ) : (
+            <ArrowDown className="h-3 w-3" />
+          )
+        ) : null}
+      </button>
+    );
+  }
+
+  return (
+    <section className="flex min-h-0 flex-1 flex-col gap-2">
+      {/* Encabezado: nombre + contador, filtro local y acciones */}
+      <header className="flex shrink-0 flex-wrap items-center gap-2">
+        <h2 className="shrink-0 text-sm font-semibold text-zinc-100">
+          {formName}
+        </h2>
+        <span
+          className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-sky-300"
+          title="Registros cargados"
+        >
+          {String(items.length)}
+        </span>
+
+        {/* Filtro pequeño integrado a la tabla (no sustituye a Ctrl+K) */}
+        <label
+          className="relative ml-1 flex w-44 min-w-0 items-center rounded-md border border-zinc-800 bg-zinc-900 px-2 py-1 transition-colors focus-within:border-sky-400"
+          title="Filtrar las filas de esta tabla"
+        >
+          <ListFilter className="mr-1.5 h-3 w-3 shrink-0 text-zinc-600" />
+          <input
+            type="text"
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+            }}
+            placeholder="Filtrar…"
+            aria-label="Filtrar registros"
+            maxLength={120}
+            className="w-full min-w-0 bg-transparent text-xs text-zinc-100 outline-none placeholder:text-zinc-600"
+          />
+          {query !== "" ? (
+            <button
+              type="button"
+              aria-label="Quitar filtro"
+              className="ml-1 shrink-0 rounded p-0.5 text-zinc-600 transition-colors hover:text-zinc-200"
+              onClick={() => {
+                setQuery("");
+              }}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          ) : null}
+        </label>
+
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-zinc-400">
+            <input
+              type="checkbox"
+              className="h-3.5 w-3.5 accent-sky-500"
+              checked={showDeleted}
+              onChange={(event) => {
+                setShowDeleted(event.target.checked);
+              }}
+            />
+            Papelera
+          </label>
+          {!showDeleted && hasFields ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-500"
+              onClick={openCreate}
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo registro
+            </button>
+          ) : null}
+        </div>
+      </header>
+
+      {error !== null ? (
+        <p className="shrink-0 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+          {error}
+        </p>
+      ) : null}
+
+      {!hasFields && !showDeleted ? (
+        /* Sin campos en la plantilla todavía. */
+        <div className="flex min-h-48 flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-zinc-800 px-6 py-12 text-center">
+          <LayoutList className="h-10 w-10 text-zinc-700" />
+          <p className="max-w-sm text-sm leading-relaxed text-zinc-500">
+            Añade campos a esta plantilla para empezar a llenar registros.
+          </p>
+          {onGoToTemplate !== undefined ? (
+            <button
+              type="button"
+              className="mt-1 inline-flex items-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
+              onClick={onGoToTemplate}
+            >
+              <Plus className="h-4 w-4" />
+              Ir a la pestaña Plantilla
+            </button>
+          ) : onOpenWorkspace !== undefined ? (
+            <button
+              type="button"
+              className="mt-1 inline-flex items-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
+              onClick={onOpenWorkspace}
+            >
+              <Plus className="h-4 w-4" />
+              Editar plantilla del formulario
+            </button>
+          ) : null}
+        </div>
+      ) : loading && items.length === 0 ? (
+        <p className="py-8 text-center text-sm text-zinc-500">
+          Cargando registros…
+        </p>
+      ) : isEmpty ? (
+        <div className="flex min-h-48 flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-zinc-800 px-6 py-12 text-center">
+          <LayoutList className="h-8 w-8 text-zinc-700" />
+          <p className="text-sm text-zinc-500">
+            {showDeleted
+              ? "La papelera está vacía."
+              : "Esta plantilla todavía no tiene registros. Crea el primero."}
+          </p>
+          {!showDeleted && hasFields ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
+              onClick={openCreate}
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo registro
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <>
+          <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-zinc-800">
+            <table className="w-full border-collapse text-left text-xs">
+              <thead>
+                <tr className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-950">
+                  {visibleFields.map((field) => (
+                    <th
+                      key={field.id}
+                      scope="col"
+                      className="whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500"
+                    >
+                      {SORTABLE_TYPES.has(field.type)
+                        ? sortableHeader(field.name, field.id)
+                        : field.name}
+                    </th>
+                  ))}
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500"
+                  >
+                    {sortableHeader("Creado", "created_at")}
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500"
+                  >
+                    {sortableHeader("Modificado", "updated_at")}
+                  </th>
+                  <th scope="col" className="w-10 px-2 py-2">
+                    <span className="sr-only">Acciones</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/70">
+                {pageRows.map(({ record, title }) => {
+                  const deleted = record.deletedAt !== null;
+                  const values = valuesByRecord.get(record.id);
+                  return (
+                    <tr
+                      key={record.id}
+                      role={deleted ? undefined : "button"}
+                      tabIndex={deleted ? undefined : 0}
+                      className={`transition-colors ${
+                        deleted
+                          ? "opacity-60"
+                          : "cursor-pointer hover:bg-zinc-900"
+                      }`}
+                      onClick={() => {
+                        if (!deleted) {
+                          void openRecord(record.id);
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (!deleted && (event.key === "Enter" || event.key === " ")) {
+                          event.preventDefault();
+                          void openRecord(record.id);
+                        }
+                      }}
+                    >
+                      {visibleFields.map((field) => (
+                        <td
+                          key={field.id}
+                          className="max-w-56 truncate px-3 py-2 text-zinc-200"
+                        >
+                          <CellValue field={field} value={values?.get(field.id)} />
+                        </td>
+                      ))}
+                      <td className="whitespace-nowrap px-3 py-2 text-zinc-500">
+                        {new Date(record.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 text-zinc-500">
+                        {new Date(record.updatedAt).toLocaleDateString()}
+                      </td>
+                      <td className="relative px-2 py-2 text-right">
+                        <button
+                          type="button"
+                          aria-label={`Acciones de ${title}`}
+                          title="Acciones"
+                          className={`rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100 ${
+                            menuRecordId === record.id ? "" : "opacity-60"
+                          }`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setMenuRecordId(
+                              menuRecordId === record.id ? null : record.id,
+                            );
+                          }}
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </button>
+                        {menuRecordId === record.id ? (
+                          <RecordRowMenu
+                            actions={
+                              deleted
+                                ? [
+                                    {
+                                      label: "Restaurar",
+                                      icon: RotateCcw,
+                                      run: () => {
+                                        void restoreItem(record.id);
+                                      },
+                                    },
+                                  ]
+                                : [
+                                    {
+                                      label: "Ver",
+                                      icon: Eye,
+                                      run: () => {
+                                        void openRecord(record.id);
+                                      },
+                                    },
+                                    {
+                                      label: "Editar",
+                                      icon: Pencil,
+                                      run: () => {
+                                        editRecord(record.id);
+                                      },
+                                    },
+                                    {
+                                      label: "Eliminar",
+                                      icon: Trash2,
+                                      danger: true,
+                                      run: () => {
+                                        setDeleteRecordId(record.id);
+                                      },
+                                    },
+                                  ]
+                            }
+                            onClose={() => {
+                              setMenuRecordId(null);
+                            }}
+                          />
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {pageRows.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={visibleFields.length + 3}
+                      className="px-3 py-6 text-center text-sm text-zinc-500"
+                    >
+                      Ningún registro coincide con «{query.trim()}».
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Paginación */}
+          <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 pt-0.5">
+            <p className="text-[11px] tabular-nums text-zinc-500">
+              Mostrando {String(from)}–{String(to)} de {String(totalCount)}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                aria-label="Página anterior"
+                title="Anterior"
+                className="rounded-md border border-zinc-800 p-1 text-zinc-400 transition-colors hover:border-sky-400 hover:text-sky-300 disabled:pointer-events-none disabled:opacity-40"
+                disabled={currentPage <= 1}
+                onClick={() => {
+                  setPage(Math.max(1, currentPage - 1));
+                }}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <span className="min-w-14 text-center text-[11px] tabular-nums text-zinc-400">
+                {String(currentPage)} / {String(pageCount)}
+              </span>
+              <button
+                type="button"
+                aria-label="Página siguiente"
+                title="Siguiente"
+                className="rounded-md border border-zinc-800 p-1 text-zinc-400 transition-colors hover:border-sky-400 hover:text-sky-300 disabled:pointer-events-none disabled:opacity-40"
+                disabled={currentPage >= pageCount}
+                onClick={() => {
+                  setPage(Math.min(pageCount, currentPage + 1));
+                }}
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </footer>
+        </>
+      )}
+
+      {deleteRecordId !== null ? (
+        <ConfirmModal
+          title="Eliminar registro"
+          message="El registro pasará a la papelera de este formulario. Podrás restaurarlo desde ahí."
+          confirmLabel="Eliminar"
+          onConfirm={() => deleteItem(deleteRecordId)}
+          onClose={() => {
+            setDeleteRecordId(null);
+          }}
+        />
+      ) : null}
+    </section>
+  );
+}
