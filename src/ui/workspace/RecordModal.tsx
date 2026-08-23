@@ -1,82 +1,266 @@
-import { useEffect, useState } from "react";
-import { Eye, EyeOff, Pencil, Save, Trash2, X } from "lucide-react";
+import { createElement, useEffect, useState } from "react";
+import {
+  AlignLeft,
+  Calendar,
+  CalendarClock,
+  Check,
+  Copy,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  FileText,
+  FileType,
+  Folder,
+  Hash,
+  Image as ImageIcon,
+  KeyRound,
+  Link2,
+  List,
+  Mail,
+  Pencil,
+  Save,
+  Tag,
+  Trash2,
+  Trash,
+  ToggleLeft,
+  X,
+} from "lucide-react";
+import type { ComponentType } from "react";
 import type { Field } from "../../core/fields";
+import { getFieldTypeHandler } from "../../core/fields";
+import { formatLocalizedDate, formatLocalizedDateTime, formatRelativeTime } from "../../core/utils/relativeTime";
 import { useRecordStore } from "../../stores";
 import { FieldRenderer } from "../forms/fields";
 import { ConfirmModal } from "../components/ConfirmModal";
+import {
+  btnDangerGhost,
+  btnPrimary,
+  btnSecondary,
+  chipNeutral,
+  modalBackdrop,
+  modalFooter,
+  modalHeader,
+  modalPanel,
+} from "../components/uiStyles";
 import { formatValue } from "./recordValues";
 
+/** Icono representativo por tipo de campo para las filas de la ficha. */
+const FIELD_TYPE_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  boolean: ToggleLeft,
+  date: Calendar,
+  datetime: CalendarClock,
+  email: Mail,
+  file_path: Folder,
+  image: ImageIcon,
+  long_text: AlignLeft,
+  number: Hash,
+  password: KeyRound,
+  select: List,
+  tags: Tag,
+  text: FileType,
+  url: Link2,
+};
+
+function fieldTypeIcon(type: string): ComponentType<{ className?: string }> {
+  return FIELD_TYPE_ICONS[type] ?? FileText;
+}
+
+/** Badge genérico para valores categóricos (Sí/No, select). */
+function ValueBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-0.5 text-xs font-medium text-zinc-200">
+      {label}
+    </span>
+  );
+}
+
+function ChipList({ items }: { items: readonly unknown[] }) {
+  return (
+    <span className="flex flex-wrap gap-1.5">
+      {items.map((item, index) => (
+        <span
+          key={`${String(item)}:${String(index)}`}
+          className="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs font-medium text-sky-200"
+        >
+          <Tag className="h-3 w-3 opacity-70" />
+          {String(item)}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Fila etiqueta→valor de la ficha, con renderizado rico por tipo de campo. */
 function ValueRow({
   field,
   value,
   revealed,
+  copied,
   onToggleReveal,
+  onCopied,
+  onOpenImage,
 }: {
   field: Field;
   value: unknown;
   revealed: boolean;
+  copied: boolean;
   onToggleReveal: () => void;
+  onCopied: () => void;
+  onOpenImage: (src: string) => void;
 }) {
-  const formatted = formatValue(field, value);
-  const empty = formatted === "—";
+  const typeIcon = createElement(fieldTypeIcon(field.type), {
+    className: "h-3.5 w-3.5 shrink-0 text-zinc-600",
+  });
+  const handler = getFieldTypeHandler(field.type);
+  const empty = handler.isEmpty(value);
+  const formatted = empty ? "—" : formatValue(field, value);
 
   let content;
-  if (field.type === "password" && !empty) {
+  if (empty) {
+    content = <span className="break-all text-sm text-zinc-600">—</span>;
+  } else if (field.type === "password") {
     content = (
-      <span className="flex items-center gap-2">
+      <span className="flex items-center gap-1.5">
         <span className="break-all font-mono text-sm text-zinc-100">
-          {revealed ? String(value) : formatted}
+          {revealed && typeof value === "string" ? value : formatted}
         </span>
         <button
           type="button"
           aria-label={revealed ? "Ocultar contraseña" : "Mostrar contraseña"}
           title={revealed ? "Ocultar" : "Mostrar"}
-          className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100"
+          className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
           onClick={onToggleReveal}
         >
           {revealed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
         </button>
+        {typeof value === "string" ? (
+          <button
+            type="button"
+            aria-label="Copiar contraseña"
+            title="Copiar"
+            className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+            onClick={() => {
+              void navigator.clipboard.writeText(value);
+              onCopied();
+            }}
+          >
+            {copied ? <Check className="h-3.5 w-3.5 text-sky-300" /> : <Copy className="h-3.5 w-3.5" />}
+          </button>
+        ) : null}
       </span>
     );
-  } else if (field.type === "image" && !empty && typeof value === "string") {
+  } else if (field.type === "boolean") {
+    content = <ValueBadge label={value === true ? "Sí" : "No"} />;
+  } else if (field.type === "select") {
+    content = <ValueBadge label={formatted} />;
+  } else if ((field.type === "tags" || field.type === "multiselect") && Array.isArray(value)) {
+    content = <ChipList items={value} />;
+  } else if (field.type === "image" && typeof value === "string") {
     content = (
-      <img
-        src={value}
-        alt={field.name}
-        className="max-h-32 rounded-md border border-zinc-700 object-contain"
-      />
+      <button
+        type="button"
+        title="Ver en grande"
+        className="group relative inline-block max-w-full cursor-zoom-in overflow-hidden rounded-lg border border-zinc-700"
+        onClick={() => {
+          onOpenImage(value);
+        }}
+      >
+        <img
+          src={value}
+          alt={field.name}
+          className="max-h-48 w-auto object-contain transition-transform duration-150 group-hover:scale-[1.02]"
+        />
+        <span className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/60 py-1 text-[10px] uppercase tracking-wide text-zinc-300 opacity-0 transition-opacity group-hover:opacity-100">
+          Ampliar
+        </span>
+      </button>
     );
-  } else if (field.type === "url" && !empty && typeof value === "string") {
+  } else if (field.type === "url" && typeof value === "string") {
     content = (
       <a
         href={value}
         target="_blank"
         rel="noreferrer"
-        className="break-all text-sky-300 underline decoration-sky-500/40 hover:decoration-sky-300"
+        className="inline-flex items-center gap-1 break-all text-sm text-sky-300 underline decoration-sky-500/40 underline-offset-2 hover:decoration-sky-300"
       >
+        {formatted}
+        <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+      </a>
+    );
+  } else if (field.type === "email" && typeof value === "string") {
+    content = (
+      <a
+        href={`mailto:${value}`}
+        className="inline-flex items-center gap-1 break-all text-sm text-sky-300 underline decoration-sky-500/40 underline-offset-2 hover:decoration-sky-300"
+      >
+        <Mail className="h-3.5 w-3.5 shrink-0 opacity-70" />
         {formatted}
       </a>
     );
+  } else if (field.type === "file_path" && typeof value === "string") {
+    content = (
+      <span className="flex min-w-0 items-center gap-1.5">
+        <code className="min-w-0 break-all rounded bg-zinc-800/70 px-1.5 py-0.5 font-mono text-xs text-zinc-200">
+          {value}
+        </code>
+        <button
+          type="button"
+          aria-label="Copiar ruta"
+          title="Copiar ruta"
+          className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+          onClick={() => {
+            void navigator.clipboard.writeText(value);
+            onCopied();
+          }}
+        >
+          {copied ? <Check className="h-3.5 w-3.5 text-sky-300" /> : <Copy className="h-3.5 w-3.5" />}
+        </button>
+      </span>
+    );
+  } else if (field.type === "long_text" && typeof value === "string") {
+    content = (
+      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-100">
+        {value}
+      </p>
+    );
+  } else if (field.type === "date") {
+    content = (
+      <span className="text-sm text-zinc-100">
+        {formatLocalizedDate(String(value))}
+      </span>
+    );
+  } else if (field.type === "datetime") {
+    content = (
+      <span className="text-sm text-zinc-100">
+        {formatLocalizedDateTime(String(value))}
+      </span>
+    );
   } else {
     content = (
-      <span className={`break-all text-sm ${empty ? "text-zinc-600" : "text-zinc-100"}`}>
+      <span className={`break-all text-sm ${formatted === "—" ? "text-zinc-600" : "text-zinc-100"}`}>
         {formatted}
       </span>
     );
   }
 
   return (
-    <div className="grid grid-cols-[minmax(8rem,10rem)_1fr] gap-3 py-2">
-      <span className="pt-0.5 text-xs font-medium text-zinc-500">{field.name}</span>
-      {content}
+    <div className="grid grid-cols-[minmax(9rem,12rem)_1fr] items-start gap-4 py-3">
+      <div className="flex items-center gap-2 pt-0.5">
+        {typeIcon}
+        <span className="truncate text-xs font-medium text-zinc-500" title={field.name}>
+          {field.name}
+        </span>
+      </div>
+      <div className="min-w-0">{content}</div>
     </div>
   );
 }
 
 /**
- * Modal grande (casi pantalla completa) del registro activo según el modo de
- * useRecordStore: vista con formato por tipo, o creación/edición con
- * FieldRenderer y validación required. Esc lo cierra.
+ * Ficha rica del registro activo según el modo de useRecordStore: vista con
+ * cabecera jerárquica (título del registro, marcas relativas, papelera) y
+ * filas etiqueta→valor por tipo; creación/edición con FieldRenderer y
+ * validación required. Esc y el clic fuera cierran.
  */
 export function RecordModal() {
   const mode = useRecordStore((state) => state.activeMode);
@@ -95,9 +279,28 @@ export function RecordModal() {
   const deleteActive = useRecordStore((state) => state.deleteActive);
 
   const [revealed, setRevealed] = useState<ReadonlySet<string>>(new Set());
+  const [copiedFieldId, setCopiedFieldId] = useState<string | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const open = mode !== "closed";
+
+  // Esc cierra primero la imagen ampliada y después la ficha.
+  useEffect(() => {
+    if (lightboxSrc === null) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        setLightboxSrc(null);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [lightboxSrc]);
 
   useEffect(() => {
     if (!open || saving || confirmingDelete) {
@@ -140,44 +343,104 @@ export function RecordModal() {
     });
   }
 
+  function markCopied(fieldId: string): void {
+    setCopiedFieldId(fieldId);
+    window.setTimeout(() => {
+      setCopiedFieldId((current) => (current === fieldId ? null : current));
+    }, 1500);
+  }
+
   const editing = mode === "create" || mode === "edit";
   const valuesByField =
     activeDetail !== null
       ? new Map(activeDetail.values.map((entry) => [entry.fieldId, entry.value]))
       : new Map<string, unknown>();
 
+  // Título del registro: primer campo de texto con valor; si no, el primer
+  // campo obligatorio con valor; si no, un título genérico.
+  let recordTitle = "Registro sin título";
+  if (!editing) {
+    const titleField =
+      fields.find(
+        (field) =>
+          field.type === "text" &&
+          !getFieldTypeHandler(field.type).isEmpty(valuesByField.get(field.id)),
+      ) ??
+      fields.find(
+        (field) =>
+          field.required &&
+          !getFieldTypeHandler(field.type).isEmpty(valuesByField.get(field.id)),
+      );
+    const rawTitle = titleField?.name !== undefined ? valuesByField.get(titleField.id) : undefined;
+    if (typeof rawTitle === "string" && rawTitle.trim() !== "") {
+      recordTitle = rawTitle;
+    } else if (typeof rawTitle === "number") {
+      recordTitle = String(rawTitle);
+    }
+  }
+
+  const inTrash = activeDetail !== null && activeDetail.deletedAt !== null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+    <div className={modalBackdrop}>
       <section
         role="dialog"
         aria-modal="true"
-        aria-label={
-          mode === "view" ? "Detalle del registro" : "Edición de registro"
-        }
-        className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl"
+        aria-label={mode === "view" ? "Detalle del registro" : "Edición de registro"}
+        className={`${modalPanel} max-h-[92vh] max-w-3xl`}
       >
-        <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-800 px-5 py-3.5">
-          <h2 className="truncate text-base font-semibold text-zinc-100">
-            {mode === "create"
-              ? "Nuevo registro"
-              : mode === "edit"
-                ? "Editar registro"
-                : "Detalle del registro"}
-          </h2>
+        {/* Cabecera jerárquica de la ficha */}
+        <header className={`${modalHeader} items-start`}>
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-800 bg-sky-500/10 text-sky-300">
+              <FileText className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              {editing ? (
+                <h2 className="truncate text-base font-semibold text-zinc-50">
+                  {mode === "create" ? "Nuevo registro" : "Editar registro"}
+                </h2>
+              ) : (
+                <>
+                  <h2 className="truncate text-lg font-bold tracking-tight text-zinc-50" title={recordTitle}>
+                    {recordTitle}
+                  </h2>
+                  {activeDetail !== null ? (
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <span
+                        className={`${chipNeutral} normal-case`}
+                        title={`Creado: ${formatLocalizedDateTime(activeDetail.createdAt)}`}
+                      >
+                        Creado {formatRelativeTime(activeDetail.createdAt)}
+                      </span>
+                      <span
+                        className={`${chipNeutral} normal-case`}
+                        title={`Modificado: ${formatLocalizedDateTime(activeDetail.updatedAt)}`}
+                      >
+                        Modificado {formatRelativeTime(activeDetail.updatedAt)}
+                      </span>
+                      {inTrash ? (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 text-[11px] font-semibold text-rose-300">
+                          <Trash className="h-3 w-3" />
+                          En papelera
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </div>
 
           {!editing ? (
             <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-500"
-                onClick={startEditing}
-              >
+              <button type="button" className={btnPrimary} onClick={startEditing}>
                 <Pencil className="h-3.5 w-3.5" />
                 Editar
               </button>
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/40 px-3 py-1.5 text-xs font-semibold text-rose-300 transition-colors hover:bg-rose-500/10"
+                className={`${btnDangerGhost} px-3 py-1.5 text-xs font-semibold`}
                 onClick={() => {
                   setConfirmingDelete(true);
                 }}
@@ -238,16 +501,21 @@ export function RecordModal() {
               ) : null}
             </div>
           ) : (
-            <div className="divide-y divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-950/40 px-4 py-1">
+            <div className="divide-y divide-zinc-800/80 rounded-lg border border-zinc-800 bg-zinc-950/40 px-4 py-1">
               {fields.map((field) => (
                 <ValueRow
                   key={field.id}
                   field={field}
                   value={valuesByField.get(field.id)}
                   revealed={revealed.has(field.id)}
+                  copied={copiedFieldId === field.id}
                   onToggleReveal={() => {
                     toggleReveal(field.id);
                   }}
+                  onCopied={() => {
+                    markCopied(field.id);
+                  }}
+                  onOpenImage={setLightboxSrc}
                 />
               ))}
               {fields.length === 0 ? (
@@ -260,18 +528,13 @@ export function RecordModal() {
         </div>
 
         {editing ? (
-          <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-zinc-800 px-5 py-3.5">
-            <button
-              type="button"
-              className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300 transition-colors hover:text-zinc-100 disabled:opacity-50"
-              onClick={cancel}
-              disabled={saving}
-            >
+          <footer className={modalFooter}>
+            <button type="button" className={btnSecondary} onClick={cancel} disabled={saving}>
               Cancelar
             </button>
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+              className={btnPrimary}
               onClick={() => {
                 void saveActive();
               }}
@@ -283,6 +546,36 @@ export function RecordModal() {
           </footer>
         ) : null}
       </section>
+
+      {/* Vista ampliada de imagen */}
+      {lightboxSrc !== null ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Imagen ampliada"
+          className="fixed inset-0 z-[70] flex cursor-zoom-out items-center justify-center bg-black/85 p-6"
+          onClick={() => {
+            setLightboxSrc(null);
+          }}
+        >
+          <img
+            src={lightboxSrc}
+            alt=""
+            className="max-h-[88vh] max-w-full rounded-lg border border-zinc-700 object-contain shadow-2xl"
+          />
+          <button
+            type="button"
+            aria-label="Cerrar imagen"
+            className="absolute right-4 top-4 rounded-md border border-zinc-700 bg-zinc-900 p-2 text-zinc-300 transition-colors hover:text-zinc-100"
+            onClick={(event) => {
+              event.stopPropagation();
+              setLightboxSrc(null);
+            }}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : null}
 
       {confirmingDelete ? (
         <ConfirmModal
