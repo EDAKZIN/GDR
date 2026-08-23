@@ -29,6 +29,7 @@ import { buildSectionTree, useSectionStore, type SectionNode } from "../../store
 import { useBreadcrumb, useUiStore } from "../../stores/useUiStore";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { IconRenderer } from "../components/IconRenderer";
+import { openSection } from "../navigation/openSection";
 import { FormModal } from "../screens/FormModal";
 import { SectionModal } from "../screens/SectionModal";
 import { showErrorToast } from "./toastStore";
@@ -733,7 +734,8 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
   const handlers: TreeHandlers = {
     onToggleExpanded: toggleExpanded,
     onSelectSection: (id) => {
-      navigate("section", id);
+      // Sección plana con un único formulario: entra directo a sus registros.
+      void openSection(id);
     },
     onSelectForm: (id) => {
       navigate("form", id);
