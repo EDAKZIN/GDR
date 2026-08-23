@@ -9,6 +9,13 @@ import {
   templateFieldDescription,
 } from "../menu/formTemplates";
 import { showToast } from "../menu/toastStore";
+import {
+  btnPrimary,
+  btnSecondary,
+  inputClass,
+  modalBackdrop,
+  modalPanel,
+} from "../components/uiStyles";
 
 const fieldsRepository = createFieldsRepository(getDb);
 
@@ -18,9 +25,6 @@ export interface FormModalProps {
     | { kind: "edit"; form: Form };
   onClose: () => void;
 }
-
-const inputClass =
-  "w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-sky-400";
 
 function templateOptionClass(active: boolean): string {
   return `flex cursor-pointer items-start gap-2 rounded-md border px-2.5 py-2 text-left transition-colors duration-150 ${
@@ -99,9 +103,9 @@ export function FormModal({ mode, onClose }: FormModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div className={modalBackdrop}>
       <form
-        className="flex w-full max-w-md flex-col gap-3 rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl"
+        className={`${modalPanel} max-w-md gap-3 p-5`}
         onSubmit={(event) => {
           event.preventDefault();
           if (!saving && name.trim() !== "") {
@@ -199,19 +203,10 @@ export function FormModal({ mode, onClose }: FormModalProps) {
         ) : null}
 
         <footer className="mt-1 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300 transition-colors hover:text-zinc-100 disabled:opacity-50"
-            onClick={onClose}
-            disabled={saving}
-          >
+          <button type="button" className={btnSecondary} onClick={onClose} disabled={saving}>
             Cancelar
           </button>
-          <button
-            type="submit"
-            className="rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={saving || name.trim() === ""}
-          >
+          <button type="submit" className={btnPrimary} disabled={saving || name.trim() === ""}>
             {saving ? "Guardando…" : "Guardar"}
           </button>
         </footer>

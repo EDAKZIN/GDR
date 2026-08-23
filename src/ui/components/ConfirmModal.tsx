@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import { TriangleAlert } from "lucide-react";
+import {
+  btnDangerSolid,
+  btnSecondary,
+  modalPanel,
+} from "./uiStyles";
 
 export interface ConfirmModalProps {
   title: string;
@@ -52,7 +57,7 @@ export function ConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
       onClick={() => {
         if (!busy) {
           onClose();
@@ -63,7 +68,7 @@ export function ConfirmModal({
         role="alertdialog"
         aria-modal="true"
         aria-label={title}
-        className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl"
+        className={`${modalPanel} max-w-sm gap-3 p-5`}
         onClick={(event) => {
           event.stopPropagation();
         }}
@@ -82,21 +87,12 @@ export function ConfirmModal({
         <p className="text-xs leading-relaxed text-zinc-400">{message}</p>
 
         <footer className="mt-1 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300 transition-colors hover:text-zinc-100 disabled:opacity-50"
-            onClick={onClose}
-            disabled={busy}
-          >
+          <button type="button" className={btnSecondary} onClick={onClose} disabled={busy}>
             Cancelar
           </button>
           <button
             type="button"
-            className={`rounded-md px-3 py-1.5 text-xs font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-              danger
-                ? "bg-rose-600 hover:bg-rose-500"
-                : "bg-sky-600 hover:bg-sky-500"
-            }`}
+            className={btnDangerSolid(danger)}
             onClick={() => {
               void confirm();
             }}
