@@ -104,10 +104,7 @@ export interface SectionRepository {
 }
 
 export function createSectionsRepository(db: DbHandle): SectionRepository {
-  async function getRow(
-    database: Database,
-    id: string,
-  ): Promise<Section | null> {
+  async function getRow(database: Database, id: string): Promise<Section | null> {
     const rows = await database.select<SectionRow[]>(
       `SELECT ${SECTION_COLUMNS} FROM sections WHERE id = $1`,
       [z.uuid().parse(id)],
@@ -127,10 +124,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
   }
 
   /** Valida que el padre propuesto exista, no esté eliminado y admita hijas. */
-  async function requireLiveParent(
-    database: Database,
-    parentId: string,
-  ): Promise<Section> {
+  async function requireLiveParent(database: Database, parentId: string): Promise<Section> {
     const parent = await getRow(database, z.uuid().parse(parentId));
     if (parent === null) {
       throw new Error(`Sección padre no encontrada: ${parentId}`);
@@ -139,18 +133,13 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
       throw new Error(`La sección padre está eliminada: ${parent.name}`);
     }
     if (!parent.allowChildren) {
-      throw new Error(
-        `La sección «${parent.name}» no permite sub-secciones.`,
-      );
+      throw new Error(`La sección «${parent.name}» no permite sub-secciones.`);
     }
     return parent;
   }
 
   /** Nº de subsecciones NO eliminadas de una sección. */
-  async function countLiveChildren(
-    database: Database,
-    id: string,
-  ): Promise<number> {
+  async function countLiveChildren(database: Database, id: string): Promise<number> {
     const rows = await database.select<Array<{ total: number }>>(
       "SELECT COUNT(*) AS total FROM sections WHERE parent_id = $1 AND deleted_at IS NULL",
       [id],
@@ -162,16 +151,11 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
    * Ids de la sección y de TODO su subárbol, en pre-orden (padre antes que hijos),
    * para poder restaurar en el orden correcto.
    */
-  async function collectSubtreeIds(
-    database: Database,
-    rootId: string,
-  ): Promise<string[]> {
+  async function collectSubtreeIds(database: Database, rootId: string): Promise<string[]> {
     const ids: string[] = [rootId];
     let frontier = [rootId];
     while (frontier.length > 0) {
-      const placeholders = frontier
-        .map((_, index) => `$${String(index + 1)}`)
-        .join(", ");
+      const placeholders = frontier.map((_, index) => `$${String(index + 1)}`).join(", ");
       const rows = await database.select<Array<{ id: string }>>(
         `SELECT id FROM sections WHERE parent_id IN (${placeholders})`,
         frontier,
@@ -205,9 +189,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
   }
 
   /** Listado con filtros base + filtro jerárquico opcional por padre. */
-  async function listSections(
-    options?: SectionListOptions,
-  ): Promise<Section[]> {
+  async function listSections(options?: SectionListOptions): Promise<Section[]> {
     const database = await db();
     const clauses = listClauses(options);
     const params: unknown[] = [];
@@ -354,17 +336,16 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         let cursor: Section | null = parent;
         while (cursor !== null && cursor.parentId !== null) {
           if (cursor.parentId === sectionId) {
-            throw new Error(
-              "No se puede mover una sección bajo su propio descendiente.",
-            );
+            throw new Error("No se puede mover una sección bajo su propio descendiente.");
           }
           cursor = await getRow(database, cursor.parentId);
         }
       }
-      await database.execute(
-        "UPDATE sections SET parent_id = $1, updated_at = $2 WHERE id = $3",
-        [newParentId, nowIso(), sectionId],
-      );
+      await database.execute("UPDATE sections SET parent_id = $1, updated_at = $2 WHERE id = $3", [
+        newParentId,
+        nowIso(),
+        sectionId,
+      ]);
       return requireRow(database, sectionId);
     },
 
@@ -410,12 +391,8 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         await database.execute(
           "DELETE FROM field_values WHERE record_id NOT IN (SELECT id FROM records)",
         );
-        await database.execute(
-          "DELETE FROM records WHERE form_id NOT IN (SELECT id FROM forms)",
-        );
-        await database.execute(
-          "DELETE FROM fields WHERE form_id NOT IN (SELECT id FROM forms)",
-        );
+        await database.execute("DELETE FROM records WHERE form_id NOT IN (SELECT id FROM forms)");
+        await database.execute("DELETE FROM fields WHERE form_id NOT IN (SELECT id FROM forms)");
       }
       return result.rowsAffected > 0;
     },
@@ -424,12 +401,12 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
       const ids = reorderInputSchema.parse(orderedIds);
       const database = await db();
       for (const [index, id] of ids.entries()) {
-        await database.execute(
-          "UPDATE sections SET position = $1, updated_at = $2 WHERE id = $3",
-          [index, nowIso(), id],
-        );
+        await database.execute("UPDATE sections SET position = $1, updated_at = $2 WHERE id = $3", [
+          index,
+          nowIso(),
+          id,
+        ]);
       }
     },
   };
 }
-

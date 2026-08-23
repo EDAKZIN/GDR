@@ -1,19 +1,8 @@
 import { create } from "zustand";
-import type {
-  CreateFormInput,
-  Form,
-  UpdateFormInput,
-} from "../core/forms";
-import type {
-  CreateSectionInput,
-  Section,
-  UpdateSectionInput,
-} from "../core/sections";
+import type { CreateFormInput, Form, UpdateFormInput } from "../core/forms";
+import type { CreateSectionInput, Section, UpdateSectionInput } from "../core/sections";
 import { getDb } from "../database/client";
-import {
-  createFormsRepository,
-  createSectionsRepository,
-} from "../database/repositories";
+import { createFormsRepository, createSectionsRepository } from "../database/repositories";
 import { useUiStore } from "./useUiStore";
 
 const sectionsRepository = createSectionsRepository(getDb);
@@ -147,10 +136,7 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
       void get().loadFormCounts();
       // Si la sección activa dejó de existir, se limpia la selección.
       const active = get().activeSectionId;
-      if (
-        active !== null &&
-        !sections.some((section) => section.id === active)
-      ) {
+      if (active !== null && !sections.some((section) => section.id === active)) {
         set({
           activeSectionId: null,
           forms: [],
@@ -180,22 +166,16 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
     const changed = get().activeSectionId !== sectionId;
     set({
       activeSectionId: sectionId,
-      ...(changed
-        ? { activeFormId: null }
-        : {}),
+      ...(changed ? { activeFormId: null } : {}),
     });
     await get().loadForms(sectionId);
   },
 
   childrenOf: (parentId) =>
-    get()
-      .sections.filter(
-        (section) => (section.parentId ?? null) === parentId,
-      ),
+    get().sections.filter((section) => (section.parentId ?? null) === parentId),
 
   createSection: async (input) => {
-    const total =
-      get().sections.length + get().trashedSections.length;
+    const total = get().sections.length + get().trashedSections.length;
     const created = await sectionsRepository.create({
       ...input,
       position: input.position ?? total,
@@ -364,8 +344,6 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
     await formsRepository.reorder(orderedIds);
     await get().loadForms(get().activeSectionId ?? "");
   },
-
-
 }));
 
 export interface SectionNode {

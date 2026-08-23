@@ -23,9 +23,7 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
   const [description, setDescription] = useState(
     mode.kind === "edit" ? (mode.section.description ?? "") : "",
   );
-  const [icon, setIcon] = useState(
-    mode.kind === "edit" ? (mode.section.icon ?? "") : "",
-  );
+  const [icon, setIcon] = useState(mode.kind === "edit" ? (mode.section.icon ?? "") : "");
   const [allowChildren, setAllowChildren] = useState(
     mode.kind === "edit" ? mode.section.allowChildren : true,
   );
@@ -49,9 +47,7 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
       }
       onClose();
     } catch (submitError) {
-      setError(
-        submitError instanceof Error ? submitError.message : String(submitError),
-      );
+      setError(submitError instanceof Error ? submitError.message : String(submitError));
       setSaving(false);
     }
   }
@@ -83,8 +79,7 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
 
         {mode.kind === "create" && mode.parentName !== undefined ? (
           <p className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-500">
-            Subsección de{" "}
-            <span className="font-medium text-sky-300">{mode.parentName}</span>
+            Subsección de <span className="font-medium text-sky-300">{mode.parentName}</span>
           </p>
         ) : null}
 
