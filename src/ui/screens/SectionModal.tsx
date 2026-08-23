@@ -26,6 +26,9 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
   const [icon, setIcon] = useState(
     mode.kind === "edit" ? (mode.section.icon ?? "") : "",
   );
+  const [allowChildren, setAllowChildren] = useState(
+    mode.kind === "edit" ? mode.section.allowChildren : true,
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +40,7 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
         name,
         description: description.trim() === "" ? null : description.trim(),
         icon: icon.trim() === "" ? null : icon.trim(),
+        allowChildren,
       };
       if (mode.kind === "create") {
         await createSection({ ...payload, parentId: mode.parentId });
@@ -133,6 +137,18 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
             </datalist>
           </div>
         </div>
+
+        <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-zinc-400">
+          <input
+            type="checkbox"
+            className="h-3.5 w-3.5 shrink-0 accent-sky-500"
+            checked={allowChildren}
+            onChange={(event) => {
+              setAllowChildren(event.target.checked);
+            }}
+          />
+          Permitir sub-secciones
+        </label>
 
         {error !== null ? (
           <p className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">

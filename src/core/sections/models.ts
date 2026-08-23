@@ -4,6 +4,8 @@ export const sectionSchema = z.object({
   id: z.uuid(),
   /** Sección padre; null = raíz. La jerarquía es opcional por nodo. */
   parentId: z.uuid().nullable(),
+  /** false = hoja estructural: no admite sub-secciones. */
+  allowChildren: z.boolean(),
   name: z.string().min(1),
   description: z.string().nullable(),
   icon: z.string().nullable(),
@@ -25,6 +27,7 @@ export const createSectionInputSchema = z.object({
   description: nullableText.max(2000).nullish(),
   icon: nullableText.max(100).nullish(),
   parentId: parentIdInput,
+  allowChildren: z.boolean().optional(),
   position: z.number().int().nonnegative().optional(),
 });
 

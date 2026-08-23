@@ -78,6 +78,8 @@ export interface SectionState {
   moveSection: (id: string, delta: -1 | 1) => Promise<void>;
   /** Reubica una sección bajo otro padre (null = raíz), sin ciclos. */
   moveSectionTo: (id: string, newParentId: string | null) => Promise<void>;
+  /** Alterna «Permitir sub-secciones»; falla si tiene hijas vivas. */
+  toggleAllowChildren: (id: string) => Promise<void>;
 
   loadForms: (sectionId: string) => Promise<void>;
   selectForm: (formId: string) => void;
@@ -262,6 +264,18 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
 
   moveSectionTo: async (id, newParentId) => {
     await sectionsRepository.move(id, newParentId);
+    await get().loadSections();
+  },
+
+  toggleAllowChildren: async (id) => {
+    const current = get().sections.find((section) => section.id === id);
+    if (current === undefined) {
+      return;
+    }
+    // El repositorio valida y lanza mensajes claros (p. ej. con hijas vivas).
+    await sectionsRepository.update(id, {
+      allowChildren: !current.allowChildren,
+    });
     await get().loadSections();
   },
 

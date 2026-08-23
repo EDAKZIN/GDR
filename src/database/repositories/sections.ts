@@ -28,6 +28,7 @@ interface SectionRow {
   icon: string | null;
   position: number;
   enabled: number;
+  allowChildren: number;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -42,6 +43,7 @@ const sectionRowSchema = z
     icon: z.string().nullable(),
     position: z.number().int(),
     enabled: dbEnabled,
+    allowChildren: dbEnabled,
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
     deletedAt: z.iso.datetime().nullable(),
@@ -54,13 +56,14 @@ const sectionRowSchema = z
     icon: row.icon,
     position: row.position,
     enabled: row.enabled,
+    allowChildren: row.allowChildren,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
   }));
 
 const SECTION_COLUMNS =
-  "id, parent_id AS parentId, name, description, icon, position, enabled, created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt";
+  "id, parent_id AS parentId, name, description, icon, position, enabled, allow_children AS allowChildren, created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt";
 
 export interface SectionListOptions extends ListOptions {
   /**
@@ -123,7 +126,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
     return section;
   }
 
-  /** Valida que el padre propuesto exista y no esté eliminado. */
+  /** Valida que el padre propuesto exista, no esté eliminado y admita hijas. */
   async function requireLiveParent(
     database: Database,
     parentId: string,
@@ -135,7 +138,24 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
     if (parent.deletedAt !== null) {
       throw new Error(`La sección padre está eliminada: ${parent.name}`);
     }
+    if (!parent.allowChildren) {
+      throw new Error(
+        `La sección «${parent.name}» no permite sub-secciones.`,
+      );
+    }
     return parent;
+  }
+
+  /** Nº de subsecciones NO eliminadas de una sección. */
+  async function countLiveChildren(
+    database: Database,
+    id: string,
+  ): Promise<number> {
+    const rows = await database.select<Array<{ total: number }>>(
+      "SELECT COUNT(*) AS total FROM sections WHERE parent_id = $1 AND deleted_at IS NULL",
+      [id],
+    );
+    return rows[0]?.total ?? 0;
   }
 
   /**
@@ -241,7 +261,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         await requireLiveParent(database, data.parentId);
       }
       await database.execute(
-        "INSERT INTO sections (id, parent_id, name, description, icon, position) VALUES ($1, $2, $3, $4, $5, $6)",
+        "INSERT INTO sections (id, parent_id, name, description, icon, position, allow_children) VALUES ($1, $2, $3, $4, $5, $6, $7)",
         [
           id,
           data.parentId ?? null,
@@ -249,6 +269,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
           data.description ?? null,
           data.icon ?? null,
           data.position ?? 0,
+          boolToDb(data.allowChildren ?? true),
         ],
       );
       return requireRow(database, id);
@@ -280,6 +301,16 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
       if (data.icon !== undefined) {
         appendSet(sets, params, "icon", data.icon ?? null);
       }
+      if (data.allowChildren !== undefined && !data.allowChildren) {
+        const sectionId = z.uuid().parse(id);
+        // Solo se puede convertir en hoja estructural una sección sin hijas vivas.
+        const liveChildren = await countLiveChildren(database, sectionId);
+        if (liveChildren > 0) {
+          throw new Error(
+            "No se puede desactivar «Permitir sub-secciones»: la sección tiene subsecciones. Mueve o elimina primero sus hijas.",
+          );
+        }
+      }
       if (data.parentId !== undefined) {
         // null explícito = pasar a raíz; id = validar que exista y esté vivo.
         if (data.parentId !== null) {
@@ -292,6 +323,9 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
       }
       if (data.position !== undefined) {
         appendSet(sets, params, "position", data.position);
+      }
+      if (data.allowChildren !== undefined) {
+        appendSet(sets, params, "allow_children", boolToDb(data.allowChildren));
       }
       if (sets.length === 0) {
         return requireRow(database, z.uuid().parse(id));
