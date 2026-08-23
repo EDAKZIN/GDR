@@ -29,6 +29,7 @@ import { buildSectionTree, useSectionStore, type SectionNode } from "../../store
 import { useBreadcrumb, useUiStore } from "../../stores/useUiStore";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { IconRenderer } from "../components/IconRenderer";
+import { btnPrimary, btnSecondary } from "../components/uiStyles";
 import { openSection } from "../navigation/openSection";
 import { FormModal } from "../screens/FormModal";
 import { SectionModal } from "../screens/SectionModal";
@@ -554,17 +555,12 @@ function MoveSectionModal({ section, onClose }: { section: Section; onClose: () 
         ) : null}
 
         <footer className="flex items-center justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300 transition-colors hover:text-zinc-100 disabled:opacity-50"
-            onClick={onClose}
-            disabled={busy}
-          >
+          <button type="button" className={btnSecondary} onClick={onClose} disabled={busy}>
             Cancelar
           </button>
           <button
             type="button"
-            className="rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className={btnPrimary}
             disabled={busy || target === section.parentId}
             onClick={() => {
               void submit();
@@ -889,7 +885,7 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
               <div className="px-3 pb-1 pt-2">
                 <button
                   type="button"
-                  className="flex w-full items-center justify-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-sky-500"
+                  className={`w-full ${btnPrimary}`}
                   onClick={() => {
                     openCreateSubsection(null);
                   }}

@@ -17,8 +17,18 @@ import {
   X,
 } from "lucide-react";
 import type { Field } from "../../core/fields";
+import {
+  formatLocalizedDateTime,
+  formatRelativeTime,
+} from "../../core/utils/relativeTime";
 import { useRecordStore } from "../../stores";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { EmptyState } from "../components/EmptyState";
+import {
+  btnPrimary,
+  btnPrimaryLg,
+  chipAccent,
+} from "../components/uiStyles";
 import { formatValue, valueSearchText } from "./recordValues";
 
 const PAGE_SIZE = 20;
@@ -339,7 +349,7 @@ export function RecordsTable({
           {formName}
         </h2>
         <span
-          className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-sky-300"
+          className={chipAccent}
           title="Registros cargados"
         >
           {String(items.length)}
@@ -389,11 +399,7 @@ export function RecordsTable({
             Papelera
           </label>
           {!showDeleted && hasFields ? (
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-500"
-              onClick={openCreate}
-            >
+            <button type="button" className={btnPrimary} onClick={openCreate}>
               <Plus className="h-4 w-4" />
               Nuevo registro
             </button>
@@ -409,54 +415,48 @@ export function RecordsTable({
 
       {!hasFields && !showDeleted ? (
         /* Sin campos en la plantilla todavía. */
-        <div className="flex min-h-48 flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-zinc-800 px-6 py-12 text-center">
-          <LayoutList className="h-10 w-10 text-zinc-700" />
-          <p className="max-w-sm text-sm leading-relaxed text-zinc-500">
-            Añade campos a esta plantilla para empezar a llenar registros.
-          </p>
+        <EmptyState
+          icon={LayoutList}
+          title="Plantilla sin campos"
+          description="Añade campos a esta plantilla para empezar a llenar registros."
+        >
           {onGoToTemplate !== undefined ? (
-            <button
-              type="button"
-              className="mt-1 inline-flex items-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
-              onClick={onGoToTemplate}
-            >
+            <button type="button" className={`mt-1 ${btnPrimaryLg}`} onClick={onGoToTemplate}>
               <Plus className="h-4 w-4" />
               Ir a la pestaña Plantilla
             </button>
           ) : onOpenWorkspace !== undefined ? (
-            <button
-              type="button"
-              className="mt-1 inline-flex items-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
-              onClick={onOpenWorkspace}
-            >
+            <button type="button" className={`mt-1 ${btnPrimaryLg}`} onClick={onOpenWorkspace}>
               <Plus className="h-4 w-4" />
               Editar plantilla del formulario
             </button>
           ) : null}
-        </div>
+        </EmptyState>
       ) : loading && items.length === 0 ? (
         <p className="py-8 text-center text-sm text-zinc-500">
           Cargando registros…
         </p>
       ) : isEmpty ? (
-        <div className="flex min-h-48 flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-zinc-800 px-6 py-12 text-center">
-          <LayoutList className="h-8 w-8 text-zinc-700" />
-          <p className="text-sm text-zinc-500">
-            {showDeleted
-              ? "La papelera está vacía."
-              : "Esta plantilla todavía no tiene registros. Crea el primero."}
-          </p>
+        <EmptyState
+          icon={LayoutList}
+          title={showDeleted ? "Papelera vacía" : "Sin registros"}
+          description={
+            showDeleted
+              ? "Los registros eliminados aparecerán aquí para poder restaurarlos."
+              : "Esta plantilla todavía no tiene registros. Crea el primero."
+          }
+        >
           {!showDeleted && hasFields ? (
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
+              className={`mt-1 ${btnPrimaryLg}`}
               onClick={openCreate}
             >
               <Plus className="h-4 w-4" />
               Nuevo registro
             </button>
           ) : null}
-        </div>
+        </EmptyState>
       ) : (
         <>
           <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-zinc-800">
@@ -500,7 +500,7 @@ export function RecordsTable({
                       key={record.id}
                       role={deleted ? undefined : "button"}
                       tabIndex={deleted ? undefined : 0}
-                      className={`transition-colors ${
+                      className={`transition-colors odd:bg-zinc-950/40 ${
                         deleted
                           ? "opacity-60"
                           : "cursor-pointer hover:bg-zinc-900"
@@ -525,11 +525,17 @@ export function RecordsTable({
                           <CellValue field={field} value={values?.get(field.id)} />
                         </td>
                       ))}
-                      <td className="whitespace-nowrap px-3 py-2 text-zinc-500">
-                        {new Date(record.createdAt).toLocaleDateString()}
+                      <td
+                        className="whitespace-nowrap px-3 py-2 text-zinc-500"
+                        title={formatLocalizedDateTime(record.createdAt)}
+                      >
+                        {formatRelativeTime(record.createdAt)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2 text-zinc-500">
-                        {new Date(record.updatedAt).toLocaleDateString()}
+                      <td
+                        className="whitespace-nowrap px-3 py-2 text-zinc-500"
+                        title={formatLocalizedDateTime(record.updatedAt)}
+                      >
+                        {formatRelativeTime(record.updatedAt)}
                       </td>
                       <td className="relative px-2 py-2 text-right">
                         <button

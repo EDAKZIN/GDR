@@ -13,6 +13,7 @@ import type { Form } from "../../core/forms";
 import { useRecordStore, useSectionStore } from "../../stores";
 import { useBreadcrumb, useUiStore } from "../../stores/useUiStore";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { btnDangerGhost } from "../components/uiStyles";
 import { FormModal } from "./FormModal";
 import { RecordModal } from "../workspace/RecordModal";
 import { RecordsTable } from "../workspace/RecordsTable";
@@ -225,7 +226,7 @@ export function FormWorkspaceScreen() {
               </button>
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/40 px-2.5 py-1.5 text-xs text-rose-300 transition-colors hover:bg-rose-500/10"
+                className={`px-2.5 py-1.5 text-xs ${btnDangerGhost}`}
                 onClick={() => {
                   setConfirm({ kind: "hardDeleteForm" });
                 }}

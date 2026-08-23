@@ -14,7 +14,9 @@ import {
 import type { Section } from "../../core/sections";
 import { useSectionStore } from "../../stores";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { EmptyState } from "../components/EmptyState";
 import { IconRenderer } from "../components/IconRenderer";
+import { btnDangerGhost, btnPrimaryLg } from "../components/uiStyles";
 import { openSection } from "../navigation/openSection";
 import { SectionModal } from "./SectionModal";
 
@@ -304,7 +306,7 @@ export function SectionsScreen() {
               onClick={() => {
                 setModal({ kind: "create" });
               }}
-              className="flex items-center gap-2 rounded-md bg-sky-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
+              className={btnPrimaryLg}
             >
               <Plus className="h-4 w-4" />
               Nueva sección
@@ -353,14 +355,13 @@ export function SectionsScreen() {
                     </button>
                     <button
                       type="button"
-                      className="shrink-0 rounded-md border border-rose-500/40 px-2 py-1 text-[11px] text-rose-300 transition-colors hover:bg-rose-500/10"
+                      className={`shrink-0 px-2 py-1 text-[11px] ${btnDangerGhost}`}
                       onClick={() => {
                         setConfirmHardDelete(section);
                       }}
                     >
                       Borrar
-                    </button>
-                  </li>
+                    </button>                  </li>
                 ))}
               </ul>
             )}
@@ -371,28 +372,15 @@ export function SectionsScreen() {
           </p>
         ) : !hasAnySection ? (
           /* Estado vacío inicial */
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-zinc-800 px-6 py-16 text-center">
-            <LayoutGrid className="h-10 w-10 text-zinc-700" />
-            <div>
-              <h2 className="text-base font-semibold text-zinc-200">
-                Aún no hay secciones
-              </h2>
-              <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-zinc-500">
-                Las secciones agrupan tus formularios: proyectos, colecciones,
-                clientes… lo que necesites organizar.
-              </p>
-            </div>
-            <button
-              type="button"
-              className="mt-1 inline-flex items-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
-              onClick={() => {
-                setModal({ kind: "create" });
-              }}
-            >
-              <Plus className="h-4 w-4" />
-              Crea tu primera sección
-            </button>
-          </div>
+          <EmptyState
+            icon={LayoutGrid}
+            title="Aún no hay secciones"
+            description="Las secciones agrupan tus formularios: proyectos, colecciones, clientes… lo que necesites organizar."
+            actionLabel="Crea tu primera sección"
+            onAction={() => {
+              setModal({ kind: "create" });
+            }}
+          />
         ) : (
           /* Grid fluido de tarjetas */
           <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">

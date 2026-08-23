@@ -18,7 +18,9 @@ import type { Section } from "../../core/sections";
 import { useSectionStore } from "../../stores";
 import { useUiStore } from "../../stores/useUiStore";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { EmptyState } from "../components/EmptyState";
 import { IconRenderer } from "../components/IconRenderer";
+import { btnDangerGhost } from "../components/uiStyles";
 import { openSection } from "../navigation/openSection";
 import { RecordModal } from "../workspace/RecordModal";
 import { RecordsTable } from "../workspace/RecordsTable";
@@ -531,7 +533,7 @@ export function SectionFormsScreen() {
                     </button>
                     <button
                       type="button"
-                      className="shrink-0 rounded-md border border-rose-500/40 px-2 py-1 text-[11px] text-rose-300 transition-colors hover:bg-rose-500/10"
+                      className={`shrink-0 px-2 py-1 text-[11px] ${btnDangerGhost}`}
                       onClick={() => {
                         setConfirmHardDeleteForm(form);
                       }}
@@ -550,47 +552,22 @@ export function SectionFormsScreen() {
         ) : isEmpty ? (
           flat ? (
             /* Sección plana sin plantillas: CTA único de lista directa */
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-zinc-800 px-6 py-16 text-center">
-              <LayoutList className="h-10 w-10 text-zinc-700" />
-              <div>
-                <h2 className="text-base font-semibold text-zinc-200">
-                  Lista directa de registros
-                </h2>
-                <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-zinc-500">
-                  Esta sección funciona como lista plana: crea una plantilla y
-                  sus registros aparecerán aquí como tabla.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="mt-1 inline-flex items-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
-                onClick={openCreate}
-              >
-                <Plus className="h-4 w-4" />
-                Crear plantilla de lista
-              </button>
-            </div>
+            <EmptyState
+              icon={LayoutList}
+              title="Lista directa de registros"
+              description="Esta sección funciona como lista plana: crea una plantilla y sus registros aparecerán aquí como tabla."
+              actionLabel="Crear plantilla de lista"
+              onAction={openCreate}
+            />
           ) : (
             /* Estado vacío inicial */
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-zinc-800 px-6 py-16 text-center">
-              <LayoutList className="h-10 w-10 text-zinc-700" />
-              <div>
-                <h2 className="text-base font-semibold text-zinc-200">
-                  Esta sección no tiene formularios
-                </h2>
-                <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-zinc-500">
-                  Los formularios definen los campos con los que guardarás registros.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="mt-1 inline-flex items-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
-                onClick={openCreate}
-              >
-                <Plus className="h-4 w-4" />
-                Crea tu primer formulario
-              </button>
-            </div>
+            <EmptyState
+              icon={LayoutList}
+              title="Esta sección no tiene formularios"
+              description="Los formularios definen los campos con los que guardarás registros."
+              actionLabel="Crea tu primer formulario"
+              onAction={openCreate}
+            />
           )
         ) : flat && enabledForms.length > 0 ? (
           /* Sección plana: tabla de registros (o pestañas si hay varios) */
