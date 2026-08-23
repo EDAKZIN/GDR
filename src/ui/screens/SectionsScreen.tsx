@@ -8,15 +8,14 @@ import {
   Pencil,
   Plus,
   RotateCcw,
-  Search,
-  SearchX,
   Trash2,
   X,
 } from "lucide-react";
 import type { Section } from "../../core/sections";
 import { useSectionStore } from "../../stores";
-import { useUiStore } from "../../stores/useUiStore";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { IconRenderer } from "../components/IconRenderer";
+import { openSection } from "../navigation/openSection";
 import { SectionModal } from "./SectionModal";
 
 type ModalState = { kind: "create" } | { kind: "edit"; section: Section } | null;
@@ -141,8 +140,6 @@ function SectionCard({
   onOpenMenu: (sectionId: string | null) => void;
   menuOpen: boolean;
 }) {
-  const navigate = useUiStore((store) => store.navigate);
-
   return (
     <div
       role="button"
@@ -151,12 +148,12 @@ function SectionCard({
         section.enabled ? "" : "opacity-50"
       }`}
       onClick={() => {
-        navigate("section", section.id);
+        void openSection(section.id);
       }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          navigate("section", section.id);
+          void openSection(section.id);
         }
       }}
     >
@@ -214,7 +211,10 @@ function SectionCard({
   );
 }
 
-/** Pantalla HOME: tarjetas de secciones con hero, buscador y papelera. */
+/**
+ * Pantalla HOME: tarjetas de secciones con papelera. La búsqueda global vive
+ * exclusivamente en la barra superior (Ctrl+K).
+ */
 export function SectionsScreen() {
   const sections = useSectionStore((store) => store.sections);
   const trashedSections = useSectionStore((store) => store.trashedSections);
@@ -224,24 +224,25 @@ export function SectionsScreen() {
   const loadSections = useSectionStore((store) => store.loadSections);
   const restoreSection = useSectionStore((store) => store.restoreSection);
   const hardDeleteSection = useSectionStore((store) => store.hardDeleteSection);
-  const setSearchOpen = useUiStore((store) => store.setSearchOpen);
 
-  const [query, setQuery] = useState("");
   const [menuSectionId, setMenuSectionId] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
   const [showTrash, setShowTrash] = useState(false);
+  const [confirmHardDelete, setConfirmHardDelete] = useState<Section | null>(
+    null,
+  );
 
   useEffect(() => {
     void loadSections();
   }, [loadSections]);
 
-  // Esc cierra el menú contextual, el modal o la papelera.
+  // Esc cierra el menú contextual, el modal o la papelera (el ConfirmModal gestiona el suyo).
   useEffect(() => {
     if (menuSectionId === null && modal === null && !showTrash) {
       return;
     }
     function onKeyDown(event: KeyboardEvent): void {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && confirmHardDelete === null) {
         setMenuSectionId(null);
         setModal(null);
         setShowTrash(false);
@@ -251,7 +252,7 @@ export function SectionsScreen() {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [menuSectionId, modal, showTrash]);
+  }, [menuSectionId, modal, showTrash, confirmHardDelete]);
 
   // Con la jerarquía opcional de secciones, el HOME lista solo las raíces.
   const rootSections = useMemo(
@@ -267,16 +268,7 @@ export function SectionsScreen() {
     [rootSections],
   );
 
-  const trimmedQuery = query.trim().toLowerCase();
-  const matches = (section: Section): boolean =>
-    trimmedQuery === "" ||
-    section.name.toLowerCase().includes(trimmedQuery) ||
-    (section.description ?? "").toLowerCase().includes(trimmedQuery);
-
-  const visibleEnabled = enabledSections.filter(matches);
-  const visibleDisabled = disabledSections.filter(matches);
-
-  const orderedCards = [...visibleEnabled, ...visibleDisabled];
+  const orderedCards = [...enabledSections, ...disabledSections];
   const hasAnySection =
     enabledSections.length > 0 || disabledSections.length > 0;
 
@@ -287,38 +279,8 @@ export function SectionsScreen() {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <div className="flex w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10">
-        {/* Barra de acciones (sin hero: la marca vive en el drawer del menú) */}
+        {/* Barra de acciones (sin buscador: el global vive en la barra superior) */}
         <header className="flex flex-wrap items-center gap-2">
-            <label className="flex min-w-56 flex-1 items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm transition-colors focus-within:border-sky-400">
-              <Search className="h-4 w-4 shrink-0 text-zinc-500" />
-              <input
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  setShowTrash(false);
-                }}
-                placeholder="Filtrar secciones…"
-                maxLength={200}
-                className="w-full bg-transparent text-zinc-100 outline-none placeholder:text-zinc-600"
-              />
-            </label>
-
-            <button
-              type="button"
-              onClick={() => {
-                setSearchOpen(true);
-              }}
-              title="Buscar en todo (Ctrl+K)"
-              aria-label="Buscar en todo"
-              className="flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 transition-colors hover:border-sky-400 hover:text-zinc-100"
-            >
-              <Search className="h-4 w-4" />
-              <span className="hidden sm:inline">Buscar en todo</span>
-              <kbd className="hidden rounded border border-zinc-700 bg-zinc-950 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-600 sm:inline">
-                Ctrl K
-              </kbd>
-            </button>
-
             <button
               type="button"
               onClick={() => {
@@ -393,13 +355,7 @@ export function SectionsScreen() {
                       type="button"
                       className="shrink-0 rounded-md border border-rose-500/40 px-2 py-1 text-[11px] text-rose-300 transition-colors hover:bg-rose-500/10"
                       onClick={() => {
-                        if (
-                          window.confirm(
-                            `¿Eliminar «${section.name}» definitivamente? Esta acción no se puede deshacer.`,
-                          )
-                        ) {
-                          void hardDeleteSection(section.id);
-                        }
+                        setConfirmHardDelete(section);
                       }}
                     >
                       Borrar
@@ -436,13 +392,6 @@ export function SectionsScreen() {
               <Plus className="h-4 w-4" />
               Crea tu primera sección
             </button>
-          </div>
-        ) : orderedCards.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-12 text-center">
-            <SearchX className="h-8 w-8 text-zinc-700" />
-            <p className="text-sm text-zinc-500">
-              Sin secciones que coincidan con «{query.trim()}».
-            </p>
           </div>
         ) : (
           /* Grid fluido de tarjetas */
@@ -481,6 +430,18 @@ export function SectionsScreen() {
           mode={modal}
           onClose={() => {
             setModal(null);
+          }}
+        />
+      ) : null}
+
+      {confirmHardDelete !== null ? (
+        <ConfirmModal
+          title="Borrar sección definitivamente"
+          message={`Se eliminarán «${confirmHardDelete.name}», todo su subárbol, formularios y registros para siempre. Esta acción no se puede deshacer.`}
+          confirmLabel="Borrar definitivo"
+          onConfirm={() => hardDeleteSection(confirmHardDelete.id)}
+          onClose={() => {
+            setConfirmHardDelete(null);
           }}
         />
       ) : null}
