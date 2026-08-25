@@ -15,6 +15,7 @@ import {
   dbEnabled,
   listClauses,
   nowIso,
+  reorderAtomically,
   type DbHandle,
   type ListOptions,
 } from "./shared";
@@ -455,13 +456,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
     async reorder(orderedIds: ReorderInput): Promise<void> {
       const ids = reorderInputSchema.parse(orderedIds);
       const database = await db();
-      for (const [index, id] of ids.entries()) {
-        await database.execute("UPDATE sections SET position = $1, updated_at = $2 WHERE id = $3", [
-          index,
-          nowIso(),
-          id,
-        ]);
-      }
+      await reorderAtomically(database, "sections", ids);
     },
   };
 }

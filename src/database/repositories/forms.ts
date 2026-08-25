@@ -16,6 +16,7 @@ import {
   dbEnabled,
   listWhere,
   nowIso,
+  reorderAtomically,
   type DbHandle,
   type ListOptions,
 } from "./shared";
@@ -233,12 +234,7 @@ export function createFormsRepository(db: DbHandle): FormRepository {
     async reorder(orderedIds: ReorderInput): Promise<void> {
       const ids = reorderInputSchema.parse(orderedIds);
       const database = await db();
-      for (const [index, id] of ids.entries()) {
-        await database.execute(
-          "UPDATE forms SET position = $1, updated_at = $2 WHERE id = $3",
-          [index, nowIso(), id],
-        );
-      }
+      await reorderAtomically(database, "forms", ids);
     },
   };
 }
