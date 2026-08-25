@@ -40,4 +40,15 @@ for (const file of files) {
   console.log(`OK ${id}`);
 }
 
+// Validar que cada migración .sql esté registrada en index.ts (si no, el runner
+// nunca la aplicaría y el archivo sería letra muerta).
+const indexTs = readFileSync(join(migrationsDir, "index.ts"), "utf8");
+for (const file of files) {
+  const id = file.replace(/\.sql$/, "");
+  if (!indexTs.includes(`"${id}"`)) {
+    console.error(`Migración no registrada en src/database/migrations/index.ts: ${file}`);
+    process.exit(1);
+  }
+}
+
 console.log(`${files.length} migración(es) válida(s).`);
