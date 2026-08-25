@@ -42,6 +42,22 @@ export function FlatSectionScreen() {
     (candidate) => candidate.id === activeSectionId && !candidate.deletedAt,
   );
 
+  const enabledForms = forms.filter((form) => form.enabled);
+  const singleForm = enabledForms.length === 1 ? enabledForms[0] : undefined;
+  // El editor de plantilla integrado aplica al modelo normal (una sola lista).
+  const canEditTemplate = singleForm !== undefined;
+
+  // CRÍTICO: la tabla lee del store global de registros, sincronizado con
+  // activeFormId. Sin esta selección, la tabla muestra los datos del
+  // formulario anterior (o vacío) y los registros "desaparecen" de la UI.
+  const activeFormId = useSectionStore((store) => store.activeFormId);
+  const selectForm = useSectionStore((store) => store.selectForm);
+  useEffect(() => {
+    if (singleForm !== undefined && activeFormId !== singleForm.id) {
+      selectForm(singleForm.id);
+    }
+  }, [singleForm, activeFormId, selectForm]);
+
   // Sección eliminada o inexistente: volver al inicio.
   useEffect(() => {
     if (!loadingSections && (activeSectionId === null || section === undefined)) {
@@ -56,11 +72,6 @@ export function FlatSectionScreen() {
       </div>
     );
   }
-
-  const enabledForms = forms.filter((form) => form.enabled);
-  const singleForm = enabledForms.length === 1 ? enabledForms[0] : undefined;
-  // El editor de plantilla integrado aplica al modelo normal (una sola lista).
-  const canEditTemplate = singleForm !== undefined;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
