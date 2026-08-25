@@ -5,7 +5,8 @@
  * bajo [data-theme="light"] (aplicado en <html> desde src/theme.ts).
  * Al redefinir las variables, TODAS las utilidades zinc (incluidas las
  * variantes de opacidad tipo bg-zinc-900/60, que usan color-mix) se remapean
- * sin tocar las clases de los componentes. Los acentos sky/rose se mantienen.
+ * sin tocar las clases de los componentes. Los acentos sky/rose mantienen sus
+ * sólidos; sus tonos claros (usados como texto) se oscurecen más abajo.
  *
  * Remapeo oscuro → claro (escala invertida, contraste verificado):
  *   bg  zinc-950 (#09090b fondo)      → #f4f4f5  (fondo claro)
@@ -32,6 +33,20 @@
   --color-zinc-800: #e4e4e7;
   --color-zinc-900: #ffffff;
   --color-zinc-950: #f4f4f5;
+
+  /*
+   * Acentos en claro: los tonos CLAROS de sky/rose se usan como texto/icono
+   * sobre superficies blancas (chips activos, acciones de peligro, toasts);
+   * se oscurecen a sus equivalentes 700/800/900 para mantener el contraste.
+   * Los sólidos (sky-500/600, rose-500/600 con texto blanco) no cambian.
+   */
+  --color-sky-100: #0c4a6e; /* sky-900: texto activo */
+  --color-sky-200: #075985; /* sky-800: texto sobre tinte sky */
+  --color-sky-300: #0369a1; /* sky-700: acento principal legible */
+  --color-sky-400: #0284c7; /* sky-600: focos/hover de borde */
+  --color-rose-200: #9f1239; /* rose-800: texto de error */
+  --color-rose-300: #be123c; /* rose-700: acción destructiva */
+  --color-rose-400: #be123c; /* rose-700: icono de error */
 }
 
 /* Scrollbars finos para las zonas con desplazamiento (siguen el tema vía var) */
