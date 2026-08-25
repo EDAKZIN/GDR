@@ -385,12 +385,24 @@ export function RecordModal() {
   const inTrash = activeDetail !== null && activeDetail.deletedAt !== null;
 
   return (
-    <div className={modalBackdrop}>
+    <div
+      className={modalBackdrop}
+      onClick={() => {
+        // Clic fuera cierra solo en vista y sin capas superpuestas; en
+        // creación/edición se exige botón explícito para no perder el borrador.
+        if (!editing && !saving && !confirmingDelete && lightboxSrc === null) {
+          closeActive();
+        }
+      }}
+    >
       <section
         role="dialog"
         aria-modal="true"
         aria-label={mode === "view" ? "Detalle del registro" : "Edición de registro"}
         className={`${modalPanel} max-h-[92vh] max-w-3xl`}
+        onClick={(event) => {
+          event.stopPropagation();
+        }}
       >
         {/* Cabecera jerárquica de la ficha */}
         <header className={`${modalHeader} items-start`}>
