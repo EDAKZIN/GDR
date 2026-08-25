@@ -1,11 +1,13 @@
+import { useT } from "../../../i18n";
 import type { FieldInputProps } from "./types";
 import { fieldInputClass } from "./fieldStyles";
 
 export function EmailField({ value, onChange, disabled }: FieldInputProps) {
+  const { t } = useT();
   return (
     <input
       type="email"
-      placeholder="usuario@dominio.com"
+      placeholder={t("campos.emailPlaceholder")}
       className={fieldInputClass(false)}
       value={typeof value === "string" ? value : ""}
       onChange={(event) => {

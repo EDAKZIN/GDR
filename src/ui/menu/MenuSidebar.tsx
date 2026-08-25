@@ -773,8 +773,8 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-zinc-800 bg-zinc-950 px-2">
         <button
           type="button"
-          title={open ? "Ocultar menú" : "Mostrar menú"}
-          aria-label={open ? "Ocultar menú" : "Mostrar menú"}
+          title={open ? t("comun.menuOcultar") : t("comun.menuMostrar")}
+          aria-label={open ? t("comun.menuOcultar") : t("comun.menuMostrar")}
           aria-expanded={open}
           onClick={() => {
             setOpen((previous) => !previous);

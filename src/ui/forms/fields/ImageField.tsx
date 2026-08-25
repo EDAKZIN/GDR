@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useT } from "../../../i18n";
 import type { FieldInputProps } from "./types";
 import { fieldInputClass } from "./fieldStyles";
 
 export function ImageField({ field, value, onChange, disabled }: FieldInputProps) {
+  const { t } = useT();
   const url = typeof value === "string" && value.trim() !== "" ? value.trim() : null;
   const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
 
@@ -13,7 +15,7 @@ export function ImageField({ field, value, onChange, disabled }: FieldInputProps
     <div className="flex items-start gap-3">
       <input
         type="text"
-        placeholder="https://…/imagen.png"
+        placeholder={t("campos.imagenPlaceholder")}
         className={fieldInputClass(false)}
         value={url ?? ""}
         onChange={(event) => {

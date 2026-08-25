@@ -61,6 +61,8 @@ export const en: Dictionary = {
     migasAria: "Breadcrumb",
     selecciona: "— Select —",
     etiquetaPlaceholder: "Type and press Enter…",
+    menuOcultar: "Hide menu",
+    menuMostrar: "Show menu",
   },
   secciones: {
     nueva: "New section",
@@ -297,6 +299,17 @@ export const en: Dictionary = {
       etiquetasInvalidas: "Tags must be a list of texts.",
       campoObligatorio: "This field is required.",
     },
+    rutaPlaceholder: "C:\\path\\to\\file or /path/to/file",
+    urlPlaceholder: "https://…",
+    emailPlaceholder: "user@example.com",
+    imagenPlaceholder: "https://…/image.png",
+    examinar: "Browse…",
+  },
+  error: {
+    titulo: "An unexpected error occurred",
+    mensaje:
+      "The application could not continue. Reload to try again; if it persists, restart it.",
+    recargar: "Reload",
   },
   busqueda: {
     abrir: "Search everything",

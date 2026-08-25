@@ -60,6 +60,8 @@ export const es = {
     migasAria: "Migas de pan",
     selecciona: "— Selecciona —",
     etiquetaPlaceholder: "Escribe y pulsa Enter…",
+    menuOcultar: "Ocultar menú",
+    menuMostrar: "Mostrar menú",
   },
   secciones: {
     nueva: "Nueva sección",
@@ -296,6 +298,17 @@ export const es = {
       etiquetasInvalidas: "Las etiquetas deben ser una lista de textos.",
       campoObligatorio: "Este campo es obligatorio.",
     },
+    rutaPlaceholder: "C:\\ruta\\a\\archivo o /ruta/a/archivo",
+    urlPlaceholder: "https://…",
+    emailPlaceholder: "usuario@dominio.com",
+    imagenPlaceholder: "https://…/imagen.png",
+    examinar: "Examinar…",
+  },
+  error: {
+    titulo: "Se produjo un error inesperado",
+    mensaje:
+      "La aplicación no pudo continuar. Recarga para volver a intentarlo; si persiste, reiníciala.",
+    recargar: "Recargar",
   },
   busqueda: {
     abrir: "Buscar en todo",
