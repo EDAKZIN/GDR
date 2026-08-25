@@ -58,6 +58,12 @@ export interface SectionState {
   childrenOf: (parentId: string | null) => Section[];
 
   createSection: (input: CreateSectionInput) => Promise<Section>;
+  /**
+   * Backfill idempotente: para cada sección viva allowChildren=false sin
+   * formularios vivos, crea el formulario homónimo (descripción vacía).
+   * Devuelve cuántos formularios creó.
+   */
+  ensureFlatSectionForms: () => Promise<number>;
   updateSection: (id: string, input: UpdateSectionInput) => Promise<void>;
   enableSection: (id: string) => Promise<void>;
   disableSection: (id: string) => Promise<void>;
@@ -180,8 +186,47 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
       ...input,
       position: input.position ?? total,
     });
+    // Sección plana: el formulario homónimo se crea automáticamente e
+    // invisible para el usuario (sin pedir nombre ni plantilla).
+    if (!created.allowChildren) {
+      await formsRepository.create({
+        sectionId: created.id,
+        name: created.name,
+        description: null,
+      });
+    }
     await get().loadSections();
     return created;
+  },
+
+  ensureFlatSectionForms: async () => {
+    try {
+      const [liveSections, liveForms] = await Promise.all([
+        sectionsRepository.list({ includeDisabled: true }),
+        formsRepository.list({ includeDisabled: true }),
+      ]);
+      const sectionsWithForms = new Set(liveForms.map((form) => form.sectionId));
+      const orphans = liveSections.filter(
+        (section) => !section.allowChildren && !sectionsWithForms.has(section.id),
+      );
+      for (const section of orphans) {
+        await formsRepository.create({
+          sectionId: section.id,
+          name: section.name,
+          description: null,
+        });
+      }
+      if (orphans.length > 0) {
+        console.info(
+          `Backfill secciones planas: ${String(orphans.length)} formulario(s) homónimo(s) creado(s).`,
+        );
+        await Promise.all([get().loadSections(), get().loadFormCounts()]);
+      }
+      return orphans.length;
+    } catch (error) {
+      console.error("Backfill de secciones planas falló:", error);
+      return 0;
+    }
   },
 
   updateSection: async (id, input) => {

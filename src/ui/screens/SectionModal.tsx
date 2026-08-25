@@ -137,17 +137,25 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
           </div>
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-zinc-400">
-          <input
-            type="checkbox"
-            className="h-3.5 w-3.5 shrink-0 accent-sky-500"
-            checked={allowChildren}
-            onChange={(event) => {
-              setAllowChildren(event.target.checked);
-            }}
-          />
-          Permitir sub-secciones
-        </label>
+        <div className="flex flex-col gap-1">
+          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-zinc-400">
+            <input
+              type="checkbox"
+              className="h-3.5 w-3.5 shrink-0 accent-sky-500"
+              checked={allowChildren}
+              onChange={(event) => {
+                setAllowChildren(event.target.checked);
+              }}
+            />
+            Permitir sub-secciones
+          </label>
+          {!allowChildren ? (
+            <p className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-[11px] leading-relaxed text-zinc-500">
+              Lista directa de registros: no hace falta nombrar ningún
+              formulario, se crea solo con el nombre de la sección.
+            </p>
+          ) : null}
+        </div>
 
         {error !== null ? (
           <p className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">

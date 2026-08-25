@@ -5,6 +5,7 @@ import "./index.css";
 import { getDb } from "./database/client";
 import { runMigrations } from "./database/migrations/runner";
 import { createSearchRepository } from "./database/repositories";
+import { useSectionStore } from "./stores";
 
 async function bootstrap(): Promise<void> {
   let fatal: unknown = null;
@@ -22,6 +23,9 @@ async function bootstrap(): Promise<void> {
     } catch (indexError) {
       console.error("Error al reconstruir el índice de búsqueda:", indexError);
     }
+    // Backfill idempotente: toda sección plana (allowChildren=0) viva sin
+    // formularios vivos recibe su formulario homónimo automático.
+    await useSectionStore.getState().ensureFlatSectionForms();
   } catch (error) {
     console.error("Error al inicializar la base de datos:", error);
     fatal = error;
