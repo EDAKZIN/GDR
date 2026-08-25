@@ -270,6 +270,21 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
       if (data.parentId != null) {
         await requireLiveParent(database, data.parentId);
       }
+      let position = data.position;
+      if (position === undefined) {
+        // Sin posición explícita, la sección se añade al FINAL entre sus
+        // hermanas (position 0 la colocaría antes que las existentes).
+        const rows =
+          data.parentId == null
+            ? await database.select<Array<{ next: number }>>(
+                "SELECT COALESCE(MAX(position) + 1, 0) AS next FROM sections WHERE parent_id IS NULL",
+              )
+            : await database.select<Array<{ next: number }>>(
+                "SELECT COALESCE(MAX(position) + 1, 0) AS next FROM sections WHERE parent_id = $1",
+                [data.parentId],
+              );
+        position = rows[0]?.next ?? 0;
+      }
       await database.execute(
         "INSERT INTO sections (id, parent_id, name, description, icon, position, allow_children) VALUES ($1, $2, $3, $4, $5, $6, $7)",
         [
@@ -278,7 +293,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
           data.name,
           data.description ?? null,
           data.icon ?? null,
-          data.position ?? 0,
+          position,
           boolToDb(data.allowChildren ?? true),
         ],
       );
