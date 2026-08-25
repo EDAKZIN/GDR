@@ -150,12 +150,12 @@ function SectionCard({
         section.enabled ? "" : "opacity-50"
       }`}
       onClick={() => {
-        void openSection(section.id);
+        openSection(section.id);
       }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          void openSection(section.id);
+          openSection(section.id);
         }
       }}
     >

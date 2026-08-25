@@ -60,10 +60,18 @@ function waitForRecordForm(formId: string, timeoutMs = 2000): Promise<boolean> {
 
 async function navigateToResult(result: SearchResult): Promise<void> {
   const sections = useSectionStore.getState();
+  const section = sections.sections.find(
+    (candidate) => candidate.id === result.sectionId,
+  );
   await sections.selectSection(result.sectionId);
   sections.selectForm(result.formId);
-  // Navegar a la pantalla del formulario seleccionado.
-  useUiStore.getState().navigate("form", result.formId);
+  // En secciones planas la vista de registros es la propia sección (un solo
+  // nivel); en jerárquicas se abre el workspace del formulario.
+  if (section !== undefined && !section.allowChildren) {
+    useUiStore.getState().navigate("section", result.sectionId);
+  } else {
+    useUiStore.getState().navigate("form", result.formId);
+  }
 
   // El efecto useFormSync de App abre el formulario en useRecordStore;
   // si por timing no llegara a hacerlo, se abre manualmente.

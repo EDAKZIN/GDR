@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowDown,
   ArrowLeft,
@@ -19,11 +19,11 @@ import { useSectionStore } from "../../stores";
 import { useUiStore } from "../../stores/useUiStore";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { EmptyState } from "../components/EmptyState";
+import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMenu";
 import { IconRenderer } from "../components/IconRenderer";
 import { btnDangerGhost } from "../components/uiStyles";
 import { openSection } from "../navigation/openSection";
-import { RecordModal } from "../workspace/RecordModal";
-import { RecordsTable } from "../workspace/RecordsTable";
+import { FlatSectionScreen } from "./FlatSectionScreen";
 import { FormModal } from "./FormModal";
 import { SectionModal } from "./SectionModal";
 
@@ -43,12 +43,14 @@ interface MenuAction {
 }
 
 function FormCardMenu({
+  anchor,
   form,
   isFirst,
   isLast,
   onEdit,
   onClose,
 }: {
+  anchor: FloatingMenuAnchor;
   form: Form;
   isFirst: boolean;
   isLast: boolean;
@@ -110,30 +112,27 @@ function FormCardMenu({
   ];
 
   return (
-    <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-3 top-12 z-50 flex min-w-40 flex-col overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-2xl">
-        {actions.map((action) => (
-          <button
-            key={action.label}
-            type="button"
-            className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
-              action.danger === true
-                ? "text-rose-300 hover:bg-rose-500/10"
-                : "text-zinc-200 hover:bg-zinc-800"
-            } disabled:pointer-events-none disabled:opacity-40`}
-            disabled={action.disabled === true}
-            onClick={() => {
-              onClose();
-              action.run();
-            }}
-          >
-            <action.icon className="h-3.5 w-3.5" />
-            {action.label}
-          </button>
-        ))}
-      </div>
-    </>
+    <FloatingMenu anchor={anchor} widthClass="w-40" onClose={onClose}>
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          type="button"
+          className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
+            action.danger === true
+              ? "text-rose-300 hover:bg-rose-500/10"
+              : "text-zinc-200 hover:bg-zinc-800"
+          } disabled:pointer-events-none disabled:opacity-40`}
+          disabled={action.disabled === true}
+          onClick={() => {
+            onClose();
+            action.run();
+          }}
+        >
+          <action.icon className="h-3.5 w-3.5" />
+          {action.label}
+        </button>
+      ))}
+    </FloatingMenu>
   );
 }
 
@@ -143,14 +142,14 @@ function FormCard({
   isLast,
   onEdit,
   onOpenMenu,
-  menuOpen,
+  menuAnchor,
 }: {
   form: Form;
   isFirst: boolean;
   isLast: boolean;
   onEdit: (form: Form) => void;
-  onOpenMenu: (formId: string | null) => void;
-  menuOpen: boolean;
+  onOpenMenu: (anchor: FloatingMenuAnchor | null) => void;
+  menuAnchor: FloatingMenuAnchor | null;
 }) {
   const navigate = useUiStore((store) => store.navigate);
 
@@ -181,7 +180,11 @@ function FormCard({
           className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100 focus-visible:opacity-100 group-hover:opacity-100 md:opacity-0"
           onClick={(event) => {
             event.stopPropagation();
-            onOpenMenu(menuOpen ? null : form.id);
+            onOpenMenu(
+              menuAnchor !== null
+                ? null
+                : event.currentTarget.getBoundingClientRect(),
+            );
           }}
         >
           <MoreVertical className="h-4 w-4" />
@@ -203,8 +206,9 @@ function FormCard({
         </footer>
       ) : null}
 
-      {menuOpen ? (
+      {menuAnchor !== null ? (
         <FormCardMenu
+          anchor={menuAnchor}
           form={form}
           isFirst={isFirst}
           isLast={isLast}
@@ -219,81 +223,10 @@ function FormCard({
 }
 
 /**
- * Panel de sección PLANA con formularios: con uno solo muestra su tabla de
- * registros directamente; con varios, pestañas internas por formulario.
- * La selección pasa por activeFormId del store, así que la sincronización
- * global (App) carga los campos y registros del formulario activo.
+ * Panel de sección JERÁRQUICA: tarjetas de formularios con papelera y modales.
+ * Las secciones planas (allowChildren=false) delegan en FlatSectionScreen,
+ * que muestra la lista de registros como un único nivel de navegación.
  */
-function FlatFormPanels({ forms }: { forms: readonly Form[] }) {
-  const navigate = useUiStore((store) => store.navigate);
-  const selectForm = useSectionStore((store) => store.selectForm);
-  const [tabId, setTabId] = useState("");
-  // Si el formulario de la pestaña quedó deshabilitado, cae al primero.
-  const enabledForms = useMemo(
-    () => forms.filter((form) => form.enabled),
-    [forms],
-  );
-  const fallback =
-    enabledForms.length > 0 ? enabledForms[0] : undefined;
-  const active = enabledForms.find((form) => form.id === tabId) ?? fallback;
-  const activeId = active !== undefined ? active.id : "";
-
-  useEffect(() => {
-    if (activeId !== "") {
-      selectForm(activeId);
-    }
-  }, [activeId, selectForm]);
-
-  if (active === undefined) {
-    return null;
-  }
-
-  return (
-    <section className="flex min-h-0 flex-1 flex-col gap-4">
-      {forms.length > 1 ? (
-        <nav
-          aria-label="Formularios de la sección"
-          className="flex shrink-0 flex-wrap items-center gap-1 border-b border-zinc-800"
-        >
-          {forms.map((form) => {
-            const isActive = form.id === active.id;
-            return (
-              <button
-                key={form.id}
-                type="button"
-                disabled={!form.enabled}
-                title={form.enabled ? undefined : "Formulario deshabilitado"}
-                className={`inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "border-sky-400 text-sky-300"
-                    : "border-transparent text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
-                } disabled:pointer-events-none disabled:opacity-40`}
-                onClick={() => {
-                  setTabId(form.id);
-                }}
-              >
-                {form.name}
-              </button>
-            );
-          })}
-        </nav>
-      ) : null}
-
-      <RecordsTable
-        key={active.id}
-        formName={active.name}
-        onOpenWorkspace={() => {
-          navigate("form", active.id);
-        }}
-      />
-
-      {/* Modal de detalle / creación / edición del registro activo */}
-      <RecordModal />
-    </section>
-  );
-}
-
-/** Pantalla SECCIÓN: tarjetas de formularios con papelera y modales. */
 export function SectionFormsScreen() {
   const activeSectionId = useSectionStore((store) => store.activeSectionId);
   const sections = useSectionStore((store) => store.sections);
@@ -309,7 +242,7 @@ export function SectionFormsScreen() {
   const navigate = useUiStore((store) => store.navigate);
   const goBack = useUiStore((store) => store.goBack);
 
-  const [menuFormId, setMenuFormId] = useState<string | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<FloatingMenuAnchor | null>(null);
   const [formModal, setFormModal] = useState<FormModalState>(null);
   const [sectionModal, setSectionModal] = useState<SectionModalState>(null);
   const [showTrash, setShowTrash] = useState(false);
@@ -340,7 +273,7 @@ export function SectionFormsScreen() {
   // Esc cierra el menú contextual, los modales o la papelera (el ConfirmModal gestiona el suyo).
   useEffect(() => {
     if (
-      menuFormId === null &&
+      menuAnchor === null &&
       formModal === null &&
       sectionModal === null &&
       !showTrash
@@ -349,7 +282,7 @@ export function SectionFormsScreen() {
     }
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key === "Escape" && confirmHardDeleteForm === null) {
-        setMenuFormId(null);
+        setMenuAnchor(null);
         setFormModal(null);
         setSectionModal(null);
         setShowTrash(false);
@@ -359,7 +292,7 @@ export function SectionFormsScreen() {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [menuFormId, formModal, sectionModal, showTrash, confirmHardDeleteForm]);
+  }, [menuAnchor, formModal, sectionModal, showTrash, confirmHardDeleteForm]);
 
   if (activeSectionId === null || activeSection === undefined) {
     return (
@@ -369,15 +302,14 @@ export function SectionFormsScreen() {
     );
   }
 
+  // Sección plana: vista unificada de registros en un solo nivel.
+  if (!activeSection.allowChildren) {
+    return <FlatSectionScreen />;
+  }
+
   const enabledForms = forms.filter((form) => form.enabled);
   const disabledForms = forms.filter((form) => !form.enabled);
   const orderedCards = [...enabledForms, ...disabledForms];
-  const isEmpty = orderedCards.length === 0;
-  // Sección plana: lista directa de registros (sin tarjetas de formularios).
-  const flat = !activeSection.allowChildren;
-  // Modo «CTA único»: sección plana sin plantillas ni papelera que mostrar.
-  const flatEmptyCta =
-    flat && isEmpty && !showTrash && trashedForms.length === 0;
 
   function openCreate(): void {
     setFormModal({ kind: "create", sectionId: activeSection?.id ?? "" });
@@ -420,14 +352,13 @@ export function SectionFormsScreen() {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            {flatEmptyCta ? null : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowTrash((previous) => !previous);
-                    setMenuFormId(null);
-                  }}
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTrash((previous) => !previous);
+                  setMenuAnchor(null);
+                }}
                   title="Papelera de formularios"
                   aria-label="Papelera de formularios"
                   className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
@@ -451,8 +382,7 @@ export function SectionFormsScreen() {
                   <Pencil className="h-4 w-4" />
                   <span className="hidden sm:inline">Editar sección</span>
                 </button>
-              </>
-            )}
+            </>
           </div>
         </header>
 
@@ -477,7 +407,7 @@ export function SectionFormsScreen() {
                     child.enabled ? "" : "opacity-50"
                   }`}
                   onClick={() => {
-                    void openSection(child.id);
+                    openSection(child.id);
                   }}
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-800 bg-sky-500/10 text-sky-300">
@@ -545,33 +475,19 @@ export function SectionFormsScreen() {
               </ul>
             )}
           </section>
-        ) : loadingForms && isEmpty ? (
+        ) : loadingForms && orderedCards.length === 0 ? (
           <p className="py-12 text-center text-sm text-zinc-500">
             Cargando formularios…
           </p>
-        ) : isEmpty ? (
-          flat ? (
-            /* Sección plana sin plantillas: CTA único de lista directa */
-            <EmptyState
-              icon={LayoutList}
-              title="Lista directa de registros"
-              description="Esta sección funciona como lista plana: crea una plantilla y sus registros aparecerán aquí como tabla."
-              actionLabel="Crear plantilla de lista"
-              onAction={openCreate}
-            />
-          ) : (
-            /* Estado vacío inicial */
-            <EmptyState
-              icon={LayoutList}
-              title="Esta sección no tiene formularios"
-              description="Los formularios definen los campos con los que guardarás registros."
-              actionLabel="Crea tu primer formulario"
-              onAction={openCreate}
-            />
-          )
-        ) : flat && enabledForms.length > 0 ? (
-          /* Sección plana: tabla de registros (o pestañas si hay varios) */
-          <FlatFormPanels forms={orderedCards} />
+        ) : orderedCards.length === 0 ? (
+          /* Estado vacío inicial */
+          <EmptyState
+            icon={LayoutList}
+            title="Esta sección no tiene formularios"
+            description="Los formularios definen los campos con los que guardarás registros."
+            actionLabel="Crea tu primer formulario"
+            onAction={openCreate}
+          />
         ) : (
           /* Grid fluido de tarjetas + botón destacado */
           <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
@@ -585,9 +501,9 @@ export function SectionFormsScreen() {
                     ? enabledForms[enabledForms.length - 1]?.id === form.id
                     : disabledForms[disabledForms.length - 1]?.id === form.id
                 }
-                menuOpen={menuFormId === form.id}
-                onOpenMenu={(formId) => {
-                  setMenuFormId(formId);
+                menuAnchor={menuAnchor}
+                onOpenMenu={(anchor) => {
+                  setMenuAnchor(anchor);
                 }}
                 onEdit={openEditForm}
               />
@@ -610,16 +526,6 @@ export function SectionFormsScreen() {
           mode={formModal}
           onClose={() => {
             setFormModal(null);
-            // En secciones planas, tras crear la única plantilla se entra
-            // directo a su lista de registros.
-            if (!activeSection.allowChildren) {
-              const enabled = useSectionStore
-                .getState()
-                .forms.filter((form) => form.enabled);
-              if (enabled.length === 1) {
-                navigate("form", enabled[0].id);
-              }
-            }
           }}
         />
       ) : null}
