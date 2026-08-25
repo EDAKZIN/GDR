@@ -95,7 +95,10 @@ export interface SectionRepository {
   enable(id: string): Promise<Section>;
   /** Soft-delete en cascada: elimina también todo el subárbol de descendientes. */
   softDelete(id: string): Promise<Section>;
-  /** Restaura la sección y su subárbol (el padre primero, en pre-orden). */
+  /**
+   * Restaura la sección y los descendientes eliminados EN LA MISMA cascada
+   * (los borrados individualmente antes o después permanecen en papelera).
+   */
   restore(id: string): Promise<Section>;
   /** Borrado definitivo; las FK con ON DELETE CASCADE arrastran subárbol y datos. */
   hardDelete(id: string): Promise<boolean>;
@@ -391,9 +394,41 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
     async restore(id: string): Promise<Section> {
       const sectionId = z.uuid().parse(id);
       const database = await db();
-      // Restauración padre primero (pre-orden) para respetar la jerarquía.
-      const subtreeIds = await collectSubtreeIds(database, sectionId);
-      await applyDeletedFlag(database, subtreeIds, false);
+      /*
+       * Restauración selectiva: SOLO se resucitan los nodos borrados EN LA
+       * MISMA cascada que la raíz. El soft-delete recursivo estampa un único
+       * timestamp para todo el subárbol (una UPDATE con un solo nowIso()),
+       * así que comparar deleted_at con el de la raíz distingue:
+       *   - hijos eliminados individualmente ANTES de borrar el padre
+       *     (timestamp anterior) → siguen en la papelera;
+       *   - hijos eliminados después, por su cuenta (timestamp posterior)
+       *     → también siguen en la papelera.
+       * Se atraviesa el subárbol completo (sin cortar en nodos no
+       * restaurables) porque puede haber restaurables bajo ramas tocadas
+       * por otras operaciones.
+       */
+      const root = await requireRow(database, sectionId);
+      if (root.deletedAt === null) {
+        return root;
+      }
+      const ids: string[] = [sectionId];
+      const visited = new Set<string>([sectionId]);
+      let frontier = [sectionId];
+      while (frontier.length > 0) {
+        // $1 = timestamp de la cascada; $2.. = frontera actual.
+        const placeholders = frontier.map((_, index) => `$${String(index + 2)}`).join(", ");
+        const rows = await database.select<Array<{ id: string }>>(
+          `SELECT id FROM sections WHERE parent_id IN (${placeholders}) AND deleted_at = $1`,
+          [root.deletedAt, ...frontier],
+        );
+        // Dedupe defensivo contra ciclos heredados en parent_id.
+        frontier = rows.map((row) => row.id).filter((childId) => !visited.has(childId));
+        for (const childId of frontier) {
+          visited.add(childId);
+        }
+        ids.push(...frontier);
+      }
+      await applyDeletedFlag(database, ids, false);
       return requireRow(database, sectionId);
     },
 
