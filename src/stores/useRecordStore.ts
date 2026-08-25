@@ -339,14 +339,21 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
       return false;
     }
 
+    // Descartar valores de campos que ya no existen (borrados mientras se
+    // editaba): insertarlos rompería la FK de field_values.field_id.
+    const liveFieldIds = new Set(fields.map((field) => field.id));
+    const payload = Object.fromEntries(
+      Object.entries(draft).filter(([fieldId]) => liveFieldIds.has(fieldId)),
+    );
+
     set({ saving: true, error: null });
     try {
       let savedId: string;
       if (activeMode === "edit" && activeId !== null) {
-        await recordsRepository.updateValues(activeId, draft);
+        await recordsRepository.updateValues(activeId, payload);
         savedId = activeId;
       } else {
-        const created = await recordsRepository.create({ formId, values: draft });
+        const created = await recordsRepository.create({ formId, values: payload });
         savedId = created.id;
       }
       const detail = await recordsRepository.get(savedId);
