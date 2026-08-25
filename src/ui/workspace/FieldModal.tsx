@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { GripVertical, Plus, X } from "lucide-react";
 import {
   FIELD_OPTIONS_PREFIX,
   FIELD_TYPES,
@@ -10,6 +10,8 @@ import {
 import type { CreateFieldInput, Field, FieldType } from "../../core/fields";
 import { getDb } from "../../database/client";
 import { createFieldsRepository } from "../../database/repositories";
+import { ReorderContainer, ReorderItem } from "../components/LongPressReorder";
+import { useLongPressReorder } from "../components/useLongPressReorder";
 
 const fieldsRepository = createFieldsRepository(getDb);
 
@@ -23,7 +25,7 @@ const labelClass = "flex flex-col gap-1 text-xs font-medium text-zinc-400";
 interface EditorState {
   name: string;
   descriptionText: string;
-  optionsText: string;
+  options: string[];
   type: FieldType;
   required: boolean;
   searchable: boolean;
@@ -33,7 +35,7 @@ function emptyEditor(type: FieldType): EditorState {
   return {
     name: "",
     descriptionText: "",
-    optionsText: "",
+    options: [],
     type,
     required: false,
     // Los campos nuevos son buscables por defecto (salvo contraseñas): el
@@ -59,23 +61,18 @@ function splitDescription(field: Pick<Field, "description">): {
 
 function buildDescription(
   descriptionText: string,
-  optionsText: string,
+  options: readonly string[],
   type: FieldType,
 ): string | null {
   const text = descriptionText.trim();
   if (!OPTION_TYPES.includes(type)) {
     return text === "" ? null : text;
   }
-  const values = optionsText
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line !== "");
+  const values = options.map((option) => option.trim()).filter((option) => option !== "");
   if (values.length === 0) {
     return text === "" ? null : text;
   }
-  const serialized = stringifyFieldOptions(
-    values.map((value) => ({ value, label: value })),
-  );
+  const serialized = stringifyFieldOptions(values.map((value) => ({ value, label: value })));
   return text === "" ? serialized : `${text} ${serialized}`;
 }
 
@@ -97,7 +94,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
     return {
       name: field.name,
       descriptionText,
-      optionsText: options.join("\n"),
+      options,
       type: (FIELD_TYPES as readonly string[]).includes(field.type)
         ? (field.type as FieldType)
         : "text",
@@ -107,6 +104,37 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Reordenación por arrastre de las opciones (estado local del modal; el
+  // orden se persiste con las opciones al guardar).
+  const optionIds = editor.options.map((_option, index) => String(index));
+  const optionsReorder = useLongPressReorder({
+    orderedIds: optionIds,
+    onReorder: (orderedOptionIds) => {
+      setEditor((current) => ({
+        ...current,
+        options: orderedOptionIds.map((id) => current.options[Number(id)]),
+      }));
+    },
+  });
+
+  function updateOption(index: number, value: string): void {
+    setEditor((current) => ({
+      ...current,
+      options: current.options.map((option, position) => (position === index ? value : option)),
+    }));
+  }
+
+  function removeOption(index: number): void {
+    setEditor((current) => ({
+      ...current,
+      options: current.options.filter((_option, position) => position !== index),
+    }));
+  }
+
+  function addOption(): void {
+    setEditor((current) => ({ ...current, options: [...current.options, ""] }));
+  }
 
   useEffect(() => {
     if (saving) {
@@ -133,11 +161,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
     try {
       const payload = {
         name: editor.name.trim(),
-        description: buildDescription(
-          editor.descriptionText,
-          editor.optionsText,
-          editor.type,
-        ),
+        description: buildDescription(editor.descriptionText, editor.options, editor.type),
         type: editor.type,
         required: editor.required,
         searchable: editor.searchable,
@@ -151,11 +175,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
       onSaved();
       onClose();
     } catch (submitError) {
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : String(submitError),
-      );
+      setError(submitError instanceof Error ? submitError.message : String(submitError));
       setSaving(false);
     }
   }
@@ -241,17 +261,67 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
         </label>
 
         {isOptionType ? (
-          <label className={labelClass}>
-            Opciones (una por línea)
-            <textarea
-              className={`${inputClass} min-h-16 resize-y font-mono text-xs`}
-              value={editor.optionsText}
-              onChange={(event) => {
-                setEditor({ ...editor, optionsText: event.target.value });
-              }}
-              placeholder={"alta\nmedia\nbaja"}
-            />
-          </label>
+          <div className={labelClass}>
+            Opciones
+            <ReorderContainer controller={optionsReorder} className="flex flex-col gap-1.5">
+              {optionsReorder.order.map((optionId) => {
+                const optionIndex = Number(optionId);
+                const isDragging = optionsReorder.draggingId === optionId;
+                return (
+                  <ReorderItem
+                    key={optionId}
+                    controller={optionsReorder}
+                    id={optionId}
+                    className={`flex items-center gap-1.5 rounded-md border bg-zinc-900/60 pl-1 pr-2 transition-colors ${
+                      isDragging
+                        ? "z-10 scale-[1.02] border-sky-400/70 shadow-lg shadow-sky-500/10 ring-2 ring-sky-400/40"
+                        : optionsReorder.draggingId !== null
+                          ? "border-zinc-800 opacity-60"
+                          : "border-zinc-800"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      {...optionsReorder.getGripProps(optionId)}
+                      aria-label={`Arrastra para reordenar la opción ${String(optionIndex + 1)}`}
+                      className={`shrink-0 cursor-grab rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-sky-300 ${
+                        isDragging ? "cursor-grabbing text-sky-300" : ""
+                      }`}
+                    >
+                      <GripVertical className="h-3.5 w-3.5" />
+                    </button>
+                    <input
+                      value={editor.options[optionIndex] ?? ""}
+                      onChange={(event) => {
+                        updateOption(optionIndex, event.target.value);
+                      }}
+                      placeholder={`Opción ${String(optionIndex + 1)}`}
+                      maxLength={200}
+                      className="min-w-0 flex-1 bg-transparent py-1.5 font-mono text-xs text-zinc-100 outline-none placeholder:text-zinc-600"
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Eliminar opción ${String(optionIndex + 1)}`}
+                      className="shrink-0 rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-rose-300"
+                      onClick={() => {
+                        removeOption(optionIndex);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </ReorderItem>
+                );
+              })}
+            </ReorderContainer>
+            <button
+              type="button"
+              onClick={addOption}
+              className="inline-flex items-center gap-1 self-start rounded-md border border-dashed border-zinc-700 px-2 py-1 text-[11px] text-zinc-400 transition-colors hover:border-sky-400 hover:text-sky-300"
+            >
+              <Plus className="h-3 w-3" />
+              Añadir opción
+            </button>
+          </div>
         ) : null}
 
         <div className="flex items-center gap-4">
