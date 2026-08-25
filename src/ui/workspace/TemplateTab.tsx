@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
+  GripVertical,
   MoreVertical,
   Pencil,
   Plus,
@@ -14,6 +15,8 @@ import type { Field } from "../../core/fields";
 import { getDb } from "../../database/client";
 import { createFieldsRepository } from "../../database/repositories";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { ReorderContainer, ReorderItem } from "../components/LongPressReorder";
+import { useLongPressReorder } from "../components/useLongPressReorder";
 import { FieldModal } from "./FieldModal";
 
 const fieldsRepository = createFieldsRepository(getDb);
@@ -31,10 +34,7 @@ interface MenuAction {
 }
 
 type ModalState =
-  | { kind: "create" }
-  | { kind: "edit"; field: Field }
-  | { kind: "hardDelete"; field: Field }
-  | null;
+  { kind: "create" } | { kind: "edit"; field: Field } | { kind: "hardDelete"; field: Field } | null;
 
 function FieldBadges({ field }: { field: Field }) {
   return (
@@ -43,14 +43,10 @@ function FieldBadges({ field }: { field: Field }) {
         {typeLabel(field.type)}
       </span>
       {field.required ? (
-        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-sky-300">
-          Obligatorio
-        </span>
+        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-sky-300">Obligatorio</span>
       ) : null}
       {field.searchable ? (
-        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-sky-300">
-          Buscable
-        </span>
+        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-sky-300">Buscable</span>
       ) : null}
     </span>
   );
@@ -138,13 +134,7 @@ function FieldRowMenu({
  * edición en modal, deshabilitados y papelera de campos eliminados.
  * Cada cambio avisa al padre para refrescar los campos de los registros.
  */
-export function TemplateTab({
-  formId,
-  onChanged,
-}: {
-  formId: string;
-  onChanged: () => void;
-}) {
+export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: () => void }) {
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -161,9 +151,7 @@ export function TemplateTab({
       setFields(loaded);
       setError(null);
     } catch (loadError) {
-      setError(
-        loadError instanceof Error ? loadError.message : String(loadError),
-      );
+      setError(loadError instanceof Error ? loadError.message : String(loadError));
     }
   }, [formId]);
 
@@ -181,9 +169,7 @@ export function TemplateTab({
       })
       .catch((loadError: unknown) => {
         if (!cancelled) {
-          setError(
-            loadError instanceof Error ? loadError.message : String(loadError),
-          );
+          setError(loadError instanceof Error ? loadError.message : String(loadError));
         }
       })
       .finally(() => {
@@ -220,11 +206,7 @@ export function TemplateTab({
       await refreshFields();
       onChanged();
     } catch (actionError) {
-      setError(
-        actionError instanceof Error
-          ? actionError.message
-          : String(actionError),
-      );
+      setError(actionError instanceof Error ? actionError.message : String(actionError));
     }
   }
 
@@ -233,10 +215,23 @@ export function TemplateTab({
   const disabledFields = activeFields.filter((field) => !field.enabled);
   const deletedFields = fields.filter((field) => field.deletedAt !== null);
 
+  // Reordenación por arrastre (mantener presionado el grip); los botones
+  // Subir/Bajar del menú siguen siendo la alternativa accesible.
+  const enabledIds = enabledFields.map((field) => field.id);
+  const reorder = useLongPressReorder({
+    orderedIds: enabledIds,
+    onReorder: (orderedFieldIds) => {
+      void runAction(() => fieldsRepository.reorder([...orderedFieldIds]));
+    },
+  });
+  const enabledById = new Map(enabledFields.map((field) => [field.id, field]));
+  const orderedEnabledFields = reorder.order.flatMap((id) => {
+    const field = enabledById.get(id);
+    return field === undefined ? [] : [field];
+  });
+
   async function moveField(fieldId: string, delta: -1 | 1): Promise<void> {
-    const index = enabledFields.findIndex(
-      (candidate) => candidate.id === fieldId,
-    );
+    const index = enabledFields.findIndex((candidate) => candidate.id === fieldId);
     const target = index + delta;
     if (index === -1 || target < 0 || target >= enabledFields.length) {
       return;
@@ -251,8 +246,7 @@ export function TemplateTab({
     <section className="flex min-h-0 flex-1 flex-col gap-3">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-zinc-500">
-          Añade, ordena y configura los campos con los que se llenarán los
-          registros.
+          Añade, ordena y configura los campos con los que se llenarán los registros.
         </p>
         <div className="flex shrink-0 items-center gap-2">
           {deletedFields.length > 0 ? (
@@ -340,9 +334,7 @@ export function TemplateTab({
 
       {/* Listado de campos */}
       {loading && activeFields.length === 0 ? (
-        <p className="py-8 text-center text-sm text-zinc-500">
-          Cargando campos…
-        </p>
+        <p className="py-8 text-center text-sm text-zinc-500">Cargando campos…</p>
       ) : activeFields.length === 0 ? (
         <div className="flex min-h-48 flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-800 px-6 py-12 text-center">
           <Plus className="h-8 w-8 text-zinc-700" />
@@ -351,55 +343,84 @@ export function TemplateTab({
           </p>
         </div>
       ) : (
-        <ul className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
-          {enabledFields.map((field) => (
-            <li key={field.id} className="relative">
-              <div className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 transition-colors hover:border-zinc-700">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-zinc-100">
-                    {field.name}
-                  </span>
-                  <FieldBadges field={field} />
-                </span>
-                <button
-                  type="button"
-                  aria-label={`Menú de ${field.name}`}
-                  className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100"
-                  onClick={() => {
-                    setMenuFieldId(menuFieldId === field.id ? null : field.id);
-                  }}
+        <ReorderContainer
+          controller={reorder}
+          className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1"
+        >
+          {orderedEnabledFields.map((field) => {
+            const isDragging = reorder.draggingId === field.id;
+            return (
+              <ReorderItem
+                key={field.id}
+                controller={reorder}
+                id={field.id}
+                className={`relative ${
+                  isDragging ? "z-10 scale-[1.02]" : reorder.draggingId !== null ? "opacity-60" : ""
+                }`}
+              >
+                <div
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                    isDragging
+                      ? "border-sky-400/70 bg-zinc-900 shadow-xl shadow-sky-500/10 ring-2 ring-sky-400/40"
+                      : "border-zinc-800 bg-zinc-900/60 hover:border-zinc-700"
+                  }`}
                 >
-                  <MoreVertical className="h-4 w-4" />
-                </button>
-              </div>
-              {menuFieldId === field.id ? (
-                <FieldRowMenu
-                  field={field}
-                  isFirst={enabledFields[0]?.id === field.id}
-                  isLast={enabledFields[enabledFields.length - 1]?.id === field.id}
-                  onEdit={() => {
-                    setModal({ kind: "edit", field });
-                  }}
-                  onMove={(delta) => {
-                    void moveField(field.id, delta);
-                  }}
-                  onToggleEnabled={() => {
-                    void runAction(() =>
-                      field.enabled
-                        ? fieldsRepository.disable(field.id)
-                        : fieldsRepository.enable(field.id),
-                    );
-                  }}
-                  onDelete={() => {
-                    void runAction(() => fieldsRepository.softDelete(field.id));
-                  }}
-                  onClose={() => {
-                    setMenuFieldId(null);
-                  }}
-                />
-              ) : null}
-            </li>
-          ))}
+                  <button
+                    type="button"
+                    {...reorder.getGripProps(field.id)}
+                    aria-label={`Arrastra para reordenar ${field.name}`}
+                    className={`shrink-0 cursor-grab rounded-md p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-sky-300 ${
+                      isDragging ? "cursor-grabbing text-sky-300" : ""
+                    }`}
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </button>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-zinc-100">
+                      {field.name}
+                    </span>
+                    <FieldBadges field={field} />
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`Menú de ${field.name}`}
+                    className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100"
+                    onClick={() => {
+                      setMenuFieldId(menuFieldId === field.id ? null : field.id);
+                    }}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </div>
+                {menuFieldId === field.id ? (
+                  <FieldRowMenu
+                    field={field}
+                    isFirst={enabledFields[0]?.id === field.id}
+                    isLast={enabledFields[enabledFields.length - 1]?.id === field.id}
+                    onEdit={() => {
+                      setModal({ kind: "edit", field });
+                    }}
+                    onMove={(delta) => {
+                      void moveField(field.id, delta);
+                    }}
+                    onToggleEnabled={() => {
+                      void runAction(() =>
+                        field.enabled
+                          ? fieldsRepository.disable(field.id)
+                          : fieldsRepository.enable(field.id),
+                      );
+                    }}
+                    onDelete={() => {
+                      void runAction(() => fieldsRepository.softDelete(field.id));
+                    }}
+                    onClose={() => {
+                      setMenuFieldId(null);
+                    }}
+                  />
+                ) : null}
+              </ReorderItem>
+            );
+          })}
 
           {disabledFields.length > 0 ? (
             <>
@@ -429,9 +450,7 @@ export function TemplateTab({
                       aria-label={`Quitar ${field.name}`}
                       className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:text-rose-300"
                       onClick={() => {
-                        void runAction(() =>
-                          fieldsRepository.softDelete(field.id),
-                        );
+                        void runAction(() => fieldsRepository.softDelete(field.id));
                       }}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -441,7 +460,7 @@ export function TemplateTab({
               ))}
             </>
           ) : null}
-        </ul>
+        </ReorderContainer>
       )}
 
       {modal !== null && modal.kind !== "hardDelete" ? (
