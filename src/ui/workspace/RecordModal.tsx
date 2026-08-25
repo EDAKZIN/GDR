@@ -303,7 +303,10 @@ export function RecordModal() {
   }, [lightboxSrc]);
 
   useEffect(() => {
-    if (!open || saving || confirmingDelete) {
+    // Con la imagen ampliada abierta, su propio efecto gestiona Esc; cerrar
+    // aquí también dejaría la ficha entera (stopPropagation no aísla listeners
+    // del mismo window).
+    if (!open || saving || confirmingDelete || lightboxSrc !== null) {
       return;
     }
     function onKeyDown(event: KeyboardEvent): void {
@@ -316,7 +319,7 @@ export function RecordModal() {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, saving, confirmingDelete, closeActive]);
+  }, [open, saving, confirmingDelete, lightboxSrc, closeActive]);
 
   if (!open) {
     return null;
