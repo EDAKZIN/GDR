@@ -1,6 +1,8 @@
+import { useT } from "../../../i18n";
 import type { FieldInputProps } from "./types";
 
 export function BooleanField({ value, onChange, disabled }: FieldInputProps) {
+  const { t } = useT();
   return (
     <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-200">
       <input
@@ -12,7 +14,7 @@ export function BooleanField({ value, onChange, disabled }: FieldInputProps) {
         }}
         disabled={disabled}
       />
-      <span>{value === true ? "Sí" : "No"}</span>
+      <span>{value === true ? t("comun.si") : t("comun.no")}</span>
     </label>
   );
 }

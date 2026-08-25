@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
+import { useT } from "../../../i18n";
 import type { FieldInputProps } from "./types";
 import { fieldInputClass } from "./fieldStyles";
 
@@ -8,6 +9,7 @@ function toStringArray(value: unknown): string[] {
 }
 
 export function TagsField({ value, onChange, disabled }: FieldInputProps) {
+  const { t } = useT();
   const [draft, setDraft] = useState("");
   const tags = toStringArray(value);
 
@@ -42,7 +44,7 @@ export function TagsField({ value, onChange, disabled }: FieldInputProps) {
               removeTag(tag);
             }}
             disabled={disabled}
-            aria-label={`Quitar etiqueta ${tag}`}
+            aria-label={t("plantilla.quitarDe", { n: tag })}
           >
             <X className="h-3 w-3" />
           </button>
@@ -52,7 +54,7 @@ export function TagsField({ value, onChange, disabled }: FieldInputProps) {
         type="text"
         className="min-w-24 flex-1 border-none bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none"
         value={draft}
-        placeholder={tags.length === 0 ? "Escribe y pulsa Enter…" : ""}
+        placeholder={tags.length === 0 ? t("comun.etiquetaPlaceholder") : ""}
         onChange={(event) => {
           setDraft(event.target.value);
         }}
