@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type { Section } from "../../core/sections";
+import { useT } from "../../i18n";
 import { useSectionStore } from "../../stores";
 import { IconRenderer } from "../components/IconRenderer";
 import { SUGGESTED_ICON_NAMES } from "../components/iconNames";
@@ -21,6 +22,7 @@ export interface SectionModalProps {
 
 /** Modal ligero para crear o editar una sección (nombre, descripción, icono). */
 export function SectionModal({ mode, onClose }: SectionModalProps) {
+  const { t } = useT();
   const createSection = useSectionStore((store) => store.createSection);
   const updateSection = useSectionStore((store) => store.updateSection);
   const [name, setName] = useState(mode.kind === "edit" ? mode.section.name : "");
@@ -85,13 +87,13 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
       >
         <header className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-zinc-100">
-            {mode.kind === "edit" ? "Editar sección" : "Nueva sección"}
+            {mode.kind === "edit" ? t("secciones.editar") : t("secciones.nueva")}
           </h2>
           <button
             type="button"
             className="rounded-md border border-zinc-700 p-1 text-zinc-400 transition-colors hover:text-zinc-100"
             onClick={onClose}
-            aria-label="Cerrar"
+            aria-label={t("comun.cerrar")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -99,12 +101,12 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
 
         {mode.kind === "create" && mode.parentName !== undefined ? (
           <p className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-500">
-            Subsección de <span className="font-medium text-sky-300">{mode.parentName}</span>
+            {t("secciones.subseccionDe")} <span className="font-medium text-sky-300">{mode.parentName}</span>
           </p>
         ) : null}
 
         <label className="flex flex-col gap-1 text-xs font-medium text-zinc-400">
-          Nombre
+          {t("comun.nombre")}
           <input
             className={inputClass}
             value={name}
@@ -118,7 +120,7 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
         </label>
 
         <label className="flex flex-col gap-1 text-xs font-medium text-zinc-400">
-          Descripción
+          {t("comun.descripcion")}
           <textarea
             className={`${inputClass} min-h-16 resize-y`}
             value={description}
@@ -130,7 +132,7 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
         </label>
 
         <div className="flex flex-col gap-1 text-xs font-medium text-zinc-400">
-          Icono (nombre de Lucide o URL de imagen)
+          {t("secciones.icono")}
           <div className="flex items-center gap-2">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-sky-300">
               <IconRenderer icon={icon} />
@@ -142,7 +144,7 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
                 setIcon(event.target.value);
               }}
               list="suggested-icons"
-              placeholder="Folder o https://…"
+              placeholder={t("secciones.iconoPlaceholder")}
               maxLength={100}
             />
             <datalist id="suggested-icons">
@@ -163,12 +165,11 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
                 setAllowChildren(event.target.checked);
               }}
             />
-            Permitir sub-secciones
+            {t("secciones.permitirSubsecciones")}
           </label>
           {!allowChildren ? (
             <p className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-[11px] leading-relaxed text-zinc-500">
-              Lista directa de registros: no hace falta nombrar ningún
-              formulario, se crea solo con el nombre de la sección.
+              {t("secciones.listaDirectaNota")}
             </p>
           ) : null}
         </div>
@@ -181,10 +182,10 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
 
         <footer className="mt-1 flex items-center justify-end gap-2">
           <button type="button" className={btnSecondary} onClick={onClose} disabled={saving}>
-            Cancelar
+            {t("comun.cancelar")}
           </button>
           <button type="submit" className={btnPrimary} disabled={saving || name.trim() === ""}>
-            {saving ? "Guardando…" : "Guardar"}
+            {saving ? t("comun.guardando") : t("comun.guardar")}
           </button>
         </footer>
       </form>

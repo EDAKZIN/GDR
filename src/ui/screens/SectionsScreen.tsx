@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import type { Section } from "../../core/sections";
+import { useT } from "../../i18n";
 import { useSectionStore } from "../../stores";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { EmptyState } from "../components/EmptyState";
@@ -47,17 +48,18 @@ function SectionCardMenu({
   const disableSection = useSectionStore((store) => store.disableSection);
   const moveSection = useSectionStore((store) => store.moveSection);
   const softDeleteSection = useSectionStore((store) => store.softDeleteSection);
+  const { t } = useT();
 
   const actions: MenuAction[] = [
     {
-      label: "Editar",
+      label: t("comun.editar"),
       icon: Pencil,
       run: () => {
         onEdit(section);
       },
     },
     {
-      label: "Subir",
+      label: t("comun.subir"),
       icon: ArrowUp,
       run: () => {
         void moveSection(section.id, -1);
@@ -65,7 +67,7 @@ function SectionCardMenu({
       disabled: !section.enabled || isFirst,
     },
     {
-      label: "Bajar",
+      label: t("comun.bajar"),
       icon: ArrowDown,
       run: () => {
         void moveSection(section.id, 1);
@@ -74,21 +76,21 @@ function SectionCardMenu({
     },
     section.enabled
       ? {
-          label: "Deshabilitar",
+          label: t("comun.deshabilitar"),
           icon: X,
           run: () => {
             void disableSection(section.id);
           },
         }
       : {
-          label: "Habilitar",
+          label: t("comun.habilitar"),
           icon: RotateCcw,
           run: () => {
             void enableSection(section.id);
           },
         },
     {
-      label: "Eliminar",
+      label: t("comun.eliminar"),
       icon: Trash2,
       danger: true,
       run: () => {
@@ -142,6 +144,8 @@ function SectionCard({
   onOpenMenu: (sectionId: string | null) => void;
   menuOpen: boolean;
 }) {
+  const { t } = useT();
+
   return (
     <div
       role="button"
@@ -165,7 +169,7 @@ function SectionCard({
         </span>
         <button
           type="button"
-          aria-label={`Menú de ${section.name}`}
+          aria-label={t("comun.menuDe", { n: section.name })}
           className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100 focus-visible:opacity-100 group-hover:opacity-100 md:opacity-0"
           onClick={(event) => {
             event.stopPropagation();
@@ -181,19 +185,19 @@ function SectionCard({
           {section.name}
         </h3>
         <p className="mt-1 line-clamp-2 min-h-8 text-xs leading-relaxed text-zinc-500">
-          {section.description ?? "Sin descripción."}
+          {section.description ?? t("comun.sinDescripcion")}
         </p>
       </div>
 
       <footer className="flex items-center justify-between text-[11px]">
         <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-zinc-400">
           {formCount === 1
-            ? "1 formulario"
-            : `${String(formCount)} formularios`}
+            ? t("secciones.contadorUno")
+            : t("secciones.contadorVarios", { n: formCount })}
         </span>
         {!section.enabled ? (
           <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-zinc-500">
-            Deshabilitada
+            {t("secciones.deshabilitada")}
           </span>
         ) : null}
       </footer>
@@ -226,6 +230,7 @@ export function SectionsScreen() {
   const loadSections = useSectionStore((store) => store.loadSections);
   const restoreSection = useSectionStore((store) => store.restoreSection);
   const hardDeleteSection = useSectionStore((store) => store.hardDeleteSection);
+  const { t } = useT();
 
   const [menuSectionId, setMenuSectionId] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
@@ -289,8 +294,8 @@ export function SectionsScreen() {
                 setShowTrash((previous) => !previous);
                 setMenuSectionId(null);
               }}
-              title="Papelera de secciones"
-              aria-label="Papelera de secciones"
+              title={t("secciones.papeleraTitle")}
+              aria-label={t("secciones.papeleraTitle")}
               className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
                 showTrash
                   ? "border-sky-500/50 bg-sky-500/15 text-sky-300"
@@ -298,7 +303,7 @@ export function SectionsScreen() {
               }`}
             >
               <Trash2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Papelera</span>
+              <span className="hidden sm:inline">{t("papelera.boton")}</span>
             </button>
 
             <button
@@ -309,7 +314,7 @@ export function SectionsScreen() {
               className={btnPrimaryLg}
             >
               <Plus className="h-4 w-4" />
-              Nueva sección
+              {t("secciones.nueva")}
             </button>
         </header>
 
@@ -323,11 +328,11 @@ export function SectionsScreen() {
         {showTrash ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Papelera · secciones eliminadas
+              {t("secciones.papeleraLista")}
             </h2>
             {trashedSections.length === 0 ? (
               <p className="rounded-lg border border-dashed border-zinc-800 px-4 py-6 text-center text-sm text-zinc-500">
-                La papelera está vacía.
+                {t("papelera.vacia")}
               </p>
             ) : (
               <ul className="flex flex-col gap-2">
@@ -351,7 +356,7 @@ export function SectionsScreen() {
                       }}
                     >
                       <RotateCcw className="mr-1 inline h-3 w-3" />
-                      Restaurar
+                      {t("comun.restaurar")}
                     </button>
                     <button
                       type="button"
@@ -360,7 +365,7 @@ export function SectionsScreen() {
                         setConfirmHardDelete(section);
                       }}
                     >
-                      Borrar
+                      {t("comun.borrar")}
                     </button>                  </li>
                 ))}
               </ul>
@@ -368,15 +373,15 @@ export function SectionsScreen() {
           </section>
         ) : loading && sections.length === 0 ? (
           <p className="py-12 text-center text-sm text-zinc-500">
-            Cargando secciones…
+            {t("secciones.cargando")}
           </p>
         ) : !hasAnySection ? (
           /* Estado vacío inicial */
           <EmptyState
             icon={LayoutGrid}
-            title="Aún no hay secciones"
-            description="Las secciones agrupan tus formularios: proyectos, colecciones, clientes… lo que necesites organizar."
-            actionLabel="Crea tu primera sección"
+            title={t("secciones.aunNoHay")}
+            description={t("secciones.aunNoHayDesc")}
+            actionLabel={t("secciones.creaPrimera")}
             onAction={() => {
               setModal({ kind: "create" });
             }}
@@ -408,7 +413,7 @@ export function SectionsScreen() {
         {!showTrash && hasAnySection && orderedCards.length > 0 ? (
           <p className="flex items-center gap-1.5 text-xs text-zinc-600">
             <FolderOpen className="h-3.5 w-3.5" />
-            Pulsa una tarjeta para entrar en la sección.
+            {t("secciones.pulsaTarjeta")}
           </p>
         ) : null}
       </div>
@@ -424,9 +429,9 @@ export function SectionsScreen() {
 
       {confirmHardDelete !== null ? (
         <ConfirmModal
-          title="Borrar sección definitivamente"
-          message={`Se eliminarán «${confirmHardDelete.name}», todo su subárbol, formularios y registros para siempre. Esta acción no se puede deshacer.`}
-          confirmLabel="Borrar definitivo"
+          title={t("secciones.borrarDefTitulo")}
+          message={t("secciones.borrarDefMensaje", { n: confirmHardDelete.name })}
+          confirmLabel={t("comun.borrarDefinitivo")}
           onConfirm={() => hardDeleteSection(confirmHardDelete.id)}
           onClose={() => {
             setConfirmHardDelete(null);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { TriangleAlert } from "lucide-react";
+import { useT } from "../../i18n";
 import {
   btnDangerSolid,
   btnSecondary,
@@ -22,11 +23,12 @@ export interface ConfirmModalProps {
 export function ConfirmModal({
   title,
   message,
-  confirmLabel = "Eliminar",
+  confirmLabel,
   danger = true,
   onConfirm,
   onClose,
 }: ConfirmModalProps) {
+  const { t } = useT();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -54,6 +56,8 @@ export function ConfirmModal({
       setBusy(false);
     }
   }
+
+  const finalConfirmLabel = confirmLabel ?? t("comun.eliminar");
 
   return (
     <div
@@ -88,7 +92,7 @@ export function ConfirmModal({
 
         <footer className="mt-1 flex items-center justify-end gap-2">
           <button type="button" className={btnSecondary} onClick={onClose} disabled={busy}>
-            Cancelar
+            {t("comun.cancelar")}
           </button>
           <button
             type="button"
@@ -98,7 +102,7 @@ export function ConfirmModal({
             }}
             disabled={busy}
           >
-            {busy ? "Procesando…" : confirmLabel}
+            {busy ? t("comun.procesando") : finalConfirmLabel}
           </button>
         </footer>
       </div>

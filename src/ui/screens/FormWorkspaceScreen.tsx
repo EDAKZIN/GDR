@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import type { Form } from "../../core/forms";
+import { useT } from "../../i18n";
 import { useRecordStore, useSectionStore } from "../../stores";
 import { useBreadcrumb, useUiStore } from "../../stores/useUiStore";
 import { ConfirmModal } from "../components/ConfirmModal";
@@ -53,6 +54,7 @@ export function FormWorkspaceScreen() {
   const navigate = useUiStore((store) => store.navigate);
   const goBack = useUiStore((store) => store.goBack);
   const breadcrumb = useBreadcrumb();
+  const { t } = useT();
 
   const [tab, setTab] = useState<TabKey>("records");
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -79,7 +81,7 @@ export function FormWorkspaceScreen() {
   if (activeSectionId === null || activeFormId === null || form === undefined) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-8">
-        <p className="text-sm text-zinc-500">Cargando formulario…</p>
+        <p className="text-sm text-zinc-500">{t("formularios.cargandoFormulario")}</p>
       </div>
     );
   }
@@ -94,8 +96,8 @@ export function FormWorkspaceScreen() {
           <button
             type="button"
             onClick={goBack}
-            title="Volver a la sección"
-            aria-label="Volver"
+            title={t("formularios.volverSeccionTitle")}
+            aria-label={t("comun.volver")}
             className="shrink-0 rounded-md border border-zinc-700 bg-zinc-900 p-2 text-zinc-300 transition-colors hover:border-sky-400 hover:text-zinc-100"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -107,7 +109,7 @@ export function FormWorkspaceScreen() {
 
           <div className="min-w-0 flex-1">
             <nav
-              aria-label="Migas de pan"
+              aria-label={t("comun.migasAria")}
               className="mb-0.5 flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] text-zinc-500"
             >
               {breadcrumb.map((item, index) => (
@@ -139,7 +141,7 @@ export function FormWorkspaceScreen() {
               {form.name}
               {!form.enabled && !deletedForm ? (
                 <span className="ml-2 inline-block translate-y-[-2px] rounded-full bg-zinc-800 px-2 py-0.5 align-middle text-[10px] font-medium normal-case text-zinc-500">
-                  Deshabilitado
+                  {t("formularios.deshabilitado")}
                 </span>
               ) : null}
             </h1>
@@ -157,12 +159,12 @@ export function FormWorkspaceScreen() {
                 onClick={() => {
                   setEditModalOpen(true);
                 }}
-                title="Editar nombre y descripción"
-                aria-label="Editar formulario"
+                title={t("formularios.editarInfoTitle")}
+                aria-label={t("formularios.editar")}
                 className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-2 text-xs text-zinc-300 transition-colors hover:border-sky-400 hover:text-zinc-100"
               >
                 <Pencil className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Editar info</span>
+                <span className="hidden sm:inline">{t("formularios.editarInfo")}</span>
               </button>
               {form.enabled ? (
                 <button
@@ -170,12 +172,12 @@ export function FormWorkspaceScreen() {
                   onClick={() => {
                     void disableForm(form.id);
                   }}
-                  title="Deshabilitar formulario"
-                  aria-label="Deshabilitar formulario"
+                  title={t("formularios.deshabilitarTitle")}
+                  aria-label={t("formularios.deshabilitarTitle")}
                   className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-2 text-xs text-zinc-300 transition-colors hover:border-sky-400 hover:text-zinc-100"
                 >
                   <X className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Deshabilitar</span>
+                  <span className="hidden sm:inline">{t("comun.deshabilitar")}</span>
                 </button>
               ) : (
                 <button
@@ -183,12 +185,12 @@ export function FormWorkspaceScreen() {
                   onClick={() => {
                     void enableForm(form.id);
                   }}
-                  title="Habilitar formulario"
-                  aria-label="Habilitar formulario"
+                  title={t("formularios.habilitarTitle")}
+                  aria-label={t("formularios.habilitarTitle")}
                   className="inline-flex items-center gap-1.5 rounded-md border border-sky-500/40 bg-sky-500/10 px-2.5 py-2 text-xs text-sky-300 transition-colors hover:bg-sky-500/20"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Habilitar</span>
+                  <span className="hidden sm:inline">{t("comun.habilitar")}</span>
                 </button>
               )}
               <button
@@ -196,8 +198,8 @@ export function FormWorkspaceScreen() {
                 onClick={() => {
                   setConfirm({ kind: "deleteForm" });
                 }}
-                title="Eliminar formulario"
-                aria-label="Eliminar formulario"
+                title={t("formularios.eliminarAccion")}
+                aria-label={t("formularios.eliminarAccion")}
                 className="rounded-md border border-rose-500/40 bg-transparent p-2 text-rose-300 transition-colors hover:bg-rose-500/10"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -210,8 +212,7 @@ export function FormWorkspaceScreen() {
         {deletedForm ? (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-rose-500/40 bg-rose-500/5 px-4 py-3">
             <p className="text-xs text-zinc-400">
-              Este formulario está eliminado. Restáuralo para seguir usándolo o
-              bórralo definitivamente.
+              {t("formularios.avisoEliminado")}
             </p>
             <div className="flex shrink-0 items-center gap-2">
               <button
@@ -222,7 +223,7 @@ export function FormWorkspaceScreen() {
                 }}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
-                Restaurar
+                {t("comun.restaurar")}
               </button>
               <button
                 type="button"
@@ -232,7 +233,7 @@ export function FormWorkspaceScreen() {
                 }}
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Borrar definitivo
+                {t("comun.borrarDefinitivo")}
               </button>
             </div>
           </div>
@@ -240,7 +241,7 @@ export function FormWorkspaceScreen() {
 
         {/* Pestañas internas */}
         <nav
-          aria-label="Pestañas del formulario"
+          aria-label={t("formularios.pestanasAria")}
           className="flex shrink-0 items-center gap-1 border-b border-zinc-800"
         >
           <button
@@ -251,7 +252,7 @@ export function FormWorkspaceScreen() {
             }}
           >
             <Rows3 className="h-4 w-4" />
-            Registros
+            {t("registros.tab")}
           </button>
           <button
             type="button"
@@ -261,7 +262,7 @@ export function FormWorkspaceScreen() {
             }}
           >
             <LayoutTemplate className="h-4 w-4" />
-            Plantilla
+            {t("plantilla.tab")}
           </button>
         </nav>
 
@@ -294,9 +295,9 @@ export function FormWorkspaceScreen() {
 
       {confirm?.kind === "deleteForm" ? (
         <ConfirmModal
-          title="Eliminar formulario"
-          message={`El formulario «${form.name}» pasará a la papelera de la sección junto con sus campos y registros.`}
-          confirmLabel="Eliminar"
+          title={t("formularios.eliminarTitulo")}
+          message={t("formularios.eliminarMensaje", { n: form.name })}
+          confirmLabel={t("comun.eliminar")}
           onConfirm={() => softDeleteForm(form.id)}
           onClose={() => {
             setConfirm(null);
@@ -306,9 +307,9 @@ export function FormWorkspaceScreen() {
 
       {confirm?.kind === "hardDeleteForm" ? (
         <ConfirmModal
-          title="Borrar formulario definitivamente"
-          message={`Se eliminarán «${form.name}» y todos sus registros para siempre. Esta acción no se puede deshacer.`}
-          confirmLabel="Borrar definitivo"
+          title={t("formularios.borrarDefTitulo")}
+          message={t("formularios.borrarDefMensaje", { n: form.name })}
+          confirmLabel={t("comun.borrarDefinitivo")}
           onConfirm={() => hardDeleteForm(form.id)}
           onClose={() => {
             setConfirm(null);

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type { Form } from "../../core/forms";
+import { useT } from "../../i18n";
 import { getDb } from "../../database/client";
 import { createFieldsRepository } from "../../database/repositories";
 import { useSectionStore } from "../../stores";
 import {
-  FORM_TEMPLATES,
+  getFormTemplates,
   templateFieldDescription,
 } from "../menu/formTemplates";
 import { showToast } from "../menu/toastStore";
@@ -41,6 +42,8 @@ function templateOptionClass(active: boolean): string {
  * después en la pestaña Plantilla.
  */
 export function FormModal({ mode, onClose }: FormModalProps) {
+  const { t } = useT();
+  const templates = getFormTemplates();
   const createForm = useSectionStore((store) => store.createForm);
   const updateForm = useSectionStore((store) => store.updateForm);
   const [name, setName] = useState(mode.kind === "edit" ? mode.form.name : "");
@@ -48,7 +51,7 @@ export function FormModal({ mode, onClose }: FormModalProps) {
     mode.kind === "edit" ? (mode.form.description ?? "") : "",
   );
   const [templateId, setTemplateId] = useState<string>(
-    FORM_TEMPLATES[0]?.id ?? "empty",
+    templates[0]?.id ?? "empty",
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,8 +86,8 @@ export function FormModal({ mode, onClose }: FormModalProps) {
         });
         // Alta de los campos de la plantilla elegida, en posiciones 0..n.
         const template =
-          FORM_TEMPLATES.find((candidate) => candidate.id === templateId) ??
-          FORM_TEMPLATES[0];
+          templates.find((candidate) => candidate.id === templateId) ??
+          templates[0];
         const fieldCount = template.fields.length;
         if (fieldCount > 0) {
           for (const [index, spec] of template.fields.entries()) {
@@ -103,8 +106,8 @@ export function FormModal({ mode, onClose }: FormModalProps) {
         }
         showToast(
           fieldCount > 0
-            ? `Formulario «${created.name}» creado con ${String(fieldCount)} campos`
-            : `Formulario «${created.name}» creado`,
+            ? t("formularios.creadoConCampos", { n: created.name, m: fieldCount })
+            : t("formularios.creado", { n: created.name }),
         );
       } else {
         await updateForm(mode.form.id, {
@@ -134,13 +137,13 @@ export function FormModal({ mode, onClose }: FormModalProps) {
       >
         <header className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-zinc-100">
-            {mode.kind === "create" ? "Nuevo formulario" : "Editar formulario"}
+            {mode.kind === "create" ? t("formularios.nuevo") : t("formularios.editar")}
           </h2>
           <button
             type="button"
             className="rounded-md border border-zinc-700 p-1 text-zinc-400 transition-colors hover:text-zinc-100"
             onClick={onClose}
-            aria-label="Cerrar"
+            aria-label={t("comun.cerrar")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -148,13 +151,13 @@ export function FormModal({ mode, onClose }: FormModalProps) {
 
         {mode.kind === "create" && mode.sectionName !== undefined ? (
           <p className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-500">
-            En la sección{" "}
+            {t("formularios.enLaSeccion")}{" "}
             <span className="font-medium text-sky-300">{mode.sectionName}</span>
           </p>
         ) : null}
 
         <label className="flex flex-col gap-1 text-xs font-medium text-zinc-400">
-          Nombre
+          {t("comun.nombre")}
           <input
             className={inputClass}
             value={name}
@@ -168,7 +171,7 @@ export function FormModal({ mode, onClose }: FormModalProps) {
         </label>
 
         <label className="flex flex-col gap-1 text-xs font-medium text-zinc-400">
-          Descripción
+          {t("comun.descripcion")}
           <textarea
             className={`${inputClass} min-h-16 resize-y`}
             value={description}
@@ -181,9 +184,9 @@ export function FormModal({ mode, onClose }: FormModalProps) {
 
         {mode.kind === "create" ? (
           <fieldset className="flex flex-col gap-1.5 text-xs font-medium text-zinc-400">
-            Plantilla inicial
+            {t("formularios.plantillaInicial")}
             <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-              {FORM_TEMPLATES.map((template) => (
+              {templates.map((template) => (
                 <label
                   key={template.id}
                   className={templateOptionClass(templateId === template.id)}
@@ -209,8 +212,7 @@ export function FormModal({ mode, onClose }: FormModalProps) {
               ))}
             </div>
             <p className="text-[10px] font-normal leading-relaxed text-zinc-600">
-              Los campos se crean al instante y luego puedes editarlos en la
-              pestaña Plantilla.
+              {t("formularios.plantillaInicialNota")}
             </p>
           </fieldset>
         ) : null}
@@ -223,10 +225,10 @@ export function FormModal({ mode, onClose }: FormModalProps) {
 
         <footer className="mt-1 flex items-center justify-end gap-2">
           <button type="button" className={btnSecondary} onClick={onClose} disabled={saving}>
-            Cancelar
+            {t("comun.cancelar")}
           </button>
           <button type="submit" className={btnPrimary} disabled={saving || name.trim() === ""}>
-            {saving ? "Guardando…" : "Guardar"}
+            {saving ? t("comun.guardando") : t("comun.guardar")}
           </button>
         </footer>
       </form>

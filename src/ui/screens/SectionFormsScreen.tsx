@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { Form } from "../../core/forms";
 import type { Section } from "../../core/sections";
+import { useT } from "../../i18n";
 import { useSectionStore } from "../../stores";
 import { useUiStore } from "../../stores/useUiStore";
 import { ConfirmModal } from "../components/ConfirmModal";
@@ -61,17 +62,18 @@ function FormCardMenu({
   const disableForm = useSectionStore((store) => store.disableForm);
   const softDeleteForm = useSectionStore((store) => store.softDeleteForm);
   const moveForm = useSectionStore((store) => store.moveForm);
+  const { t } = useT();
 
   const actions: MenuAction[] = [
     {
-      label: "Editar",
+      label: t("comun.editar"),
       icon: Pencil,
       run: () => {
         onEdit(form);
       },
     },
     {
-      label: "Subir",
+      label: t("comun.subir"),
       icon: ArrowUp,
       run: () => {
         void moveForm(form.id, -1);
@@ -79,7 +81,7 @@ function FormCardMenu({
       disabled: isFirst || !form.enabled,
     },
     {
-      label: "Bajar",
+      label: t("comun.bajar"),
       icon: ArrowDown,
       run: () => {
         void moveForm(form.id, 1);
@@ -88,21 +90,21 @@ function FormCardMenu({
     },
     form.enabled
       ? {
-          label: "Deshabilitar",
+          label: t("comun.deshabilitar"),
           icon: X,
           run: () => {
             void disableForm(form.id);
           },
         }
       : {
-          label: "Habilitar",
+          label: t("comun.habilitar"),
           icon: RotateCcw,
           run: () => {
             void enableForm(form.id);
           },
         },
     {
-      label: "Eliminar",
+      label: t("comun.eliminar"),
       icon: Trash2,
       danger: true,
       run: () => {
@@ -152,6 +154,7 @@ function FormCard({
   menuAnchor: FloatingMenuAnchor | null;
 }) {
   const navigate = useUiStore((store) => store.navigate);
+  const { t } = useT();
 
   return (
     <div
@@ -176,7 +179,7 @@ function FormCard({
         </span>
         <button
           type="button"
-          aria-label={`Menú de ${form.name}`}
+          aria-label={t("comun.menuDe", { n: form.name })}
           className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100 focus-visible:opacity-100 group-hover:opacity-100 md:opacity-0"
           onClick={(event) => {
             event.stopPropagation();
@@ -193,14 +196,14 @@ function FormCard({
       <div className="min-w-0">
         <h3 className="truncate text-sm font-semibold text-zinc-100">{form.name}</h3>
         <p className="mt-1 line-clamp-2 min-h-8 text-xs leading-relaxed text-zinc-500">
-          {form.description ?? "Sin descripción."}
+          {form.description ?? t("comun.sinDescripcion")}
         </p>
       </div>
 
       {!form.enabled ? (
         <footer>
           <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] text-zinc-500">
-            Deshabilitado
+            {t("formularios.deshabilitado")}
           </span>
         </footer>
       ) : null}
@@ -240,6 +243,7 @@ export function SectionFormsScreen() {
 
   const navigate = useUiStore((store) => store.navigate);
   const goBack = useUiStore((store) => store.goBack);
+  const { t } = useT();
 
   const [menuAnchor, setMenuAnchor] = useState<FloatingMenuAnchor | null>(null);
   const [formModal, setFormModal] = useState<FormModalState>(null);
@@ -290,7 +294,7 @@ export function SectionFormsScreen() {
   if (activeSectionId === null || activeSection === undefined) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-8">
-        <p className="text-sm text-zinc-500">Cargando sección…</p>
+        <p className="text-sm text-zinc-500">{t("secciones.cargandoSeccion")}</p>
       </div>
     );
   }
@@ -322,8 +326,8 @@ export function SectionFormsScreen() {
             onClick={() => {
               goBack();
             }}
-            title="Volver a las secciones"
-            aria-label="Volver"
+            title={t("formularios.volverSeccionesTitle")}
+            aria-label={t("comun.volver")}
             className="shrink-0 rounded-md border border-zinc-700 bg-zinc-900 p-2 text-zinc-300 transition-colors hover:border-sky-400 hover:text-zinc-100"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -352,8 +356,8 @@ export function SectionFormsScreen() {
                   setShowTrash((previous) => !previous);
                   setMenuAnchor(null);
                 }}
-                  title="Papelera de formularios"
-                  aria-label="Papelera de formularios"
+                  title={t("formularios.papeleraTitle")}
+                  aria-label={t("formularios.papeleraTitle")}
                   className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
                     showTrash
                       ? "border-sky-500/50 bg-sky-500/15 text-sky-300"
@@ -361,19 +365,19 @@ export function SectionFormsScreen() {
                   }`}
                 >
                   <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Papelera</span>
+                  <span className="hidden sm:inline">{t("papelera.boton")}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setSectionModal({ kind: "edit", section: activeSection });
                   }}
-                  title="Editar sección"
-                  aria-label="Editar sección"
+                  title={t("secciones.editar")}
+                  aria-label={t("secciones.editar")}
                   className="flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 transition-colors hover:border-sky-400 hover:text-zinc-100"
                 >
                   <Pencil className="h-4 w-4" />
-                  <span className="hidden sm:inline">Editar sección</span>
+                  <span className="hidden sm:inline">{t("secciones.editar")}</span>
                 </button>
             </>
           </div>
@@ -389,7 +393,7 @@ export function SectionFormsScreen() {
         {!showTrash && childSections.length > 0 ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Subsecciones ({String(childSections.length)})
+              {t("secciones.subseccionesTitulo", { n: childSections.length })}
             </h2>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
               {childSections.map((child) => (
@@ -412,8 +416,8 @@ export function SectionFormsScreen() {
                     </span>
                     <span className="block truncate text-[11px] text-zinc-500">
                       {(formCounts[child.id] ?? 0) === 1
-                        ? "1 formulario"
-                        : `${String(formCounts[child.id] ?? 0)} formularios`}
+                        ? t("secciones.contadorUno")
+                        : t("secciones.contadorVarios", { n: formCounts[child.id] ?? 0 })}
                     </span>
                   </span>
                   <FolderOpen className="h-4 w-4 shrink-0 text-zinc-700 transition-colors duration-150 group-hover:text-sky-400" />
@@ -427,11 +431,11 @@ export function SectionFormsScreen() {
         {showTrash ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Papelera · formularios eliminados
+              {t("formularios.papeleraLista")}
             </h2>
             {trashedForms.length === 0 ? (
               <p className="rounded-lg border border-dashed border-zinc-800 px-4 py-6 text-center text-sm text-zinc-500">
-                La papelera de formularios está vacía.
+                {t("formularios.papeleraVacia")}
               </p>
             ) : (
               <ul className="flex flex-col gap-2">
@@ -452,7 +456,7 @@ export function SectionFormsScreen() {
                       }}
                     >
                       <RotateCcw className="mr-1 inline h-3 w-3" />
-                      Restaurar
+                      {t("comun.restaurar")}
                     </button>
                     <button
                       type="button"
@@ -461,7 +465,7 @@ export function SectionFormsScreen() {
                         setConfirmHardDeleteForm(form);
                       }}
                     >
-                      Borrar
+                      {t("comun.borrar")}
                     </button>
                   </li>
                 ))}
@@ -470,15 +474,15 @@ export function SectionFormsScreen() {
           </section>
         ) : loadingForms && orderedCards.length === 0 ? (
           <p className="py-12 text-center text-sm text-zinc-500">
-            Cargando formularios…
+            {t("formularios.cargando")}
           </p>
         ) : orderedCards.length === 0 ? (
           /* Estado vacío inicial */
           <EmptyState
             icon={LayoutList}
-            title="Esta sección no tiene formularios"
-            description="Los formularios definen los campos con los que guardarás registros."
-            actionLabel="Crea tu primer formulario"
+            title={t("formularios.seccionSinFormularios")}
+            description={t("formularios.seccionSinFormulariosDesc")}
+            actionLabel={t("formularios.creaPrimero")}
             onAction={openCreate}
           />
         ) : (
@@ -508,7 +512,7 @@ export function SectionFormsScreen() {
               onClick={openCreate}
             >
               <Plus className="h-6 w-6" />
-              <span className="text-sm font-semibold">Nuevo formulario</span>
+              <span className="text-sm font-semibold">{t("formularios.nuevo")}</span>
             </button>
           </div>
         )}
@@ -532,9 +536,9 @@ export function SectionFormsScreen() {
       ) : null}
       {confirmHardDeleteForm !== null ? (
         <ConfirmModal
-          title="Borrar formulario definitivamente"
-          message={`Se eliminarán «${confirmHardDeleteForm.name}» y todos sus registros para siempre. Esta acción no se puede deshacer.`}
-          confirmLabel="Borrar definitivo"
+          title={t("formularios.borrarDefTitulo")}
+          message={t("formularios.borrarDefMensaje", { n: confirmHardDeleteForm.name })}
+          confirmLabel={t("comun.borrarDefinitivo")}
           onConfirm={() => hardDeleteForm(confirmHardDeleteForm.id)}
           onClose={() => {
             setConfirmHardDeleteForm(null);

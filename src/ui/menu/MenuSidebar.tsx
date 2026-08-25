@@ -25,6 +25,7 @@ import { getDb } from "../../database/client";
 import { createFormsRepository } from "../../database/repositories";
 import { buildSectionTree, useSectionStore, type SectionNode } from "../../stores/useSectionStore";
 import { useBreadcrumb, useUiStore } from "../../stores/useUiStore";
+import { useT } from "../../i18n";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMenu";
 import { IconRenderer } from "../components/IconRenderer";
@@ -174,6 +175,7 @@ function SectionTreeNode({
   const section = node.section;
   const expanded = expandedIds.has(section.id);
   const isActive = activeSectionId === section.id;
+  const { t } = useT();
   const sectionForms = section.allowChildren
     ? (formsBySection.get(section.id) ?? [])
     : [];
@@ -198,7 +200,7 @@ function SectionTreeNode({
 
   const actions: MenuAction[] = [
     {
-      label: "Añadir subsección",
+      label: t("secciones.anadirSubseccion"),
       icon: FolderPlus,
       disabled: !section.allowChildren,
       run: () => {
@@ -210,7 +212,7 @@ function SectionTreeNode({
     ...(section.allowChildren
       ? [
           {
-            label: "Añadir formulario",
+            label: t("formularios.nuevo"),
             icon: FilePlus2,
             run: () => {
               handlers.onAddForm(section);
@@ -220,21 +222,21 @@ function SectionTreeNode({
       : []),
 
     {
-      label: "Editar",
+      label: t("comun.editar"),
       icon: Pencil,
       run: () => {
         handlers.onEditSection(section);
       },
     },
     {
-      label: "Mover a…",
+      label: t("secciones.moverA"),
       icon: Move,
       run: () => {
         handlers.onMoveTo(section);
       },
     },
     {
-      label: "Subir",
+      label: t("comun.subir"),
       icon: ArrowUp,
       disabled: isFirst || !section.enabled,
       run: () => {
@@ -242,7 +244,7 @@ function SectionTreeNode({
       },
     },
     {
-      label: "Bajar",
+      label: t("comun.bajar"),
       icon: ArrowDown,
       disabled: isLast || !section.enabled,
       run: () => {
@@ -251,14 +253,14 @@ function SectionTreeNode({
     },
     section.enabled
       ? {
-          label: "Deshabilitar",
+          label: t("comun.deshabilitar"),
           icon: X,
           run: () => {
             handlers.onToggleEnabled(section);
           },
         }
       : {
-          label: "Habilitar",
+          label: t("comun.habilitar"),
           icon: RotateCcw,
           run: () => {
             handlers.onToggleEnabled(section);
@@ -266,21 +268,21 @@ function SectionTreeNode({
         },
     section.allowChildren
       ? {
-          label: "Impedir sub-secciones",
+          label: t("secciones.impedirSubsecciones"),
           icon: Ban,
           run: () => {
             handlers.onToggleAllowChildren(section);
           },
         }
       : {
-          label: "Permitir sub-secciones",
+          label: t("secciones.permitirSubsecciones"),
           icon: Check,
           run: () => {
             handlers.onToggleAllowChildren(section);
           },
         },
     {
-      label: "Eliminar",
+      label: t("comun.eliminar"),
       icon: Trash2,
       danger: true,
       run: () => {
@@ -312,7 +314,7 @@ function SectionTreeNode({
           {node.children.length > 0 ? (
             <button
               type="button"
-              aria-label={expanded ? `Contraer ${section.name}` : `Expandir ${section.name}`}
+              aria-label={expanded ? t("secciones.contraer", { n: section.name }) : t("secciones.expandir", { n: section.name })}
               aria-expanded={expanded}
               className="shrink-0 rounded p-0.5 text-zinc-500 transition-colors duration-150 hover:text-zinc-100"
               onClick={(event) => {
@@ -338,31 +340,31 @@ function SectionTreeNode({
 
           {!section.enabled ? (
             <span className="shrink-0 rounded bg-zinc-800 px-1 py-px text-[9px] uppercase tracking-wide text-zinc-500">
-              Off
+              {t("comun.off")}
             </span>
           ) : null}
           {!section.allowChildren ? (
             <span
               className="flex shrink-0 items-center rounded bg-zinc-800 p-px text-zinc-500"
-              title="No permite sub-secciones"
+              title={t("secciones.noPermiteSubsecciones")}
             >
               <Ban className="h-2.5 w-2.5" />
             </span>
           ) : null}
           {node.children.length > 0 ? (
-            <span className={badgeClass} title="Subsecciones">
+            <span className={badgeClass} title={t("secciones.badgeSubsecciones")}>
               {node.children.length}
             </span>
           ) : null}
           {sectionForms.length > 0 ? (
-            <span className={badgeClass} title="Formularios">
+            <span className={badgeClass} title={t("secciones.badgeFormularios")}>
               {sectionForms.length}
             </span>
           ) : null}
 
           <button
             type="button"
-            aria-label={`Acciones de ${section.name}`}
+            aria-label={t("comun.accionesDe", { n: section.name })}
             className={`shrink-0 rounded p-0.5 text-zinc-500 transition-colors duration-150 hover:bg-zinc-800 hover:text-zinc-100 ${
               menuAnchor !== null ? "" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
             }`}
@@ -439,6 +441,7 @@ function SectionTreeNode({
 function MoveSectionModal({ section, onClose }: { section: Section; onClose: () => void }) {
   const sections = useSectionStore((store) => store.sections);
   const moveSectionTo = useSectionStore((store) => store.moveSectionTo);
+  const { t } = useT();
 
   const excludedIds = useMemo(
     () => collectDescendantIds(sections, section.id),
@@ -500,14 +503,14 @@ function MoveSectionModal({ section, onClose }: { section: Section; onClose: () 
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Mover sección"
+        aria-label={t("secciones.moverAria")}
         className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl"
         onClick={(event) => {
           event.stopPropagation();
         }}
       >
         <h2 className="text-sm font-semibold text-zinc-100">
-          Mover <span className="text-sky-300">«{section.name}»</span> a…
+          {t("secciones.moverTitulo", { n: section.name })}
         </h2>
 
         <div className="flex max-h-64 flex-col gap-1 overflow-y-auto pr-1">
@@ -521,7 +524,7 @@ function MoveSectionModal({ section, onClose }: { section: Section; onClose: () 
                 setTarget(null);
               }}
             />
-            Raíz (sin sección padre)
+            {t("secciones.moverRaiz")}
           </label>
           {candidates.map((candidate) => (
             <label key={candidate.id} className={optionClass(target === candidate.id)}>
@@ -539,7 +542,7 @@ function MoveSectionModal({ section, onClose }: { section: Section; onClose: () 
               </span>
               {!candidate.enabled ? (
                 <span className="shrink-0 rounded bg-zinc-800 px-1 text-[9px] uppercase tracking-wide text-zinc-500">
-                  Off
+                  {t("comun.off")}
                 </span>
               ) : null}
             </label>
@@ -554,7 +557,7 @@ function MoveSectionModal({ section, onClose }: { section: Section; onClose: () 
 
         <footer className="flex items-center justify-end gap-2">
           <button type="button" className={btnSecondary} onClick={onClose} disabled={busy}>
-            Cancelar
+            {t("comun.cancelar")}
           </button>
           <button
             type="button"
@@ -564,7 +567,7 @@ function MoveSectionModal({ section, onClose }: { section: Section; onClose: () 
               void submit();
             }}
           >
-            {busy ? "Moviendo…" : "Mover"}
+            {busy ? t("secciones.moviendo") : t("secciones.mover")}
           </button>
         </footer>
       </div>
@@ -579,6 +582,7 @@ function MoveSectionModal({ section, onClose }: { section: Section; onClose: () 
  * «+ Nueva sección» y papelera siempre visibles.
  */
 export function MenuSidebar({ children }: { children: ReactNode }) {
+  const { t, lang, setLang } = useT();
   const setSearchOpen = useUiStore((store) => store.setSearchOpen);
   const navigate = useUiStore((store) => store.navigate);
   const routes = useUiStore((store) => store.routes);
@@ -778,7 +782,7 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
         </button>
 
         <nav
-          aria-label="Migas de pan"
+          aria-label={t("comun.migasAria")}
           className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-xs text-zinc-500"
         >
           {breadcrumb.map((item, index) => (
@@ -808,11 +812,23 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
 
         <button
           type="button"
+          title={t("ajustes.idioma")}
+          aria-label={t("ajustes.idioma")}
+          onClick={() => {
+            setLang(lang === "es" ? "en" : "es");
+          }}
+          className="flex shrink-0 items-center rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 transition-colors duration-150 hover:border-sky-400 hover:text-zinc-100"
+        >
+          {lang === "es" ? "ES" : "EN"}
+        </button>
+
+        <button
+          type="button"
           onClick={() => {
             setSearchOpen(true);
           }}
-          title="Buscar en todo (Ctrl+K)"
-          aria-label="Buscar en todo"
+          title={t("busqueda.abrirTitle")}
+          aria-label={t("busqueda.abrir")}
           className="flex shrink-0 items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900/60 px-2.5 py-1.5 text-xs text-zinc-400 transition-colors duration-150 hover:border-sky-400 hover:text-zinc-100"
         >
           <Search className="h-3.5 w-3.5" />
@@ -835,11 +851,11 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-2 px-4 pt-3">
               <img
                 src={logoUrl}
-                alt="Logo GDR"
+                alt={t("app.logoAlt")}
                 className="h-6 w-6 rounded-md border border-zinc-800 object-cover"
               />
               <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600">
-                GDR · Organizador
+                {t("app.marca")}
               </p>
             </div>
 
@@ -852,20 +868,20 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
                 }}
               >
                 <Plus className="h-3.5 w-3.5" />
-                Nueva sección
+                {t("secciones.nueva")}
               </button>
             </div>
 
             {/* Árbol único de secciones con acciones contextuales por nodo */}
             <nav
-              aria-label="Secciones"
+              aria-label={t("secciones.navAria")}
               className="min-h-0 flex-1 overflow-y-auto px-2 pb-2"
             >
               {tree.length === 0 ? (
                 <p className="px-2 py-6 text-center text-xs leading-relaxed text-zinc-600">
-                  Aún no hay secciones.
+                  {t("secciones.arbolVacio1")}
                   <br />
-                  Crea la primera con el botón de arriba.
+                  {t("secciones.arbolVacio2")}
                 </p>
               ) : (
                 tree.map((node, index) => (
@@ -889,11 +905,11 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
                 {showTrash ? (
                   <div className="max-h-52 overflow-y-auto px-2 py-2">
                     <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
-                      Secciones eliminadas
+                      {t("papelera.seccionesEliminadas")}
                     </p>
                     {trashedSections.length === 0 ? (
                       <p className="px-2 py-2 text-center text-xs text-zinc-600">
-                        La papelera está vacía.
+                        {t("papelera.vacia")}
                       </p>
                     ) : (
                       <ul className="flex flex-col gap-1">
@@ -911,8 +927,8 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
                             </span>
                             <button
                               type="button"
-                              title="Restaurar sección y su subárbol"
-                              aria-label={`Restaurar ${section.name}`}
+                              title={t("secciones.restaurarTitle")}
+                              aria-label={t("secciones.restaurarAria", { n: section.name })}
                               className="shrink-0 rounded p-1 text-zinc-500 transition-colors duration-150 hover:text-sky-300"
                               onClick={() => {
                                 void restoreSection(section.id);
@@ -922,8 +938,8 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
                             </button>
                             <button
                               type="button"
-                              title="Borrar definitivamente"
-                              aria-label={`Borrar ${section.name} definitivamente`}
+                              title={t("secciones.borrarDefTitle")}
+                              aria-label={t("secciones.borrarDefAria", { n: section.name })}
                               className="shrink-0 rounded p-1 text-zinc-500 transition-colors duration-150 hover:text-rose-300"
                               onClick={() => {
                                 setConfirmHardDelete(section);
@@ -945,7 +961,7 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
                   }}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  Papelera
+                  {t("papelera.boton")}
                   {trashedSections.length > 0 ? (
                     <span className="ml-auto rounded bg-zinc-800 px-1.5 text-[10px] tabular-nums text-zinc-400">
                       {trashedSections.length}
@@ -1009,9 +1025,9 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
 
       {confirmHardDelete !== null ? (
         <ConfirmModal
-          title="Borrar sección definitivamente"
-          message={`Se eliminarán «${confirmHardDelete.name}», todo su subárbol, formularios y registros para siempre. Esta acción no se puede deshacer.`}
-          confirmLabel="Borrar definitivo"
+          title={t("secciones.borrarDefTitulo")}
+          message={t("secciones.borrarDefMensaje", { n: confirmHardDelete.name })}
+          confirmLabel={t("comun.borrarDefinitivo")}
           onConfirm={() => hardDeleteSection(confirmHardDelete.id)}
           onClose={() => {
             setConfirmHardDelete(null);

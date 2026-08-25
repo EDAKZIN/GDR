@@ -1,5 +1,6 @@
 import type { FieldType } from "../../core/fields";
 import { stringifyFieldOptions } from "../../core/fields";
+import { translate } from "../../i18n";
 
 /** Especificación de un campo precargado por una plantilla. */
 export interface TemplateFieldSpec {
@@ -31,47 +32,58 @@ export function templateFieldDescription(spec: TemplateFieldSpec): string | null
   );
 }
 
-export const FORM_TEMPLATES: readonly FormTemplate[] = [
-  {
-    id: "empty",
-    label: "Vacía",
-    hint: "Empieza sin campos",
-    fields: [],
-  },
-  {
-    id: "accounts",
-    label: "Cuentas",
-    hint: "Título · Usuario · Contraseña · Notas",
-    fields: [
-      { name: "Título", type: "text", required: true },
-      { name: "Usuario/Cuenta", type: "text" },
-      { name: "Contraseña", type: "password" },
-      { name: "Notas", type: "long_text" },
-    ],
-  },
-  {
-    id: "tool",
-    label: "Herramienta",
-    hint: "Nombre · URL · Descripción · Instalado",
-    fields: [
-      { name: "Nombre", type: "text", required: true },
-      { name: "URL", type: "url" },
-      { name: "Descripción", type: "long_text" },
-      { name: "Instalado", type: "boolean" },
-    ],
-  },
-  {
-    id: "idea",
-    label: "Idea",
-    hint: "Título · Descripción · Estado",
-    fields: [
-      { name: "Título", type: "text", required: true },
-      { name: "Descripción", type: "long_text" },
-      {
-        name: "Estado",
-        type: "select",
-        options: ["Pendiente", "En curso", "Hecho"],
-      },
-    ],
-  },
-];
+/**
+ * Construye las plantillas con textos traducidos al idioma activo.
+ * Es una función (no una constante) para que cada lectura use el diccionario
+ * vigente; los nombres de campo se materializan en la base de datos al crear.
+ */
+export function getFormTemplates(): readonly FormTemplate[] {
+  return [
+    {
+      id: "empty",
+      label: translate("plantillas.vacia.label"),
+      hint: translate("plantillas.vacia.hint"),
+      fields: [],
+    },
+    {
+      id: "accounts",
+      label: translate("plantillas.cuentas.label"),
+      hint: translate("plantillas.cuentas.hint"),
+      fields: [
+        { name: translate("plantillas.cuentas.campoTitulo"), type: "text", required: true },
+        { name: translate("plantillas.cuentas.campoUsuario"), type: "text" },
+        { name: translate("plantillas.cuentas.campoContrasena"), type: "password" },
+        { name: translate("plantillas.cuentas.campoNotas"), type: "long_text" },
+      ],
+    },
+    {
+      id: "tool",
+      label: translate("plantillas.herramienta.label"),
+      hint: translate("plantillas.herramienta.hint"),
+      fields: [
+        { name: translate("plantillas.herramienta.campoNombre"), type: "text", required: true },
+        { name: translate("plantillas.herramienta.campoUrl"), type: "url" },
+        { name: translate("plantillas.herramienta.campoDescripcion"), type: "long_text" },
+        { name: translate("plantillas.herramienta.campoInstalado"), type: "boolean" },
+      ],
+    },
+    {
+      id: "idea",
+      label: translate("plantillas.idea.label"),
+      hint: translate("plantillas.idea.hint"),
+      fields: [
+        { name: translate("plantillas.idea.campoTitulo"), type: "text", required: true },
+        { name: translate("plantillas.idea.campoDescripcion"), type: "long_text" },
+        {
+          name: translate("plantillas.idea.campoEstado"),
+          type: "select",
+          options: [
+            translate("plantillas.idea.estadoPendiente"),
+            translate("plantillas.idea.estadoEnCurso"),
+            translate("plantillas.idea.estadoHecho"),
+          ],
+        },
+      ],
+    },
+  ];
+}

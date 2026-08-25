@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, LayoutTemplate, Pencil, Rows3 } from "lucide-react";
 import type { Form } from "../../core/forms";
+import { useT } from "../../i18n";
 import { useRecordStore, useSectionStore } from "../../stores";
 import { useUiStore } from "../../stores/useUiStore";
 import { EmptyState } from "../components/EmptyState";
@@ -34,6 +35,7 @@ export function FlatSectionScreen() {
 
   const navigate = useUiStore((store) => store.navigate);
   const goBack = useUiStore((store) => store.goBack);
+  const { t } = useT();
 
   const [view, setView] = useState<ScreenView>("records");
   const [editOpen, setEditOpen] = useState(false);
@@ -68,7 +70,7 @@ export function FlatSectionScreen() {
   if (activeSectionId === null || section === undefined) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-8">
-        <p className="text-sm text-zinc-500">Cargando sección…</p>
+        <p className="text-sm text-zinc-500">{t("secciones.cargandoSeccion")}</p>
       </div>
     );
   }
@@ -81,8 +83,8 @@ export function FlatSectionScreen() {
           <button
             type="button"
             onClick={goBack}
-            title="Volver"
-            aria-label="Volver"
+            title={t("comun.volver")}
+            aria-label={t("comun.volver")}
             className="shrink-0 rounded-md border border-zinc-700 bg-zinc-900 p-2 text-zinc-300 transition-colors hover:border-sky-400 hover:text-zinc-100"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -109,12 +111,12 @@ export function FlatSectionScreen() {
               onClick={() => {
                 setEditOpen(true);
               }}
-              title="Editar sección"
-              aria-label="Editar sección"
+              title={t("secciones.editar")}
+              aria-label={t("secciones.editar")}
               className={viewButtonClass(false)}
             >
               <Pencil className="h-4 w-4" />
-              <span className="hidden sm:inline">Editar sección</span>
+              <span className="hidden sm:inline">{t("secciones.editar")}</span>
             </button>
             {canEditTemplate ? (
               view === "records" ? (
@@ -123,11 +125,11 @@ export function FlatSectionScreen() {
                   onClick={() => {
                     setView("template");
                   }}
-                  title="Editar la plantilla de campos de esta lista"
+                  title={t("formularios.editarPlantillaTitle")}
                   className={viewButtonClass(false)}
                 >
                   <LayoutTemplate className="h-4 w-4" />
-                  <span className="hidden sm:inline">Editar plantilla</span>
+                  <span className="hidden sm:inline">{t("formularios.editarPlantilla")}</span>
                 </button>
               ) : (
                 <button
@@ -135,11 +137,11 @@ export function FlatSectionScreen() {
                   onClick={() => {
                     setView("records");
                   }}
-                  title="Volver a la tabla de registros"
+                  title={t("formularios.verRegistrosTitle")}
                   className={viewButtonClass(true)}
                 >
                   <Rows3 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Ver registros</span>
+                  <span className="hidden sm:inline">{t("formularios.verRegistros")}</span>
                 </button>
               )
             ) : null}
@@ -148,14 +150,14 @@ export function FlatSectionScreen() {
 
         {loadingForms && enabledForms.length === 0 ? (
           <p className="py-12 text-center text-sm text-zinc-500">
-            Cargando registros…
+            {t("registros.cargando")}
           </p>
         ) : enabledForms.length === 0 ? (
           /* Caso raro: la lista automática fue deshabilitada o eliminada. */
           <EmptyState
             icon={LayoutTemplate}
-            title="Esta sección no tiene una lista activa"
-            description="La plantilla de esta sección está deshabilitada o eliminada. Restáurala desde la papelera del panel de secciones."
+            title={t("formularios.seccionPlanaSinLista")}
+            description={t("formularios.seccionPlanaSinListaDesc")}
           />
         ) : view === "template" && singleForm !== undefined ? (
           /* Editor de campos integrado en la misma pantalla. */
@@ -172,7 +174,7 @@ export function FlatSectionScreen() {
             <RecordsTable
               key={singleForm.id}
               formName={singleForm.name}
-              templateCtaLabel="Añadir campos a la plantilla"
+              templateCtaLabel={t("plantilla.anadirCamposCta")}
               onGoToTemplate={() => {
                 setView("template");
               }}
@@ -202,6 +204,7 @@ function LegacyFlatTabs({ formIds }: { formIds: readonly string[] }) {
   const forms = useSectionStore((store) => store.forms);
   const selectForm = useSectionStore((store) => store.selectForm);
   const navigate = useUiStore((store) => store.navigate);
+  const { t } = useT();
 
   const liveForms = formIds
     .map((id) => forms.find((form) => form.id === id))
@@ -229,7 +232,7 @@ function LegacyFlatTabs({ formIds }: { formIds: readonly string[] }) {
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-4">
       <nav
-        aria-label="Formularios de la sección"
+        aria-label={t("formularios.formulariosSeccionAria")}
         className="flex shrink-0 flex-wrap items-center gap-1 border-b border-zinc-800"
       >
         {liveForms.map((form) => (
