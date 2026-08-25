@@ -269,21 +269,15 @@ export function SectionFormsScreen() {
     }
   }, [activeSectionId, activeSection, loadingSections, navigate]);
 
-  // Esc cierra el menú contextual, los modales o la papelera (el ConfirmModal gestiona el suyo).
+  // Esc cierra el menú contextual o la papelera: los modales gestionan su
+  // propio Esc (y no se desmontan durante un guardado en curso).
   useEffect(() => {
-    if (
-      menuAnchor === null &&
-      formModal === null &&
-      sectionModal === null &&
-      !showTrash
-    ) {
+    if (menuAnchor === null && !showTrash) {
       return;
     }
     function onKeyDown(event: KeyboardEvent): void {
-      if (event.key === "Escape" && confirmHardDeleteForm === null) {
+      if (event.key === "Escape") {
         setMenuAnchor(null);
-        setFormModal(null);
-        setSectionModal(null);
         setShowTrash(false);
       }
     }
@@ -291,7 +285,7 @@ export function SectionFormsScreen() {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [menuAnchor, formModal, sectionModal, showTrash, confirmHardDeleteForm]);
+  }, [menuAnchor, showTrash]);
 
   if (activeSectionId === null || activeSection === undefined) {
     return (

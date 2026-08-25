@@ -238,15 +238,15 @@ export function SectionsScreen() {
     void loadSections();
   }, [loadSections]);
 
-  // Esc cierra el menú contextual, el modal o la papelera (el ConfirmModal gestiona el suyo).
+  // Esc cierra el menú contextual o la papelera: los modales gestionan su
+  // propio Esc (y no se desmontan durante un guardado en curso).
   useEffect(() => {
-    if (menuSectionId === null && modal === null && !showTrash) {
+    if (menuSectionId === null && !showTrash) {
       return;
     }
     function onKeyDown(event: KeyboardEvent): void {
-      if (event.key === "Escape" && confirmHardDelete === null) {
+      if (event.key === "Escape") {
         setMenuSectionId(null);
-        setModal(null);
         setShowTrash(false);
       }
     }
@@ -254,7 +254,7 @@ export function SectionsScreen() {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [menuSectionId, modal, showTrash, confirmHardDelete]);
+  }, [menuSectionId, showTrash]);
 
   // Con la jerarquía opcional de secciones, el HOME lista solo las raíces.
   const rootSections = useMemo(

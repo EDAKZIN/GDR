@@ -677,15 +677,15 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
     }
   }
 
-  // Esc cierra dropdowns/modales/papelera del drawer (el ConfirmModal gestiona el suyo).
+  // Esc cierra solo la papelera del drawer: los modales (sección, mover,
+  // confirmación) gestionan su propio Esc y así no se desmontan durante un
+  // guardado en curso.
   useEffect(() => {
-    if (modal === null && moveTarget === null && confirmHardDelete === null && !showTrash) {
+    if (!showTrash) {
       return;
     }
     function onKeyDown(event: KeyboardEvent): void {
-      if (event.key === "Escape" && confirmHardDelete === null) {
-        setModal(null);
-        setMoveTarget(null);
+      if (event.key === "Escape") {
         setShowTrash(false);
       }
     }
@@ -693,7 +693,7 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [modal, moveTarget, confirmHardDelete, showTrash]);
+  }, [showTrash]);
 
   function toggleExpanded(id: string): void {
     setExpandedIds((previous) => {
