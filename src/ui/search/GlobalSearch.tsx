@@ -4,14 +4,11 @@ import {
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
 } from "react";
 import { History, Loader2, Search, SearchX, X } from "lucide-react";
 import type { SearchResult } from "../../core/search";
-import {
-  FIELD_TYPES,
-  FIELD_TYPE_REGISTRY,
-  type FieldType,
-} from "../../core/fields";
+import { FIELD_TYPES, FIELD_TYPE_REGISTRY, type FieldType } from "../../core/fields";
 import { createFormsRepository, createSearchRepository } from "../../database/repositories";
 import { getDb } from "../../database/client";
 import { useRecordStore, useSectionStore, useUiStore } from "../../stores";
@@ -24,18 +21,14 @@ const RESULT_LIMIT = 50;
 const HISTORY_KEY = "gdr.global-search.history";
 const HISTORY_SIZE = 5;
 /** Tipos ofrecidos como filtro (las contraseñas nunca se indexan). */
-const FILTER_FIELD_TYPES: readonly string[] = FIELD_TYPES.filter(
-  (type) => type !== "password",
-);
+const FILTER_FIELD_TYPES: readonly string[] = FIELD_TYPES.filter((type) => type !== "password");
 
 interface ResultGroup {
   sectionName: string;
   items: SearchResult[];
 }
 
-type Entry =
-  | { kind: "history"; query: string }
-  | { kind: "result"; result: SearchResult };
+type Entry = { kind: "history"; query: string } | { kind: "result"; result: SearchResult };
 
 function loadHistory(): string[] {
   try {
@@ -47,9 +40,7 @@ function loadHistory(): string[] {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return parsed
-      .filter((item): item is string => typeof item === "string")
-      .slice(0, HISTORY_SIZE);
+    return parsed.filter((item): item is string => typeof item === "string").slice(0, HISTORY_SIZE);
   } catch {
     return [];
   }
@@ -66,6 +57,25 @@ function saveToHistory(query: string): string[] {
   return next;
 }
 
+function removeFromHistory(item: string): string[] {
+  const next = loadHistory().filter((candidate) => candidate !== item);
+  try {
+    window.localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+  } catch {
+    // Sin persistencia disponible: el historial simplemente no se guarda.
+  }
+  return next;
+}
+
+function clearStoredHistory(): string[] {
+  try {
+    window.localStorage.setItem(HISTORY_KEY, JSON.stringify([]));
+  } catch {
+    // Sin persistencia disponible: el historial simplemente no se guarda.
+  }
+  return [];
+}
+
 /** Renderiza el snippet resaltando los marcadores «coincidencia». */
 function Snippet({ text }: { text: string }) {
   const parts = text.split(/«([^»]*)»/u);
@@ -73,10 +83,7 @@ function Snippet({ text }: { text: string }) {
     <span>
       {parts.map((part, index) =>
         index % 2 === 1 ? (
-          <mark
-            key={index}
-            className="rounded-sm bg-sky-500/20 px-0.5 text-sky-300"
-          >
+          <mark key={index} className="rounded-sm bg-sky-500/20 px-0.5 text-sky-300">
             {part}
           </mark>
         ) : (
@@ -112,9 +119,7 @@ function waitForRecordForm(formId: string, timeoutMs = 2000): Promise<boolean> {
 
 async function navigateToResult(result: SearchResult): Promise<void> {
   const sections = useSectionStore.getState();
-  const section = sections.sections.find(
-    (candidate) => candidate.id === result.sectionId,
-  );
+  const section = sections.sections.find((candidate) => candidate.id === result.sectionId);
   await sections.selectSection(result.sectionId);
   sections.selectForm(result.formId);
   // En secciones planas la vista de registros es la propia sección (un solo
@@ -149,9 +154,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
   const [sectionFilter, setSectionFilter] = useState("");
   const [formFilter, setFormFilter] = useState("");
   const [typeFilters, setTypeFilters] = useState<readonly string[]>([]);
-  const [formOptions, setFormOptions] = useState<
-    Array<{ id: string; name: string }>
-  >([]);
+  const [formOptions, setFormOptions] = useState<Array<{ id: string; name: string }>>([]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const entryRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
@@ -188,9 +191,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
       .then((forms) => {
         if (!cancelled) {
           setFormOptions(
-            forms
-              .filter((form) => form.enabled)
-              .map((form) => ({ id: form.id, name: form.name })),
+            forms.filter((form) => form.enabled).map((form) => ({ id: form.id, name: form.name })),
           );
         }
       })
@@ -273,9 +274,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
       query.trim() === ""
         ? history.map((item) => ({ kind: "history", query: item }) as const)
         : groups.flatMap((group) =>
-            group.items.map(
-              (result) => ({ kind: "result", result }) as const,
-            ),
+            group.items.map((result) => ({ kind: "result", result }) as const),
           ),
     [groups, history, query],
   );
@@ -309,6 +308,17 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
     setQuery(item);
   }
 
+  /** Elimina solo esa entrada del historial sin ejecutar la búsqueda. */
+  function deleteHistoryItem(event: ReactMouseEvent<HTMLButtonElement>, item: string): void {
+    event.stopPropagation();
+    setHistory(removeFromHistory(item));
+  }
+
+  /** Vacía el historial completo (solo se ofrece con más de una entrada). */
+  function clearHistory(): void {
+    setHistory(clearStoredHistory());
+  }
+
   function onKeyDown(event: ReactKeyboardEvent<HTMLInputElement>): void {
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -329,9 +339,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
 
   function toggleType(type: string): void {
     setTypeFilters((current) =>
-      current.includes(type)
-        ? current.filter((item) => item !== type)
-        : [...current, type],
+      current.includes(type) ? current.filter((item) => item !== type) : [...current, type],
     );
   }
 
@@ -363,9 +371,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
             placeholder="Buscar en todos los registros…"
             className="w-full bg-transparent py-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600"
           />
-          {searching ? (
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-zinc-500" />
-          ) : null}
+          {searching ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-zinc-500" /> : null}
           <button
             onClick={onClose}
             className="shrink-0 rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
@@ -451,13 +457,25 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
           {!hasQuery ? (
             history.length > 0 ? (
               <div>
-                <p className="sticky top-0 bg-zinc-900 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <p className="sticky top-0 flex items-center justify-between bg-zinc-900 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Búsquedas recientes
+                  {history.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={clearHistory}
+                      className="text-[10px] font-normal normal-case tracking-normal text-zinc-600 transition-colors hover:text-sky-300"
+                    >
+                      Borrar todo
+                    </button>
+                  ) : null}
                 </p>
                 <ul>
                   {entries.map((entry, index) =>
                     entry.kind === "history" ? (
-                      <li key={`history:${entry.query}`}>
+                      <li
+                        key={`history:${entry.query}`}
+                        className={`group relative ${index === activeIndex ? "bg-zinc-800" : ""}`}
+                      >
                         <button
                           ref={(node) => {
                             if (node !== null) {
@@ -472,14 +490,24 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
                           onClick={() => {
                             setQuery(entry.query);
                           }}
-                          className={`flex w-full items-center gap-2 px-3 py-2 text-left ${
-                            index === activeIndex ? "bg-zinc-800" : ""
-                          }`}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left"
                         >
                           <History className="h-3.5 w-3.5 shrink-0 text-zinc-600" />
-                          <span className="truncate text-sm text-zinc-200">
+                          <span className="min-w-0 flex-1 truncate text-sm text-zinc-200">
                             {entry.query}
                           </span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-zinc-500 opacity-0 transition-opacity hover:bg-zinc-700 hover:text-zinc-100 focus-visible:opacity-100 ${
+                            index === activeIndex ? "opacity-100" : ""
+                          } group-hover:opacity-100`}
+                          aria-label={`Eliminar «${entry.query}» del historial`}
+                          onClick={(event) => {
+                            deleteHistoryItem(event, entry.query);
+                          }}
+                        >
+                          <X className="h-3.5 w-3.5" />
                         </button>
                       </li>
                     ) : null,
@@ -494,16 +522,13 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
           ) : !searching && results.length === 0 ? (
             <div className="flex flex-col items-center gap-2 p-6 text-center">
               <SearchX className="h-8 w-8 text-zinc-700" />
-              <p className="text-sm text-zinc-500">
-                Sin resultados para «{trimmedQuery}».
-              </p>
+              <p className="text-sm text-zinc-500">Sin resultados para «{trimmedQuery}».</p>
             </div>
           ) : (
             <>
               {showNearHint ? (
                 <p className="border-b border-sky-500/20 bg-sky-500/10 px-3 py-1.5 text-xs text-sky-300">
-                  Sin resultados exactos para «{trimmedQuery}» · resultados
-                  cercanos:
+                  Sin resultados exactos para «{trimmedQuery}» · resultados cercanos:
                 </p>
               ) : null}
               {groups.map((group) => (
@@ -514,8 +539,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
                   <ul>
                     {group.items.map((result) => {
                       const index = entries.findIndex(
-                        (entry) =>
-                          entry.kind === "result" && entry.result === result,
+                        (entry) => entry.kind === "result" && entry.result === result,
                       );
                       return (
                         <li key={`${result.recordId}:${result.fieldName}`}>
@@ -549,9 +573,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
                             </span>
                             <span className="mt-0.5 block truncate text-xs text-zinc-400">
                               {result.fieldName}:{" "}
-                              {result.snippet !== null ? (
-                                <Snippet text={result.snippet} />
-                              ) : null}
+                              {result.snippet !== null ? <Snippet text={result.snippet} /> : null}
                             </span>
                           </button>
                         </li>
