@@ -239,8 +239,10 @@ export function createRecordsRepository(db: DbHandle): RecordRepository {
         clauses.push("enabled = 1");
       }
       const database = await db();
+      // Desempate por id: created_at/updated_at comparten milisegundo en
+      // inserciones contiguas y sin él el orden alterna entre recargas.
       const rows = await database.select<RecordRow[]>(
-        `SELECT ${RECORD_COLUMNS} FROM records WHERE ${clauses.join(" AND ")} ORDER BY ${parsedOptions.orderBy} ${parsedOptions.direction}`,
+        `SELECT ${RECORD_COLUMNS} FROM records WHERE ${clauses.join(" AND ")} ORDER BY ${parsedOptions.orderBy} ${parsedOptions.direction}, id`,
         [z.uuid().parse(formId)],
       );
       return parseRecords(rows);
