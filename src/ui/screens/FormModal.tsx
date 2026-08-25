@@ -76,7 +76,9 @@ export function FormModal({ mode, onClose }: FormModalProps) {
               name: spec.name,
               type: spec.type,
               required: spec.required ?? false,
-              searchable: false,
+              // Buscables por defecto (salvo contraseñas, nunca indexadas):
+              // el índice FTS solo cubre campos con searchable = 1.
+              searchable: spec.type !== "password",
               position: index,
               description: templateFieldDescription(spec),
             });

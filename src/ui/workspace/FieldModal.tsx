@@ -36,7 +36,9 @@ function emptyEditor(type: FieldType): EditorState {
     optionsText: "",
     type,
     required: false,
-    searchable: false,
+    // Los campos nuevos son buscables por defecto (salvo contraseñas): el
+    // índice de búsqueda global solo cubre campos con searchable = 1.
+    searchable: type !== "password",
   };
 }
 
@@ -208,7 +210,13 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
               className={inputClass}
               value={editor.type}
               onChange={(event) => {
-                setEditor({ ...editor, type: event.target.value as FieldType });
+                const type = event.target.value as FieldType;
+                setEditor({
+                  ...editor,
+                  type,
+                  // Las contraseñas nunca se indexan.
+                  searchable: type === "password" ? false : editor.searchable,
+                });
               }}
             >
               {FIELD_TYPES.map((type) => (
