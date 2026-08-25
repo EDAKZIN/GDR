@@ -552,12 +552,15 @@ export function RecordsTable({
                           }`}
                           onClick={(event) => {
                             event.stopPropagation();
+                            // Capturar el rect ANTES del updater: React pone
+                            // currentTarget en null al salir del handler.
+                            const rect = event.currentTarget.getBoundingClientRect();
                             setMenu((previous) =>
                               previous !== null && previous.recordId === record.id
                                 ? null
                                 : {
                                     recordId: record.id,
-                                    anchor: event.currentTarget.getBoundingClientRect(),
+                                    anchor: rect,
                                   },
                             );
                           }}

@@ -367,11 +367,10 @@ function SectionTreeNode({
             }`}
             onClick={(event) => {
               event.stopPropagation();
-              setMenuAnchor((previous) =>
-                previous !== null
-                  ? null
-                  : event.currentTarget.getBoundingClientRect(),
-              );
+              // Capturar el rect ANTES del updater: React pone currentTarget
+              // en null al salir del handler.
+              const rect = event.currentTarget.getBoundingClientRect();
+              setMenuAnchor((previous) => (previous !== null ? null : rect));
             }}
           >
             <MoreVertical className="h-3.5 w-3.5" />

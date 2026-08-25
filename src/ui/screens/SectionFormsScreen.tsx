@@ -180,11 +180,10 @@ function FormCard({
           className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100 focus-visible:opacity-100 group-hover:opacity-100 md:opacity-0"
           onClick={(event) => {
             event.stopPropagation();
-            onOpenMenu(
-              menuAnchor !== null
-                ? null
-                : event.currentTarget.getBoundingClientRect(),
-            );
+            // Capturar el rect ANTES de usarlo: React pone currentTarget en
+            // null al salir del handler.
+            const rect = event.currentTarget.getBoundingClientRect();
+            onOpenMenu(menuAnchor !== null ? null : rect);
           }}
         >
           <MoreVertical className="h-4 w-4" />
