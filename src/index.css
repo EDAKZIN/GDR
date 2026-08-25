@@ -49,6 +49,15 @@
   --color-rose-400: #be123c; /* rose-700: icono de error */
 }
 
+/*
+ * Fondo base en <html>: si un error llegara a desmontar la app completa,
+ * el lienzo del navegador nunca aparece blanco por defecto. Usa la variable
+ * zinc-950, que ya se remapea al gris claro bajo [data-theme="light"].
+ */
+html {
+  background-color: var(--color-zinc-950);
+}
+
 /* Scrollbars finos para las zonas con desplazamiento (siguen el tema vía var) */
 * {
   scrollbar-width: thin;
