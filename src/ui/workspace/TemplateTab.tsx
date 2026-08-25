@@ -196,6 +196,23 @@ export function TemplateTab({
     };
   }, [formId]);
 
+  // Esc cierra el menú contextual del campo (igual que en la tabla de
+  // registros y en el árbol del drawer).
+  useEffect(() => {
+    if (menuFieldId === null) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setMenuFieldId(null);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuFieldId]);
+
   /** Ejecuta una acción de mantenimiento y sincroniza ambos listados. */
   async function runAction(action: () => Promise<unknown>): Promise<void> {
     try {
