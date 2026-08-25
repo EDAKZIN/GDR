@@ -34,4 +34,11 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // El módulo de i18n mezcla a propósito componentes y helpers (t, setLang).
+    files: ["src/i18n/**"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
 );

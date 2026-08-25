@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { I18nProvider } from "./i18n";
 import { GlobalSearch } from "./ui/search/GlobalSearch";
 import { MenuSidebar } from "./ui/menu/MenuSidebar";
 import { ToastHost } from "./ui/menu/toast";
@@ -66,21 +67,23 @@ function App() {
   });
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-zinc-950 text-zinc-100">
-      <MenuSidebar>
-        <CurrentScreen />
-      </MenuSidebar>
+    <I18nProvider>
+      <div className="flex h-screen flex-col overflow-hidden bg-zinc-950 text-zinc-100">
+        <MenuSidebar>
+          <CurrentScreen />
+        </MenuSidebar>
 
-      {searchOpen ? (
-        <GlobalSearch
-          onClose={() => {
-            setSearchOpen(false);
-          }}
-        />
-      ) : null}
+        {searchOpen ? (
+          <GlobalSearch
+            onClose={() => {
+              setSearchOpen(false);
+            }}
+          />
+        ) : null}
 
-      <ToastHost />
-    </div>
+        <ToastHost />
+      </div>
+    </I18nProvider>
   );
 }
 
