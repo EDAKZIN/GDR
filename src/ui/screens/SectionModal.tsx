@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type { Section } from "../../core/sections";
 import { useSectionStore } from "../../stores";
@@ -33,6 +33,22 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Esc cierra el modal salvo durante el guardado.
+  useEffect(() => {
+    if (saving) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [saving, onClose]);
 
   async function submit(): Promise<void> {
     setSaving(true);
