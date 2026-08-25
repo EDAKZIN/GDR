@@ -9,7 +9,6 @@ import {
   FilePlus2,
   FileText,
   FolderPlus,
-  LayoutList,
   MoreVertical,
   Move,
   PanelLeft,
@@ -17,7 +16,6 @@ import {
   Plus,
   RotateCcw,
   Search,
-  SlidersHorizontal,
   Trash2,
   X,
 } from "lucide-react";
@@ -28,9 +26,9 @@ import { createFormsRepository } from "../../database/repositories";
 import { buildSectionTree, useSectionStore, type SectionNode } from "../../stores/useSectionStore";
 import { useBreadcrumb, useUiStore } from "../../stores/useUiStore";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMenu";
 import { IconRenderer } from "../components/IconRenderer";
 import { btnPrimary, btnSecondary } from "../components/uiStyles";
-import { openSection } from "../navigation/openSection";
 import { FormModal } from "../screens/FormModal";
 import { SectionModal } from "../screens/SectionModal";
 import { showErrorToast } from "./toastStore";
@@ -38,19 +36,6 @@ import { showErrorToast } from "./toastStore";
 const formsRepository = createFormsRepository(getDb);
 
 const DRAWER_KEY = "gdr.menuDrawerOpen";
-const TAB_KEY = "gdr.menuDrawerTab";
-
-/** Pestañas del drawer: visor de navegación vs gestor estructural. */
-type DrawerTab = "sections" | "manager";
-type TreeNodeMode = "browse" | "manage";
-
-function readInitialTab(): DrawerTab {
-  try {
-    return window.localStorage.getItem(TAB_KEY) === "manager" ? "manager" : "sections";
-  } catch {
-    return "sections";
-  }
-}
 
 function readInitialDrawerOpen(): boolean {
   try {
@@ -113,33 +98,38 @@ type SidebarModal =
   | { kind: "formCreate"; sectionId: string }
   | null;
 
-/** Menú contextual flotante reutilizable. */
-function ActionMenu({ actions, onClose }: { actions: readonly MenuAction[]; onClose: () => void }) {
+/** Menú contextual flotante reutilizable, anclado al botón ⋮ del nodo. */
+function ActionMenu({
+  anchor,
+  actions,
+  onClose,
+}: {
+  anchor: FloatingMenuAnchor;
+  actions: readonly MenuAction[];
+  onClose: () => void;
+}) {
   return (
-    <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute left-7 top-7 z-50 flex w-52 flex-col overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-2xl">
-        {actions.map((action) => (
-          <button
-            key={action.label}
-            type="button"
-            className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors duration-150 ${
-              action.danger === true
-                ? "text-rose-300 hover:bg-rose-500/10"
-                : "text-zinc-200 hover:bg-zinc-800"
-            } disabled:pointer-events-none disabled:opacity-40`}
-            disabled={action.disabled === true}
-            onClick={() => {
-              onClose();
-              action.run();
-            }}
-          >
-            <action.icon className="h-3.5 w-3.5" />
-            {action.label}
-          </button>
-        ))}
-      </div>
-    </>
+    <FloatingMenu anchor={anchor} onClose={onClose}>
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          type="button"
+          className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors duration-150 ${
+            action.danger === true
+              ? "text-rose-300 hover:bg-rose-500/10"
+              : "text-zinc-200 hover:bg-zinc-800"
+          } disabled:pointer-events-none disabled:opacity-40`}
+          disabled={action.disabled === true}
+          onClick={() => {
+            onClose();
+            action.run();
+          }}
+        >
+          <action.icon className="h-3.5 w-3.5" />
+          {action.label}
+        </button>
+      ))}
+    </FloatingMenu>
   );
 }
 
@@ -160,13 +150,12 @@ interface TreeHandlers {
 
 const badgeClass = "shrink-0 rounded bg-zinc-800 px-1 py-px text-[9px] tabular-nums text-zinc-500";
 
-/** Nodo del árbol: fila navegable + (en gestor) acciones contextuales + hijos. */
+/** Nodo del árbol: fila navegable + acciones contextuales + hijos. */
 function SectionTreeNode({
   node,
   depth,
   isFirst,
   isLast,
-  mode,
   expandedIds,
   activeSectionId,
   formsBySection,
@@ -176,7 +165,6 @@ function SectionTreeNode({
   depth: number;
   isFirst: boolean;
   isLast: boolean;
-  mode: TreeNodeMode;
   expandedIds: ReadonlySet<string>;
   activeSectionId: string | null;
   formsBySection: ReadonlyMap<string, Form[]>;
@@ -185,26 +173,27 @@ function SectionTreeNode({
   const section = node.section;
   const expanded = expandedIds.has(section.id);
   const isActive = activeSectionId === section.id;
-  const sectionForms = formsBySection.get(section.id) ?? [];
-  const manage = mode === "manage";
+  const sectionForms = section.allowChildren
+    ? (formsBySection.get(section.id) ?? [])
+    : [];
 
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<FloatingMenuAnchor | null>(null);
 
   // Esc cierra el menú contextual del nodo.
   useEffect(() => {
-    if (!menuOpen) {
+    if (menuAnchor === null) {
       return;
     }
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key === "Escape") {
-        setMenuOpen(false);
+        setMenuAnchor(null);
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [menuOpen]);
+  }, [menuAnchor]);
 
   const actions: MenuAction[] = [
     {
@@ -215,13 +204,20 @@ function SectionTreeNode({
         handlers.onAddSubsection(section);
       },
     },
-    {
-      label: "Añadir formulario",
-      icon: FilePlus2,
-      run: () => {
-        handlers.onAddForm(section);
-      },
-    },
+    // Solo las secciones jerárquicas admiten formularios adicionales; en las
+    // planas el formulario homónimo es automático e invisible.
+    ...(section.allowChildren
+      ? [
+          {
+            label: "Añadir formulario",
+            icon: FilePlus2,
+            run: () => {
+              handlers.onAddForm(section);
+            },
+          },
+        ]
+      : []),
+
     {
       label: "Editar",
       icon: Pencil,
@@ -363,28 +359,31 @@ function SectionTreeNode({
             </span>
           ) : null}
 
-          {manage ? (
-            <button
-              type="button"
-              aria-label={`Acciones de ${section.name}`}
-              className={`shrink-0 rounded p-0.5 text-zinc-500 transition-colors duration-150 hover:bg-zinc-800 hover:text-zinc-100 ${
-                menuOpen ? "" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-              }`}
-              onClick={(event) => {
-                event.stopPropagation();
-                setMenuOpen((previous) => !previous);
-              }}
-            >
-              <MoreVertical className="h-3.5 w-3.5" />
-            </button>
-          ) : null}
+          <button
+            type="button"
+            aria-label={`Acciones de ${section.name}`}
+            className={`shrink-0 rounded p-0.5 text-zinc-500 transition-colors duration-150 hover:bg-zinc-800 hover:text-zinc-100 ${
+              menuAnchor !== null ? "" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+            }`}
+            onClick={(event) => {
+              event.stopPropagation();
+              setMenuAnchor((previous) =>
+                previous !== null
+                  ? null
+                  : event.currentTarget.getBoundingClientRect(),
+              );
+            }}
+          >
+            <MoreVertical className="h-3.5 w-3.5" />
+          </button>
         </div>
 
-        {menuOpen ? (
+        {menuAnchor !== null ? (
           <ActionMenu
+            anchor={menuAnchor}
             actions={actions}
             onClose={() => {
-              setMenuOpen(false);
+              setMenuAnchor(null);
             }}
           />
         ) : null}
@@ -399,7 +398,6 @@ function SectionTreeNode({
               depth={depth + 1}
               isFirst={index === 0}
               isLast={index === node.children.length - 1}
-              mode={mode}
               expandedIds={expandedIds}
               activeSectionId={activeSectionId}
               formsBySection={formsBySection}
@@ -576,8 +574,9 @@ function MoveSectionModal({ section, onClose }: { section: Section; onClose: () 
 
 /**
  * Manejador de menús: barra superior compacta siempre visible (hamburguesa,
- * migas y buscador) + drawer lateral colapsable con el árbol de secciones,
- * acciones de configuración por nodo y papelera de secciones.
+ * migas y buscador) + drawer lateral colapsable con UN árbol único de
+ * secciones (navegación por clic + acciones contextuales por nodo),
+ * «+ Nueva sección» y papelera siempre visibles.
  */
 export function MenuSidebar({ children }: { children: ReactNode }) {
   const setSearchOpen = useUiStore((store) => store.setSearchOpen);
@@ -597,7 +596,6 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
   const toggleAllowChildren = useSectionStore((store) => store.toggleAllowChildren);
 
   const [open, setOpen] = useState(readInitialDrawerOpen);
-  const [tab, setTab] = useState<DrawerTab>(readInitialTab);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [modal, setModal] = useState<SidebarModal>(null);
   const [moveTarget, setMoveTarget] = useState<Section | null>(null);
@@ -612,15 +610,6 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
       // localStorage no disponible: la preferencia simplemente no persiste.
     }
   }, [open]);
-
-  // La pestaña activa del drawer persiste entre sesiones de navegación.
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(TAB_KEY, tab);
-    } catch {
-      // Sin localStorage la pestaña activa no persiste; no es crítico.
-    }
-  }, [tab]);
 
   // Formularios vivos agrupables por sección (para el árbol).
   useEffect(() => {
@@ -730,8 +719,9 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
   const handlers: TreeHandlers = {
     onToggleExpanded: toggleExpanded,
     onSelectSection: (id) => {
-      // Sección plana con un único formulario: entra directo a sus registros.
-      void openSection(id);
+      // La vista de la sección (plana → registros directos; jerárquica →
+      // panel) la decide su pantalla según allowChildren.
+      navigate("section", id);
     },
     onSelectForm: (id) => {
       navigate("form", id);
@@ -846,76 +836,29 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
               GDR · Organizador
             </p>
 
-            {/* Pestañas: Secciones (visor) | Gestor (configuración) */}
-            <div
-              role="tablist"
-              aria-label="Vistas del menú"
-              className="mx-3 mt-2 flex shrink-0 items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/60 p-1"
-            >
-              {(
-                [
-                  { id: "sections", label: "Secciones", icon: LayoutList },
-                  { id: "manager", label: "Gestor", icon: SlidersHorizontal },
-                ] as const
-              ).map((entry) => {
-                const active = tab === entry.id;
-                return (
-                  <button
-                    key={entry.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors duration-150 ${
-                      active
-                        ? "bg-sky-500/15 text-sky-200"
-                        : "text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
-                    }`}
-                    onClick={() => {
-                      setTab(entry.id);
-                    }}
-                  >
-                    <entry.icon className="h-3.5 w-3.5" />
-                    {entry.label}
-                  </button>
-                );
-              })}
+            <div className="px-3 pb-1 pt-2">
+              <button
+                type="button"
+                className={`w-full ${btnPrimary}`}
+                onClick={() => {
+                  openCreateSubsection(null);
+                }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Nueva sección
+              </button>
             </div>
 
-            {tab === "manager" ? (
-              <div className="px-3 pb-1 pt-2">
-                <button
-                  type="button"
-                  className={`w-full ${btnPrimary}`}
-                  onClick={() => {
-                    openCreateSubsection(null);
-                  }}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Nueva sección
-                </button>
-              </div>
-            ) : null}
-
-            {/* Árbol de secciones (visor en «Secciones», editable en «Gestor») */}
+            {/* Árbol único de secciones con acciones contextuales por nodo */}
             <nav
-              aria-label={tab === "manager" ? "Gestor de secciones" : "Secciones"}
+              aria-label="Secciones"
               className="min-h-0 flex-1 overflow-y-auto px-2 pb-2"
             >
               {tree.length === 0 ? (
                 <p className="px-2 py-6 text-center text-xs leading-relaxed text-zinc-600">
-                  {tab === "manager" ? (
-                    <>
-                      Aún no hay secciones.
-                      <br />
-                      Crea la primera con el botón de arriba.
-                    </>
-                  ) : (
-                    <>
-                      Aún no hay secciones.
-                      <br />
-                      Créalas desde la pestaña Gestor.
-                    </>
-                  )}
+                  Aún no hay secciones.
+                  <br />
+                  Crea la primera con el botón de arriba.
                 </p>
               ) : (
                 tree.map((node, index) => (
@@ -925,7 +868,6 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
                     depth={0}
                     isFirst={index === 0}
                     isLast={index === tree.length - 1}
-                    mode={tab === "manager" ? "manage" : "browse"}
                     expandedIds={expandedIds}
                     activeSectionId={activeSectionId}
                     formsBySection={formsBySection}
@@ -935,9 +877,8 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
               )}
             </nav>
 
-            {/* Papelera de secciones (solo en el Gestor) */}
-            {tab === "manager" ? (
-              <div className="border-t border-zinc-800">
+            {/* Papelera de secciones */}
+            <div className="border-t border-zinc-800">
                 {showTrash ? (
                   <div className="max-h-52 overflow-y-auto px-2 py-2">
                     <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
@@ -1004,8 +945,7 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
                     </span>
                   ) : null}
                 </button>
-              </div>
-            ) : null}
+            </div>
           </div>
         </aside>
 
