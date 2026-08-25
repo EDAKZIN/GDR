@@ -1,25 +1,36 @@
-// Espejo en TypeScript del esquema de src/database/migrations/0001_init.sql.
-// Referencia para tooling (drizzle-kit generate); la fuente de verdad en runtime
-// son las migraciones SQL aplicadas por el runner.
+// Espejo en TypeScript del esquema de src/database/migrations/ (0001 + 0003 + 0004
+// + 0006). Referencia para tooling (drizzle-kit generate); la fuente de verdad en
+// runtime son las migraciones SQL aplicadas por el runner.
 import {
   sqliteTable,
   text,
   integer,
   uniqueIndex,
   index,
+  type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
 
-export const sections = sqliteTable("sections", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  icon: text("icon"),
-  position: integer("position").notNull().default(0),
-  enabled: integer("enabled").notNull().default(1),
-  createdAt: text("created_at").notNull(),
-  updatedAt: text("updated_at").notNull(),
-  deletedAt: text("deleted_at"),
-});
+export const sections = sqliteTable(
+  "sections",
+  {
+    id: text("id").primaryKey(),
+    // Jerarquía opcional (0003): NULL = sección raíz.
+    parentId: text("parent_id").references((): AnySQLiteColumn => sections.id, {
+      onDelete: "cascade",
+    }),
+    name: text("name").notNull(),
+    description: text("description"),
+    icon: text("icon"),
+    position: integer("position").notNull().default(0),
+    enabled: integer("enabled").notNull().default(1),
+    // Hoja estructural (0004): 0 = no admite sub-secciones.
+    allowChildren: integer("allow_children").notNull().default(1),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [index("idx_sections_parent_deleted").on(table.parentId, table.deletedAt)],
+);
 
 export const forms = sqliteTable(
   "forms",
@@ -36,7 +47,7 @@ export const forms = sqliteTable(
     updatedAt: text("updated_at").notNull(),
     deletedAt: text("deleted_at"),
   },
-  (table) => [index("idx_forms_section").on(table.sectionId)],
+  (table) => [index("idx_forms_section_deleted").on(table.sectionId, table.deletedAt)],
 );
 
 export const fields = sqliteTable(
@@ -58,7 +69,7 @@ export const fields = sqliteTable(
     updatedAt: text("updated_at").notNull(),
     deletedAt: text("deleted_at"),
   },
-  (table) => [index("idx_fields_form").on(table.formId)],
+  (table) => [index("idx_fields_form_deleted").on(table.formId, table.deletedAt)],
 );
 
 export const records = sqliteTable(
@@ -73,7 +84,7 @@ export const records = sqliteTable(
     updatedAt: text("updated_at").notNull(),
     deletedAt: text("deleted_at"),
   },
-  (table) => [index("idx_records_form").on(table.formId)],
+  (table) => [index("idx_records_form_deleted").on(table.formId, table.deletedAt)],
 );
 
 export const fieldValues = sqliteTable(
@@ -92,8 +103,9 @@ export const fieldValues = sqliteTable(
     updatedAt: text("updated_at").notNull(),
   },
   (table) => [
+    // El UNIQUE crea el índice automático (record_id, field_id) en SQLite:
+    // cubre lookups por record_id; idx_field_values_record sería redundante.
     uniqueIndex("uq_field_values_record_field").on(table.recordId, table.fieldId),
-    index("idx_field_values_record").on(table.recordId),
     index("idx_field_values_field").on(table.fieldId),
   ],
 );
