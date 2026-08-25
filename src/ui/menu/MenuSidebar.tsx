@@ -16,6 +16,7 @@ import {
   Plus,
   RotateCcw,
   Search,
+  Settings,
   Trash2,
   X,
 } from "lucide-react";
@@ -33,6 +34,7 @@ import { btnPrimary, btnSecondary } from "../components/uiStyles";
 import { FormModal } from "../screens/FormModal";
 import logoUrl from "../../assets/logo.png";
 import { SectionModal } from "../screens/SectionModal";
+import { SettingsModal } from "../settings/SettingsModal";
 import { showErrorToast } from "./toastStore";
 
 const formsRepository = createFormsRepository(getDb);
@@ -582,7 +584,7 @@ function MoveSectionModal({ section, onClose }: { section: Section; onClose: () 
  * «+ Nueva sección» y papelera siempre visibles.
  */
 export function MenuSidebar({ children }: { children: ReactNode }) {
-  const { t, lang, setLang } = useT();
+  const { t } = useT();
   const setSearchOpen = useUiStore((store) => store.setSearchOpen);
   const navigate = useUiStore((store) => store.navigate);
   const routes = useUiStore((store) => store.routes);
@@ -604,6 +606,7 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
   const [modal, setModal] = useState<SidebarModal>(null);
   const [moveTarget, setMoveTarget] = useState<Section | null>(null);
   const [confirmHardDelete, setConfirmHardDelete] = useState<Section | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
   const [allForms, setAllForms] = useState<Form[]>([]);
 
@@ -812,14 +815,15 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
 
         <button
           type="button"
-          title={t("ajustes.idioma")}
-          aria-label={t("ajustes.idioma")}
+          title={t("ajustes.abrir")}
+          aria-label={t("ajustes.abrir")}
+          aria-haspopup="dialog"
           onClick={() => {
-            setLang(lang === "es" ? "en" : "es");
+            setShowSettings(true);
           }}
-          className="flex shrink-0 items-center rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 transition-colors duration-150 hover:border-sky-400 hover:text-zinc-100"
+          className="shrink-0 rounded-md p-2 text-zinc-400 transition-colors duration-150 hover:bg-zinc-900 hover:text-zinc-100"
         >
-          {lang === "es" ? "ES" : "EN"}
+          <Settings className="h-4 w-4" />
         </button>
 
         <button
@@ -852,7 +856,7 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
               <img
                 src={logoUrl}
                 alt={t("app.logoAlt")}
-                className="h-6 w-6 rounded-md border border-zinc-800 object-cover"
+                className="app-logo h-6 w-6 rounded-md border border-zinc-800 object-cover"
               />
               <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600">
                 {t("app.marca")}
@@ -1019,6 +1023,14 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
           section={moveTarget}
           onClose={() => {
             setMoveTarget(null);
+          }}
+        />
+      ) : null}
+
+      {showSettings ? (
+        <SettingsModal
+          onClose={() => {
+            setShowSettings(false);
           }}
         />
       ) : null}

@@ -13,7 +13,17 @@ export const en: Dictionary = {
       "Check that the application has write permissions and open it again.",
   },
   ajustes: {
+    titulo: "Settings",
+    abrir: "Open settings",
+    cerrar: "Close settings",
+    apariencia: "Appearance",
+    aparienciaDesc: "Interface theme: dark or light.",
+    temaOscuro: "Dark",
+    temaClaro: "Light",
     idioma: "Language",
+    idiomaDesc: "Application-wide language.",
+    espanol: "Español",
+    ingles: "English",
   },
   comun: {
     cancelar: "Cancel",

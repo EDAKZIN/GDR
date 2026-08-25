@@ -12,7 +12,17 @@ export const es = {
       "Revisa que la aplicación tenga permisos de escritura y vuelve a abrirla.",
   },
   ajustes: {
+    titulo: "Ajustes",
+    abrir: "Abrir ajustes",
+    cerrar: "Cerrar ajustes",
+    apariencia: "Apariencia",
+    aparienciaDesc: "Tema de la interfaz: oscuro o claro.",
+    temaOscuro: "Oscuro",
+    temaClaro: "Claro",
     idioma: "Idioma",
+    idiomaDesc: "Idioma de toda la aplicación.",
+    espanol: "Español",
+    ingles: "English",
   },
   comun: {
     cancelar: "Cancelar",
