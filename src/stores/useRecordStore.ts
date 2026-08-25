@@ -121,6 +121,13 @@ async function loadItems(options: LoadItemsOptions): Promise<RecordListItem[]> {
   );
 }
 
+/**
+ * Contador de cargas de lista/campos: si dos openForm/reloadList se solapan
+ * (cambio rápido de formulario), solo la MÁS RECIENTE puede escribir estado;
+ * las respuestas tardías se descartan para no mezclar datos entre formularios.
+ */
+let listLoadSeq = 0;
+
 export const useRecordStore = create<RecordState>()((set, get) => ({
   formId: null,
   fields: [],
@@ -139,6 +146,7 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
   saving: false,
 
   openForm: async (formId) => {
+    const seq = ++listLoadSeq;
     set({
       formId,
       loading: true,
@@ -151,15 +159,23 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
     });
     try {
       const fields = await fieldsRepository.listByForm(formId);
+      if (seq !== listLoadSeq || get().formId !== formId) {
+        // Llegó tarde: otra carga más reciente ya tomó el control del estado.
+        return;
+      }
       set({ fields });
       await get().reloadList();
-      set({ loading: false });
     } catch (error) {
+      if (seq !== listLoadSeq || get().formId !== formId) {
+        return;
+      }
       set({ loading: false, error: toMessage(error) });
     }
   },
 
   closeForm: () => {
+    // Invalida cualquier carga en vuelo del formulario cerrado.
+    listLoadSeq += 1;
     set({
       formId: null,
       fields: [],
@@ -179,9 +195,16 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
       return;
     }
     try {
-      set({ fields: await fieldsRepository.listByForm(formId) });
+      const fields = await fieldsRepository.listByForm(formId);
+      if (get().formId !== formId) {
+        return;
+      }
+      set({ fields });
       await get().reloadList();
     } catch (error) {
+      if (get().formId !== formId) {
+        return;
+      }
       set({ error: toMessage(error) });
     }
   },
@@ -191,17 +214,26 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
     if (state.formId === null) {
       return;
     }
+    const targetFormId = state.formId;
+    const seq = ++listLoadSeq;
     set({ loading: true });
     try {
       const items = await loadItems({
-        formId: state.formId,
+        formId: targetFormId,
         fields: state.fields,
         orderBy: state.orderBy,
         direction: state.direction,
         showDeleted: state.showDeleted,
       });
+      if (seq !== listLoadSeq || get().formId !== targetFormId) {
+        // Llegó tarde: otra carga más reciente ya tomó el control del estado.
+        return;
+      }
       set({ items, loading: false, error: null });
     } catch (error) {
+      if (seq !== listLoadSeq || get().formId !== targetFormId) {
+        return;
+      }
       set({ loading: false, error: toMessage(error) });
     }
   },
