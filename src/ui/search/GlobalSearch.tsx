@@ -232,9 +232,8 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
           }
           setResults(outcome.results);
           setExact(outcome.exact);
-          if (outcome.results.length > 0) {
-            setHistory(saveToHistory(trimmed));
-          }
+          // El historial solo registra búsquedas concluidas (al abrir un
+          // resultado), no cada prefijo tecleado durante el debounce.
         })
         .catch(() => {
           if (!cancelled) {
@@ -293,6 +292,9 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
 
   async function onPick(result: SearchResult): Promise<void> {
     onClose();
+    // La búsqueda solo entra en el historial cuando el usuario la usa para
+    // abrir un registro (búsqueda concluida), no mientras escribe.
+    setHistory(saveToHistory(query.trim()));
     try {
       await navigateToResult(result);
     } catch (error) {
