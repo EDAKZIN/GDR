@@ -24,6 +24,7 @@ import {
 import { useRecordStore } from "../../stores";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { EmptyState } from "../components/EmptyState";
+import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMenu";
 import {
   btnPrimary,
   btnPrimaryLg,
@@ -136,36 +137,35 @@ interface RowMenuAction {
 
 /** Menú ⋮ de fila: Ver / Editar / Eliminar (o Restaurar en la papelera). */
 function RecordRowMenu({
+  anchor,
   actions,
   onClose,
 }: {
+  anchor: FloatingMenuAnchor;
   actions: readonly RowMenuAction[];
   onClose: () => void;
 }) {
   return (
-    <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-1 top-8 z-50 flex min-w-32 flex-col overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-2xl">
-        {actions.map((action) => (
-          <button
-            key={action.label}
-            type="button"
-            className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
-              action.danger === true
-                ? "text-rose-300 hover:bg-rose-500/10"
-                : "text-zinc-200 hover:bg-zinc-800"
-            }`}
-            onClick={() => {
-              onClose();
-              action.run();
-            }}
-          >
-            <action.icon className="h-3.5 w-3.5" />
-            {action.label}
-          </button>
-        ))}
-      </div>
-    </>
+    <FloatingMenu anchor={anchor} widthClass="w-32" onClose={onClose}>
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          type="button"
+          className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
+            action.danger === true
+              ? "text-rose-300 hover:bg-rose-500/10"
+              : "text-zinc-200 hover:bg-zinc-800"
+          }`}
+          onClick={() => {
+            onClose();
+            action.run();
+          }}
+        >
+          <action.icon className="h-3.5 w-3.5" />
+          {action.label}
+        </button>
+      ))}
+    </FloatingMenu>
   );
 }
 
@@ -178,6 +178,7 @@ export function RecordsTable({
   formName,
   onGoToTemplate,
   onOpenWorkspace,
+  templateCtaLabel = "Ir a la pestaña Plantilla",
 }: {
   /** Nombre del formulario (encabezado de la tabla). */
   formName: string;
@@ -185,6 +186,8 @@ export function RecordsTable({
   onGoToTemplate?: () => void;
   /** Abre el workspace completo del formulario (secciones planas). */
   onOpenWorkspace?: () => void;
+  /** Texto del CTA cuando la plantilla no tiene campos. */
+  templateCtaLabel?: string;
 }) {
   const items = useRecordStore((state) => state.items);
   const fields = useRecordStore((state) => state.fields);
@@ -200,7 +203,9 @@ export function RecordsTable({
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
   const [page, setPage] = useState(1);
-  const [menuRecordId, setMenuRecordId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ recordId: string; anchor: FloatingMenuAnchor } | null>(
+    null,
+  );
   const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
 
   // Columnas: los primeros campos habilitados de la plantilla.
@@ -284,19 +289,19 @@ export function RecordsTable({
 
   // Esc cierra el menú ⋮ de fila.
   useEffect(() => {
-    if (menuRecordId === null) {
+    if (menu === null) {
       return;
     }
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key === "Escape") {
-        setMenuRecordId(null);
+        setMenu(null);
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [menuRecordId]);
+  }, [menu]);
 
   function toggleSort(key: SortKey): void {
     setSort((previous) =>
@@ -423,7 +428,7 @@ export function RecordsTable({
           {onGoToTemplate !== undefined ? (
             <button type="button" className={`mt-1 ${btnPrimaryLg}`} onClick={onGoToTemplate}>
               <Plus className="h-4 w-4" />
-              Ir a la pestaña Plantilla
+              {templateCtaLabel}
             </button>
           ) : onOpenWorkspace !== undefined ? (
             <button type="button" className={`mt-1 ${btnPrimaryLg}`} onClick={onOpenWorkspace}>
@@ -543,19 +548,25 @@ export function RecordsTable({
                           aria-label={`Acciones de ${title}`}
                           title="Acciones"
                           className={`rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100 ${
-                            menuRecordId === record.id ? "" : "opacity-60"
+                            menu?.recordId === record.id ? "" : "opacity-60"
                           }`}
                           onClick={(event) => {
                             event.stopPropagation();
-                            setMenuRecordId(
-                              menuRecordId === record.id ? null : record.id,
+                            setMenu((previous) =>
+                              previous !== null && previous.recordId === record.id
+                                ? null
+                                : {
+                                    recordId: record.id,
+                                    anchor: event.currentTarget.getBoundingClientRect(),
+                                  },
                             );
                           }}
                         >
                           <MoreVertical className="h-3.5 w-3.5" />
                         </button>
-                        {menuRecordId === record.id ? (
+                        {menu !== null && menu.recordId === record.id ? (
                           <RecordRowMenu
+                            anchor={menu.anchor}
                             actions={
                               deleted
                                 ? [
@@ -593,7 +604,7 @@ export function RecordsTable({
                                   ]
                             }
                             onClose={() => {
-                              setMenuRecordId(null);
+                              setMenu(null);
                             }}
                           />
                         ) : null}
