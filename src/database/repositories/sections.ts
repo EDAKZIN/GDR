@@ -138,6 +138,25 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
     return parent;
   }
 
+  /**
+   * Rechaza colgar `sectionId` bajo `newParentId` si este es (cuelga de) un
+   * propio descendiente: produciría un ciclo y rompería el recorrido del
+   * subárbol. Usado tanto por move() como por update() con parentId.
+   */
+  async function assertNoCycle(
+    database: Database,
+    sectionId: string,
+    newParentId: string,
+  ): Promise<void> {
+    let cursor: Section | null = await getRow(database, newParentId);
+    while (cursor !== null && cursor.parentId !== null) {
+      if (cursor.parentId === sectionId) {
+        throw new Error("No se puede mover una sección bajo su propio descendiente.");
+      }
+      cursor = await getRow(database, cursor.parentId);
+    }
+  }
+
   /** Nº de subsecciones NO eliminadas de una sección. */
   async function countLiveChildren(database: Database, id: string): Promise<number> {
     const rows = await database.select<Array<{ total: number }>>(
@@ -153,6 +172,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
    */
   async function collectSubtreeIds(database: Database, rootId: string): Promise<string[]> {
     const ids: string[] = [rootId];
+    const visited = new Set<string>([rootId]);
     let frontier = [rootId];
     while (frontier.length > 0) {
       const placeholders = frontier.map((_, index) => `$${String(index + 1)}`).join(", ");
@@ -160,7 +180,11 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         `SELECT id FROM sections WHERE parent_id IN (${placeholders})`,
         frontier,
       );
-      frontier = rows.map((row) => row.id);
+      // Dedupe defensivo: un ciclo heredado en parent_id no debe colgar el recorrido.
+      frontier = rows.map((row) => row.id).filter((id) => !visited.has(id));
+      for (const id of frontier) {
+        visited.add(id);
+      }
       ids.push(...frontier);
     }
     return ids;
@@ -271,6 +295,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
 
     async update(id: string, input: UpdateSectionInput): Promise<Section> {
       const data = updateSectionInputSchema.parse(input);
+      const sectionId = z.uuid().parse(id);
       const database = await db();
       const sets: string[] = [];
       const params: unknown[] = [];
@@ -284,7 +309,6 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         appendSet(sets, params, "icon", data.icon ?? null);
       }
       if (data.allowChildren !== undefined && !data.allowChildren) {
-        const sectionId = z.uuid().parse(id);
         // Solo se puede convertir en hoja estructural una sección sin hijas vivas.
         const liveChildren = await countLiveChildren(database, sectionId);
         if (liveChildren > 0) {
@@ -297,8 +321,10 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         // null explícito = pasar a raíz; id = validar que exista y esté vivo.
         if (data.parentId !== null) {
           await requireLiveParent(database, data.parentId);
+          // Igual que move(): prohibido colgarse de un propio descendiente.
+          await assertNoCycle(database, sectionId, data.parentId);
         }
-        if (data.parentId === z.uuid().parse(id)) {
+        if (data.parentId === sectionId) {
           throw new Error("Una sección no puede ser su propia sección padre.");
         }
         appendSet(sets, params, "parent_id", data.parentId);
@@ -330,16 +356,10 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         if (target === sectionId) {
           throw new Error("Una sección no puede ser su propia sección padre.");
         }
-        const parent = await requireLiveParent(database, target);
+        await requireLiveParent(database, target);
         // Evitar ciclos: ningún ancestro del nuevo padre puede ser la sección
         // que se mueve (eso significaría colgarla de su propio descendiente).
-        let cursor: Section | null = parent;
-        while (cursor !== null && cursor.parentId !== null) {
-          if (cursor.parentId === sectionId) {
-            throw new Error("No se puede mover una sección bajo su propio descendiente.");
-          }
-          cursor = await getRow(database, cursor.parentId);
-        }
+        await assertNoCycle(database, sectionId, target);
       }
       await database.execute("UPDATE sections SET parent_id = $1, updated_at = $2 WHERE id = $3", [
         newParentId,
