@@ -42,7 +42,8 @@ function ThemePreview({ theme }: { theme: Theme }) {
 
 /**
  * Modal de Ajustes: dos grupos en orden de uso — Apariencia (tarjetas de tema
- * con mini-preview, aplicación instantánea sin guardar) e Idioma (radios).
+ * con mini-preview, aplicación instantánea sin guardar) e Idioma (desplegable
+ * que escala a nuevos idiomas sin añadir controles).
  * Esc o clic en el fondo cierran; el idioma vive en i18n y el tema en theme.ts.
  */
 export function SettingsModal({ onClose }: { onClose: () => void }) {
@@ -144,32 +145,26 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </h3>
             <p className="text-xs text-zinc-500">{t("ajustes.idiomaDesc")}</p>
             <div className="flex flex-col gap-1" role="radiogroup" aria-label={t("ajustes.idioma")}>
-              {(
-                [
-                  ["es", t("ajustes.espanol")],
-                  ["en", t("ajustes.ingles")],
-                ] as const
-              ).map(([id, label]) => (
-                <label
-                  key={id}
-                  className={`flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-left text-xs transition-colors duration-150 ${
-                    lang === id
-                      ? "border-sky-500/40 bg-sky-500/10 text-sky-100"
-                      : "border-transparent text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800/60"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="settings-lang"
-                    className="shrink-0 accent-sky-500"
-                    checked={lang === id}
-                    onChange={() => {
-                      setLang(id);
-                    }}
-                  />
-                  {label}
-                </label>
-              ))}
+              {/* Desplegable: escala a nuevos idiomas sin añadir controles. */}
+              <select
+                aria-label={t("ajustes.idioma")}
+                value={lang}
+                onChange={(event) => {
+                  setLang(event.target.value as "es" | "en");
+                }}
+                className="w-full cursor-pointer appearance-none rounded-md border border-zinc-700 bg-zinc-900 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22/%3E%3C/svg%3E')] bg-[position:right_0.6rem_center] bg-no-repeat px-2.5 py-1.5 pr-8 text-xs text-zinc-200 outline-none transition-colors duration-150 hover:border-zinc-600 focus:border-sky-400"
+              >
+                {(
+                  [
+                    ["es", t("ajustes.espanol")],
+                    ["en", t("ajustes.ingles")],
+                  ] as const
+                ).map(([id, label]) => (
+                  <option key={id} value={id} className="bg-zinc-900 text-zinc-200">
+                    {label}
+                  </option>
+                ))}
+              </select>
             </div>
           </section>
         </div>
