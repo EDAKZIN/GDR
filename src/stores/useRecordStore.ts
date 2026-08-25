@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { validateFieldValue, type Field } from "../core/fields";
+import { translate } from "../i18n";
 import type {
   FieldValue,
   RecordDetail,
@@ -37,7 +38,7 @@ export function resolveRecordTitle(
       return value.trim();
     }
   }
-  return "Sin título";
+  return translate("registros.sinTitulo");
 }
 
 export interface RecordListItem {
@@ -114,7 +115,7 @@ async function loadItems(options: LoadItemsOptions): Promise<RecordListItem[]> {
         values: detail?.values ?? [],
         title:
           detail === null
-            ? "Sin título"
+            ? translate("registros.sinTitulo")
             : resolveRecordTitle(options.fields, detail.values),
       };
     }),
@@ -358,7 +359,7 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
       }
       const detail = await recordsRepository.get(savedId);
       if (detail === null) {
-        throw new Error("El registro guardado no se pudo recargar.");
+        throw new Error(translate("registros.errorRecargar"));
       }
       await get().reloadList();
       set({

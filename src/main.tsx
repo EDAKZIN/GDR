@@ -5,6 +5,7 @@ import "./index.css";
 import { getDb } from "./database/client";
 import { runMigrations } from "./database/migrations/runner";
 import { createSearchRepository } from "./database/repositories";
+import { translate } from "./i18n";
 import { useSectionStore } from "./stores";
 
 async function bootstrap(): Promise<void> {
@@ -40,10 +41,10 @@ async function bootstrap(): Promise<void> {
       <React.StrictMode>
         <div className="flex h-screen flex-col items-center justify-center gap-3 bg-zinc-950 p-8 text-center">
           <h1 className="text-lg font-semibold text-rose-400">
-            No se pudo inicializar la base de datos
+            {translate("app.dbErrorTitulo")}
           </h1>
           <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-            Revisa que la aplicación tenga permisos de escritura y vuelve a abrirla.
+            {translate("app.dbErrorMensaje")}
           </p>
           <pre className="max-w-lg overflow-auto rounded-md border border-zinc-800 bg-zinc-900 p-3 text-left text-xs text-zinc-500">
             {fatal instanceof Error ? fatal.message : JSON.stringify(fatal)}

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { translate } from "../../i18n";
 import type { Field, FieldType } from "./models";
 
 /**
@@ -92,111 +93,124 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 function stringType(
-  label: string,
+  labelKey: "texto" | "textoLargo" | "url" | "email" | "contrasena" | "rutaArchivo" | "imagen" | "fecha" | "fechaHora",
   validateText?: (text: string) => string | null,
 ): FieldTypeHandler {
   return {
-    label,
+    // Getter: la etiqueta se traduce en el momento de leerla.
+    get label(): string {
+      return translate(`campos.tipos.${labelKey}`);
+    },
     isEmpty: (value) => !isNonEmptyString(value),
     validate: (value, _field) => {
       if (!isNonEmptyString(value)) {
-        return `El valor de «${label}» no es válido.`;
+        return translate("campos.validacion.valorInvalido", { campo: translate(`campos.tipos.${labelKey}`) });
       }
       return validateText ? validateText(value) : null;
     },
   };
 }
 
-const textHandler = stringType("Texto");
+const textHandler = stringType("texto");
 
-const longTextHandler = stringType("Texto largo");
+const longTextHandler = stringType("textoLargo");
 
-const urlHandler = stringType("URL", (text) =>
-  z.url().safeParse(text).success ? null : "Debe ser una URL válida.",
+const urlHandler = stringType("url", (text) =>
+  z.url().safeParse(text).success ? null : translate("campos.validacion.urlInvalida"),
 );
 
-const emailHandler = stringType("Email", (text) =>
-  z.email().safeParse(text).success ? null : "Debe ser un email válido.",
+const emailHandler = stringType("email", (text) =>
+  z.email().safeParse(text).success ? null : translate("campos.validacion.emailInvalido"),
 );
 
-const passwordHandler = stringType("Contraseña");
+const passwordHandler = stringType("contrasena");
 
-const filePathHandler = stringType("Ruta de archivo");
+const filePathHandler = stringType("rutaArchivo");
 
-const imageHandler = stringType("Imagen", (text) =>
+const imageHandler = stringType("imagen", (text) =>
   /^(https?:\/\/|\/|\.?[\\/])/.test(text.trim())
     ? null
-    : "Debe ser una URL o ruta de imagen válida.",
+    : translate("campos.validacion.imagenInvalida"),
 );
 
 const numberHandler: FieldTypeHandler = {
-  label: "Número",
+  get label(): string {
+    return translate("campos.tipos.numero");
+  },
   isEmpty: (value) => !(typeof value === "number" && Number.isFinite(value)),
   validate: (value, _field) =>
     typeof value === "number" && Number.isFinite(value)
       ? null
-      : "Debe ser un número válido.",
+      : translate("campos.validacion.numeroInvalido"),
 };
 
 const booleanHandler: FieldTypeHandler = {
-  label: "Sí/No",
+  get label(): string {
+    return translate("campos.tipos.siNo");
+  },
   isEmpty: () => false,
   validate: (value, _field) =>
-    typeof value === "boolean" ? null : "Debe ser verdadero o falso.",
+    typeof value === "boolean" ? null : translate("campos.validacion.booleanoInvalido"),
 };
 
-const dateHandler = stringType("Fecha", (text) =>
+const dateHandler = stringType("fecha", (text) =>
   /^\d{4}-\d{2}-\d{2}$/.test(text.trim()) && !Number.isNaN(Date.parse(text))
     ? null
-    : "Debe ser una fecha válida (AAAA-MM-DD).",
+    : translate("campos.validacion.fechaInvalida"),
 );
 
-const datetimeHandler = stringType("Fecha y hora", (text) =>
+const datetimeHandler = stringType("fechaHora", (text) =>
   !Number.isNaN(Date.parse(text))
     ? null
-    : "Debe ser una fecha y hora válidas.",
+    : translate("campos.validacion.fechaHoraInvalida"),
 );
 
 const selectHandler: FieldTypeHandler = {
-  label: "Selección",
+  get label(): string {
+    return translate("campos.tipos.seleccion");
+  },
   isEmpty: (value) => !isNonEmptyString(value),
   validate: (value, field) => {
     if (!isNonEmptyString(value)) {
-      return "Selecciona una opción válida.";
+      return translate("campos.validacion.seleccionInvalida");
     }
     const options = parseFieldOptions(field);
     if (options.length > 0 && !options.some((option) => option.value === value)) {
-      return "El valor no está entre las opciones definidas.";
+      return translate("campos.validacion.valorFueraDeOpciones");
     }
     return null;
   },
 };
 
 const multiselectHandler: FieldTypeHandler = {
-  label: "Selección múltiple",
+  get label(): string {
+    return translate("campos.tipos.seleccionMultiple");
+  },
   isEmpty: (value) => !(Array.isArray(value) && value.length > 0),
   validate: (value, field) => {
     if (!Array.isArray(value) || !value.every((item) => typeof item === "string")) {
-      return "Debe ser una lista de valores.";
+      return translate("campos.validacion.listaInvalida");
     }
     const options = parseFieldOptions(field);
     if (
       options.length > 0 &&
       !value.every((item) => options.some((option) => option.value === item))
     ) {
-      return "Hay valores que no están entre las opciones definidas.";
+      return translate("campos.validacion.valoresFueraDeOpciones");
     }
     return null;
   },
 };
 
 const tagsHandler: FieldTypeHandler = {
-  label: "Etiquetas",
+  get label(): string {
+    return translate("campos.tipos.etiquetas");
+  },
   isEmpty: (value) => !(Array.isArray(value) && value.length > 0),
   validate: (value, _field) =>
     Array.isArray(value) && value.every((item) => typeof item === "string")
       ? null
-      : "Las etiquetas deben ser una lista de textos.",
+      : translate("campos.validacion.etiquetasInvalidas"),
 };
 
 /**
@@ -248,7 +262,7 @@ export function getFieldTypeHandler(type: string): FieldTypeHandler {
 export function validateFieldValue(field: Field, value: unknown): string | null {
   const handler = getFieldTypeHandler(field.type);
   if (field.required && handler.isEmpty(value)) {
-    return "Este campo es obligatorio.";
+    return translate("campos.validacion.campoObligatorio");
   }
   if (handler.isEmpty(value)) {
     return null;

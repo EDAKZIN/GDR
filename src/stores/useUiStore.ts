@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { translate } from "../i18n";
 import { useSectionStore } from "./useSectionStore";
 
 /** Niveles de navegación de la app: inicio, sección o formulario. */
@@ -79,7 +80,7 @@ export function useBreadcrumb(): BreadcrumbItem[] {
 
   const items: BreadcrumbItem[] = [
     {
-      label: "Inicio",
+      label: translate("comun.inicio"),
       onClick: () => {
         useUiStore.getState().navigate("home");
       },
