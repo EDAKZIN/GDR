@@ -120,6 +120,13 @@ async function loadSectionForms(sectionId: string): Promise<{
   };
 }
 
+/**
+ * Contador de cargas de formularios: si dos loadForms se solapan (cambio
+ * rápido de sección), solo la MÁS RECIENTE puede escribir estado; las
+ * respuestas tardías de la anterior se descartan en vez de pisarla.
+ */
+let formsLoadSeq = 0;
+
 export const useSectionStore = create<SectionState>()((set, get) => ({
   sections: [],
   trashedSections: [],
@@ -305,15 +312,23 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
   },
 
   loadForms: async (sectionId) => {
+    const seq = ++formsLoadSeq;
     set({ loadingForms: true });
     try {
       const { forms, trashedForms } = await loadSectionForms(sectionId);
+      if (seq !== formsLoadSeq) {
+        // Llegó tarde: otra carga más reciente ya tomó el control del estado.
+        return;
+      }
       set({ forms, trashedForms, loadingForms: false, error: null });
       const active = get().activeFormId;
       if (active !== null && !forms.some((form) => form.id === active)) {
         set({ activeFormId: null });
       }
     } catch (error) {
+      if (seq !== formsLoadSeq) {
+        return;
+      }
       set({ loadingForms: false, error: toMessage(error) });
     }
   },
