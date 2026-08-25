@@ -21,6 +21,7 @@ import {
   formatLocalizedDateTime,
   formatRelativeTime,
 } from "../../core/utils/relativeTime";
+import { useT } from "../../i18n";
 import { useRecordStore } from "../../stores";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { EmptyState } from "../components/EmptyState";
@@ -91,6 +92,7 @@ function compareValues(a: unknown, b: unknown, type: string): number {
 
 /** Celda formateada según el tipo: contraseña oculta, booleano como badge… */
 function CellValue({ field, value }: { field: Field; value: unknown }) {
+  const { t } = useT();
   if (field.type === "password") {
     const empty = typeof value !== "string" || value === "";
     if (empty) {
@@ -105,7 +107,7 @@ function CellValue({ field, value }: { field: Field; value: unknown }) {
         className={`inline-flex items-center rounded px-1 py-0.5 ${
           on ? "bg-sky-500/15 text-sky-300" : "bg-zinc-800 text-zinc-500"
         }`}
-        title={on ? "Sí" : "No"}
+        title={on ? t("comun.si") : t("comun.no")}
       >
         {on ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
       </span>
@@ -178,7 +180,7 @@ export function RecordsTable({
   formName,
   onGoToTemplate,
   onOpenWorkspace,
-  templateCtaLabel = "Ir a la pestaña Plantilla",
+  templateCtaLabel,
 }: {
   /** Nombre del formulario (encabezado de la tabla). */
   formName: string;
@@ -189,6 +191,7 @@ export function RecordsTable({
   /** Texto del CTA cuando la plantilla no tiene campos. */
   templateCtaLabel?: string;
 }) {
+  const { t } = useT();
   const items = useRecordStore((state) => state.items);
   const fields = useRecordStore((state) => state.fields);
   const showDeleted = useRecordStore((state) => state.showDeleted);
@@ -332,7 +335,7 @@ export function RecordsTable({
         onClick={() => {
           toggleSort(key);
         }}
-        title={active ? "Cambiar orden" : "Ordenar"}
+        title={active ? t("comun.cambiarOrden") : t("comun.ordenar")}
       >
         {label}
         {active ? (
@@ -355,7 +358,7 @@ export function RecordsTable({
         </h2>
         <span
           className={chipAccent}
-          title="Registros cargados"
+          title={t("registros.registrosCargados")}
         >
           {String(items.length)}
         </span>
@@ -363,7 +366,7 @@ export function RecordsTable({
         {/* Filtro pequeño integrado a la tabla (no sustituye a Ctrl+K) */}
         <label
           className="relative ml-1 flex w-44 min-w-0 items-center rounded-md border border-zinc-800 bg-zinc-900 px-2 py-1 transition-colors focus-within:border-sky-400"
-          title="Filtrar las filas de esta tabla"
+          title={t("registros.filtroTitle")}
         >
           <ListFilter className="mr-1.5 h-3 w-3 shrink-0 text-zinc-600" />
           <input
@@ -372,15 +375,15 @@ export function RecordsTable({
             onChange={(event) => {
               setQuery(event.target.value);
             }}
-            placeholder="Filtrar…"
-            aria-label="Filtrar registros"
+            placeholder={t("registros.filtroPlaceholder")}
+            aria-label={t("registros.filtroAria")}
             maxLength={120}
             className="w-full min-w-0 bg-transparent text-xs text-zinc-100 outline-none placeholder:text-zinc-600"
           />
           {query !== "" ? (
             <button
               type="button"
-              aria-label="Quitar filtro"
+              aria-label={t("registros.quitarFiltro")}
               className="ml-1 shrink-0 rounded p-0.5 text-zinc-600 transition-colors hover:text-zinc-200"
               onClick={() => {
                 setQuery("");
@@ -401,12 +404,12 @@ export function RecordsTable({
                 setShowDeleted(event.target.checked);
               }}
             />
-            Papelera
+            {t("papelera.boton")}
           </label>
           {!showDeleted && hasFields ? (
             <button type="button" className={btnPrimary} onClick={openCreate}>
               <Plus className="h-4 w-4" />
-              Nuevo registro
+              {t("registros.nuevo")}
             </button>
           ) : null}
         </div>
@@ -422,33 +425,33 @@ export function RecordsTable({
         /* Sin campos en la plantilla todavía. */
         <EmptyState
           icon={LayoutList}
-          title="Plantilla sin campos"
-          description="Añade campos a esta plantilla para empezar a llenar registros."
+          title={t("plantilla.sinCampos")}
+          description={t("plantilla.anadirCamposNota")}
         >
           {onGoToTemplate !== undefined ? (
             <button type="button" className={`mt-1 ${btnPrimaryLg}`} onClick={onGoToTemplate}>
               <Plus className="h-4 w-4" />
-              {templateCtaLabel}
+              {templateCtaLabel ?? t("plantilla.irAPestana")}
             </button>
           ) : onOpenWorkspace !== undefined ? (
             <button type="button" className={`mt-1 ${btnPrimaryLg}`} onClick={onOpenWorkspace}>
               <Plus className="h-4 w-4" />
-              Editar plantilla del formulario
+              {t("plantilla.editarPlantillaFormulario")}
             </button>
           ) : null}
         </EmptyState>
       ) : loading && items.length === 0 ? (
         <p className="py-8 text-center text-sm text-zinc-500">
-          Cargando registros…
+          {t("registros.cargando")}
         </p>
       ) : isEmpty ? (
         <EmptyState
           icon={LayoutList}
-          title={showDeleted ? "Papelera vacía" : "Sin registros"}
+          title={showDeleted ? t("registros.papeleraVacia") : t("registros.sinRegistros")}
           description={
             showDeleted
-              ? "Los registros eliminados aparecerán aquí para poder restaurarlos."
-              : "Esta plantilla todavía no tiene registros. Crea el primero."
+              ? t("registros.papeleraVaciaDesc")
+              : t("registros.sinRegistrosDesc")
           }
         >
           {!showDeleted && hasFields ? (
@@ -458,7 +461,7 @@ export function RecordsTable({
               onClick={openCreate}
             >
               <Plus className="h-4 w-4" />
-              Nuevo registro
+              {t("registros.nuevo")}
             </button>
           ) : null}
         </EmptyState>
@@ -483,16 +486,16 @@ export function RecordsTable({
                     scope="col"
                     className="whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500"
                   >
-                    {sortableHeader("Creado", "created_at")}
+                    {sortableHeader(t("registros.creado"), "created_at")}
                   </th>
                   <th
                     scope="col"
                     className="whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500"
                   >
-                    {sortableHeader("Modificado", "updated_at")}
+                    {sortableHeader(t("registros.modificado"), "updated_at")}
                   </th>
                   <th scope="col" className="w-10 px-2 py-2">
-                    <span className="sr-only">Acciones</span>
+                    <span className="sr-only">{t("comun.acciones")}</span>
                   </th>
                 </tr>
               </thead>
@@ -545,8 +548,8 @@ export function RecordsTable({
                       <td className="relative px-2 py-2 text-right">
                         <button
                           type="button"
-                          aria-label={`Acciones de ${title}`}
-                          title="Acciones"
+                          aria-label={t("comun.accionesDe", { n: title })}
+                          title={t("comun.acciones")}
                           className={`rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100 ${
                             menu?.recordId === record.id ? "" : "opacity-60"
                           }`}
@@ -574,7 +577,7 @@ export function RecordsTable({
                               deleted
                                 ? [
                                     {
-                                      label: "Restaurar",
+                                      label: t("comun.restaurar"),
                                       icon: RotateCcw,
                                       run: () => {
                                         void restoreItem(record.id);
@@ -583,21 +586,21 @@ export function RecordsTable({
                                   ]
                                 : [
                                     {
-                                      label: "Ver",
+                                      label: t("comun.ver"),
                                       icon: Eye,
                                       run: () => {
                                         void openRecord(record.id);
                                       },
                                     },
                                     {
-                                      label: "Editar",
+                                      label: t("comun.editar"),
                                       icon: Pencil,
                                       run: () => {
                                         editRecord(record.id);
                                       },
                                     },
                                     {
-                                      label: "Eliminar",
+                                      label: t("comun.eliminar"),
                                       icon: Trash2,
                                       danger: true,
                                       run: () => {
@@ -621,7 +624,7 @@ export function RecordsTable({
                       colSpan={visibleFields.length + 3}
                       className="px-3 py-6 text-center text-sm text-zinc-500"
                     >
-                      Ningún registro coincide con «{query.trim()}».
+                      {t("registros.ningunoCoincide", { n: query.trim() })}
                     </td>
                   </tr>
                 ) : null}
@@ -632,13 +635,13 @@ export function RecordsTable({
           {/* Paginación */}
           <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 pt-0.5">
             <p className="text-[11px] tabular-nums text-zinc-500">
-              Mostrando {String(from)}–{String(to)} de {String(totalCount)}
+              {t("registros.mostrando", { a: from, b: to, c: totalCount })}
             </p>
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                aria-label="Página anterior"
-                title="Anterior"
+                aria-label={t("registros.paginaAnterior")}
+                title={t("registros.anterior")}
                 className="rounded-md border border-zinc-800 p-1 text-zinc-400 transition-colors hover:border-sky-400 hover:text-sky-300 disabled:pointer-events-none disabled:opacity-40"
                 disabled={currentPage <= 1}
                 onClick={() => {
@@ -652,8 +655,8 @@ export function RecordsTable({
               </span>
               <button
                 type="button"
-                aria-label="Página siguiente"
-                title="Siguiente"
+                aria-label={t("registros.paginaSiguiente")}
+                title={t("registros.siguiente")}
                 className="rounded-md border border-zinc-800 p-1 text-zinc-400 transition-colors hover:border-sky-400 hover:text-sky-300 disabled:pointer-events-none disabled:opacity-40"
                 disabled={currentPage >= pageCount}
                 onClick={() => {
@@ -669,9 +672,9 @@ export function RecordsTable({
 
       {deleteRecordId !== null ? (
         <ConfirmModal
-          title="Eliminar registro"
-          message="El registro pasará a la papelera de este formulario. Podrás restaurarlo desde ahí."
-          confirmLabel="Eliminar"
+          title={t("registros.eliminarTitulo")}
+          message={t("registros.eliminarMensaje")}
+          confirmLabel={t("comun.eliminar")}
           onConfirm={() => deleteItem(deleteRecordId)}
           onClose={() => {
             setDeleteRecordId(null);

@@ -1,5 +1,6 @@
 import { getFieldTypeHandler } from "../../core/fields";
 import type { Field } from "../../core/fields";
+import { translate } from "../../i18n";
 
 /** Texto plano de un valor escalar; null si no tiene representación simple. */
 export function scalarText(value: unknown): string | null {
@@ -10,7 +11,7 @@ export function scalarText(value: unknown): string | null {
     return String(value);
   }
   if (typeof value === "boolean") {
-    return value ? "Sí" : "No";
+    return value ? translate("comun.si") : translate("comun.no");
   }
   return null;
 }

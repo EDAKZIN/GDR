@@ -14,6 +14,7 @@ import { getFieldTypeHandler } from "../../core/fields";
 import type { Field } from "../../core/fields";
 import { getDb } from "../../database/client";
 import { createFieldsRepository } from "../../database/repositories";
+import { useT } from "../../i18n";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { ReorderContainer, ReorderItem } from "../components/LongPressReorder";
 import { useLongPressReorder } from "../components/useLongPressReorder";
@@ -37,16 +38,17 @@ type ModalState =
   { kind: "create" } | { kind: "edit"; field: Field } | { kind: "hardDelete"; field: Field } | null;
 
 function FieldBadges({ field }: { field: Field }) {
+  const { t } = useT();
   return (
     <span className="flex flex-wrap items-center gap-1.5 text-[11px] text-zinc-500">
       <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-zinc-400">
         {typeLabel(field.type)}
       </span>
       {field.required ? (
-        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-sky-300">Obligatorio</span>
+        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-sky-300">{t("comun.obligatorio")}</span>
       ) : null}
       {field.searchable ? (
-        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-sky-300">Buscable</span>
+        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-sky-300">{t("comun.buscable")}</span>
       ) : null}
     </span>
   );
@@ -72,10 +74,11 @@ function FieldRowMenu({
   onDelete: () => void;
   onClose: () => void;
 }) {
+  const { t } = useT();
   const actions: MenuAction[] = [
-    { label: "Editar", icon: Pencil, run: onEdit },
+    { label: t("comun.editar"), icon: Pencil, run: onEdit },
     {
-      label: "Subir",
+      label: t("comun.subir"),
       icon: ArrowUp,
       disabled: isFirst || !field.enabled,
       run: () => {
@@ -83,7 +86,7 @@ function FieldRowMenu({
       },
     },
     {
-      label: "Bajar",
+      label: t("comun.bajar"),
       icon: ArrowDown,
       disabled: isLast || !field.enabled,
       run: () => {
@@ -91,10 +94,10 @@ function FieldRowMenu({
       },
     },
     field.enabled
-      ? { label: "Deshabilitar", icon: X, run: onToggleEnabled }
-      : { label: "Habilitar", icon: RotateCcw, run: onToggleEnabled },
+      ? { label: t("comun.deshabilitar"), icon: X, run: onToggleEnabled }
+      : { label: t("comun.habilitar"), icon: RotateCcw, run: onToggleEnabled },
     {
-      label: "Quitar",
+      label: t("comun.quitar"),
       icon: Trash2,
       danger: true,
       run: onDelete,
@@ -135,6 +138,7 @@ function FieldRowMenu({
  * Cada cambio avisa al padre para refrescar los campos de los registros.
  */
 export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: () => void }) {
+  const { t } = useT();
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -246,7 +250,7 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
     <section className="flex min-h-0 flex-1 flex-col gap-3">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-zinc-500">
-          Añade, ordena y configura los campos con los que se llenarán los registros.
+          {t("plantilla.nota")}
         </p>
         <div className="flex shrink-0 items-center gap-2">
           {deletedFields.length > 0 ? (
@@ -256,8 +260,8 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
                 setShowTrash((previous) => !previous);
                 setMenuFieldId(null);
               }}
-              title="Papelera de campos"
-              aria-label="Papelera de campos"
+              title={t("plantilla.papeleraTitle")}
+              aria-label={t("plantilla.papeleraTitle")}
               className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors ${
                 showTrash
                   ? "border-sky-500/50 bg-sky-500/15 text-sky-300"
@@ -265,7 +269,7 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
               }`}
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Papelera ({deletedFields.length})
+              {t("plantilla.papeleraBoton", { n: deletedFields.length })}
             </button>
           ) : null}
           <button
@@ -276,7 +280,7 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
             }}
           >
             <Plus className="h-4 w-4" />
-            Añadir campo
+            {t("plantilla.anadirCampo")}
           </button>
         </div>
       </header>
@@ -291,11 +295,11 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
       {showTrash ? (
         <section className="flex flex-col gap-2 rounded-lg border border-dashed border-zinc-800 p-3">
           <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-            Campos eliminados
+            {t("plantilla.camposEliminados")}
           </h3>
           {deletedFields.length === 0 ? (
             <p className="py-2 text-center text-xs text-zinc-600">
-              La papelera de campos está vacía.
+              {t("plantilla.papeleraVacia")}
             </p>
           ) : (
             <ul className="flex flex-col gap-1.5">
@@ -314,7 +318,7 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
                       void runAction(() => fieldsRepository.restore(field.id));
                     }}
                   >
-                    Restaurar
+                    {t("comun.restaurar")}
                   </button>
                   <button
                     type="button"
@@ -323,7 +327,7 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
                       setModal({ kind: "hardDelete", field });
                     }}
                   >
-                    Borrar
+                    {t("comun.borrar")}
                   </button>
                 </li>
               ))}
@@ -334,12 +338,12 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
 
       {/* Listado de campos */}
       {loading && activeFields.length === 0 ? (
-        <p className="py-8 text-center text-sm text-zinc-500">Cargando campos…</p>
+        <p className="py-8 text-center text-sm text-zinc-500">{t("plantilla.cargando")}</p>
       ) : activeFields.length === 0 ? (
         <div className="flex min-h-48 flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-800 px-6 py-12 text-center">
           <Plus className="h-8 w-8 text-zinc-700" />
           <p className="max-w-sm text-sm leading-relaxed text-zinc-500">
-            Añade campos a esta plantilla para empezar a llenar registros.
+            {t("plantilla.anadirCamposNota")}
           </p>
         </div>
       ) : (
@@ -368,7 +372,7 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
                   <button
                     type="button"
                     {...reorder.getGripProps(field.id)}
-                    aria-label={`Arrastra para reordenar ${field.name}`}
+                    aria-label={t("plantilla.reordenarAria", { n: field.name })}
                     className={`shrink-0 cursor-grab rounded-md p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-sky-300 ${
                       isDragging ? "cursor-grabbing text-sky-300" : ""
                     }`}
@@ -383,7 +387,7 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
                   </span>
                   <button
                     type="button"
-                    aria-label={`Menú de ${field.name}`}
+                    aria-label={t("comun.menuDe", { n: field.name })}
                     className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100"
                     onClick={() => {
                       setMenuFieldId(menuFieldId === field.id ? null : field.id);
@@ -425,7 +429,7 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
           {disabledFields.length > 0 ? (
             <>
               <li className="pt-3 text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
-                Deshabilitados
+                {t("plantilla.deshabilitados")}
               </li>
               {disabledFields.map((field) => (
                 <li key={field.id}>
@@ -435,8 +439,8 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
                     </span>
                     <button
                       type="button"
-                      title="Habilitar"
-                      aria-label={`Habilitar ${field.name}`}
+                      title={t("comun.habilitar")}
+                      aria-label={t("plantilla.habilitarDe", { n: field.name })}
                       className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:text-sky-300"
                       onClick={() => {
                         void runAction(() => fieldsRepository.enable(field.id));
@@ -446,8 +450,8 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
                     </button>
                     <button
                       type="button"
-                      title="Quitar"
-                      aria-label={`Quitar ${field.name}`}
+                      title={t("comun.quitar")}
+                      aria-label={t("plantilla.quitarDe", { n: field.name })}
                       className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:text-rose-300"
                       onClick={() => {
                         void runAction(() => fieldsRepository.softDelete(field.id));
@@ -478,9 +482,9 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
 
       {modal !== null && modal.kind === "hardDelete" ? (
         <ConfirmModal
-          title="Eliminar campo definitivamente"
-          message={`¿Eliminar el campo «${modal.field.name}» definitivamente? Sus valores guardados en los registros se perderán.`}
-          confirmLabel="Borrar"
+          title={t("plantilla.eliminarCampoTitulo")}
+          message={t("plantilla.eliminarCampoMensaje", { n: modal.field.name })}
+          confirmLabel={t("comun.borrar")}
           onConfirm={() => runAction(() => fieldsRepository.hardDelete(modal.field.id))}
           onClose={() => {
             setModal(null);

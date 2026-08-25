@@ -8,6 +8,7 @@ import {
   stringifyFieldOptions,
 } from "../../core/fields";
 import type { CreateFieldInput, Field, FieldType } from "../../core/fields";
+import { useT } from "../../i18n";
 import { getDb } from "../../database/client";
 import { createFieldsRepository } from "../../database/repositories";
 import { ReorderContainer, ReorderItem } from "../components/LongPressReorder";
@@ -86,6 +87,7 @@ export interface FieldModalProps {
 
 /** Modal para crear o editar un campo de la plantilla del formulario. */
 export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps) {
+  const { t } = useT();
   const [editor, setEditor] = useState<EditorState>(() => {
     if (field === null) {
       return emptyEditor("text");
@@ -187,7 +189,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
       <form
         role="dialog"
         aria-modal="true"
-        aria-label={field === null ? "Añadir campo" : "Editar campo"}
+        aria-label={field === null ? t("plantilla.anadirCampo") : t("plantilla.editarCampo")}
         className="flex w-full max-w-lg flex-col gap-3 rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl"
         onSubmit={(event) => {
           event.preventDefault();
@@ -198,13 +200,13 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
       >
         <header className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-zinc-100">
-            {field === null ? "Añadir campo" : "Editar campo"}
+            {field === null ? t("plantilla.anadirCampo") : t("plantilla.editarCampo")}
           </h2>
           <button
             type="button"
             className="rounded-md border border-zinc-700 p-1 text-zinc-400 transition-colors hover:text-zinc-100"
             onClick={onClose}
-            aria-label="Cerrar"
+            aria-label={t("comun.cerrar")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -212,7 +214,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className={labelClass}>
-            Nombre
+            {t("comun.nombre")}
             <input
               className={inputClass}
               value={editor.name}
@@ -225,7 +227,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
             />
           </label>
           <label className={labelClass}>
-            Tipo
+            {t("plantilla.tipo")}
             <select
               className={inputClass}
               value={editor.type}
@@ -249,7 +251,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
         </div>
 
         <label className={labelClass}>
-          Descripción
+          {t("comun.descripcion")}
           <textarea
             className={`${inputClass} min-h-12 resize-y`}
             value={editor.descriptionText}
@@ -262,7 +264,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
 
         {isOptionType ? (
           <div className={labelClass}>
-            Opciones
+            {t("plantilla.opciones")}
             <ReorderContainer controller={optionsReorder} className="flex flex-col gap-1.5">
               {optionsReorder.order.map((optionId) => {
                 const optionIndex = Number(optionId);
@@ -283,7 +285,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
                     <button
                       type="button"
                       {...optionsReorder.getGripProps(optionId)}
-                      aria-label={`Arrastra para reordenar la opción ${String(optionIndex + 1)}`}
+                      aria-label={t("plantilla.opcionReordenarAria", { n: optionIndex + 1 })}
                       className={`shrink-0 cursor-grab rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-sky-300 ${
                         isDragging ? "cursor-grabbing text-sky-300" : ""
                       }`}
@@ -295,13 +297,13 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
                       onChange={(event) => {
                         updateOption(optionIndex, event.target.value);
                       }}
-                      placeholder={`Opción ${String(optionIndex + 1)}`}
+                      placeholder={t("plantilla.opcionPlaceholder", { n: optionIndex + 1 })}
                       maxLength={200}
                       className="min-w-0 flex-1 bg-transparent py-1.5 font-mono text-xs text-zinc-100 outline-none placeholder:text-zinc-600"
                     />
                     <button
                       type="button"
-                      aria-label={`Eliminar opción ${String(optionIndex + 1)}`}
+                      aria-label={t("plantilla.eliminarOpcionAria", { n: optionIndex + 1 })}
                       className="shrink-0 rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-rose-300"
                       onClick={() => {
                         removeOption(optionIndex);
@@ -319,7 +321,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
               className="inline-flex items-center gap-1 self-start rounded-md border border-dashed border-zinc-700 px-2 py-1 text-[11px] text-zinc-400 transition-colors hover:border-sky-400 hover:text-sky-300"
             >
               <Plus className="h-3 w-3" />
-              Añadir opción
+              {t("plantilla.anadirOpcion")}
             </button>
           </div>
         ) : null}
@@ -334,7 +336,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
                 setEditor({ ...editor, required: event.target.checked });
               }}
             />
-            Obligatorio
+            {t("comun.obligatorio")}
           </label>
           <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-zinc-400">
             <input
@@ -345,7 +347,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
                 setEditor({ ...editor, searchable: event.target.checked });
               }}
             />
-            Buscable
+            {t("comun.buscable")}
           </label>
         </div>
 
@@ -362,7 +364,7 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
             onClick={onClose}
             disabled={saving}
           >
-            Cancelar
+            {t("comun.cancelar")}
           </button>
           <button
             type="submit"
@@ -371,11 +373,11 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
           >
             {field === null
               ? saving
-                ? "Añadiendo…"
-                : "Añadir campo"
+                ? t("plantilla.anadiendo")
+                : t("plantilla.anadirCampo")
               : saving
-                ? "Guardando…"
-                : "Guardar cambios"}
+                ? t("comun.guardando")
+                : t("comun.guardarCambios")}
           </button>
         </footer>
       </form>

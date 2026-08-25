@@ -11,6 +11,7 @@ import type { SearchResult } from "../../core/search";
 import { FIELD_TYPES, FIELD_TYPE_REGISTRY, type FieldType } from "../../core/fields";
 import { createFormsRepository, createSearchRepository } from "../../database/repositories";
 import { getDb } from "../../database/client";
+import { useT } from "../../i18n";
 import { useRecordStore, useSectionStore, useUiStore } from "../../stores";
 
 const searchRepository = createSearchRepository(getDb);
@@ -143,6 +144,7 @@ const selectClass =
   "max-w-[10rem] truncate rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-300 outline-none focus:border-sky-400";
 
 export function GlobalSearch({ onClose }: { onClose: () => void }) {
+  const { t } = useT();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [exact, setExact] = useState(true);
@@ -368,14 +370,14 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
               setQuery(event.target.value);
             }}
             onKeyDown={onKeyDown}
-            placeholder="Buscar en todos los registros…"
+            placeholder={t("busqueda.placeholder")}
             className="w-full bg-transparent py-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600"
           />
           {searching ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-zinc-500" /> : null}
           <button
             onClick={onClose}
             className="shrink-0 rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
-            aria-label="Cerrar búsqueda"
+            aria-label={t("busqueda.cerrarAria")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -392,9 +394,9 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
                 setFormFilter("");
                 setFormOptions([]);
               }}
-              aria-label="Filtrar por sección"
+              aria-label={t("busqueda.filtrarSeccionAria")}
             >
-              <option value="">Todas las secciones</option>
+              <option value="">{t("busqueda.todasLasSecciones")}</option>
               {liveSections
                 .filter((section) => section.enabled)
                 .map((section) => (
@@ -410,9 +412,9 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
                 onChange={(event) => {
                   setFormFilter(event.target.value);
                 }}
-                aria-label="Filtrar por formulario"
+                aria-label={t("busqueda.filtrarFormularioAria")}
               >
-                <option value="">Todos los formularios</option>
+                <option value="">{t("busqueda.todosLosFormularios")}</option>
                 {formOptions.map((form) => (
                   <option key={form.id} value={form.id}>
                     {form.name}
@@ -447,7 +449,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
                 }}
                 className="rounded-full px-2 py-0.5 text-[10px] text-zinc-500 underline-offset-2 hover:text-sky-300 hover:underline"
               >
-                limpiar
+                {t("busqueda.limpiar")}
               </button>
             ) : null}
           </div>
@@ -458,14 +460,14 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
             history.length > 0 ? (
               <div>
                 <p className="sticky top-0 flex items-center justify-between bg-zinc-900 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Búsquedas recientes
+                  {t("busqueda.recientes")}
                   {history.length > 1 ? (
                     <button
                       type="button"
                       onClick={clearHistory}
                       className="text-[10px] font-normal normal-case tracking-normal text-zinc-600 transition-colors hover:text-sky-300"
                     >
-                      Borrar todo
+                      {t("busqueda.borrarTodo")}
                     </button>
                   ) : null}
                 </p>
@@ -502,7 +504,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
                           className={`absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-zinc-500 opacity-0 transition-opacity hover:bg-zinc-700 hover:text-zinc-100 focus-visible:opacity-100 ${
                             index === activeIndex ? "opacity-100" : ""
                           } group-hover:opacity-100`}
-                          aria-label={`Eliminar «${entry.query}» del historial`}
+                          aria-label={t("busqueda.eliminarDelHistorial", { n: entry.query })}
                           onClick={(event) => {
                             deleteHistoryItem(event, entry.query);
                           }}
@@ -516,19 +518,19 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
               </div>
             ) : (
               <p className="p-6 text-center text-sm text-zinc-600">
-                Escribe para buscar en campos indexados de todas las secciones.
+                {t("busqueda.escribeHint")}
               </p>
             )
           ) : !searching && results.length === 0 ? (
             <div className="flex flex-col items-center gap-2 p-6 text-center">
               <SearchX className="h-8 w-8 text-zinc-700" />
-              <p className="text-sm text-zinc-500">Sin resultados para «{trimmedQuery}».</p>
+              <p className="text-sm text-zinc-500">{t("busqueda.sinResultados", { n: trimmedQuery })}</p>
             </div>
           ) : (
             <>
               {showNearHint ? (
                 <p className="border-b border-sky-500/20 bg-sky-500/10 px-3 py-1.5 text-xs text-sky-300">
-                  Sin resultados exactos para «{trimmedQuery}» · resultados cercanos:
+                  {t("busqueda.sinExactos", { n: trimmedQuery })}
                 </p>
               ) : null}
               {groups.map((group) => (
@@ -567,7 +569,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
                               </span>
                               {!result.exact ? (
                                 <span className="shrink-0 rounded-full border border-zinc-700 px-1.5 text-[10px] text-zinc-500">
-                                  cercano
+                                  {t("busqueda.cercano")}
                                 </span>
                               ) : null}
                             </span>
@@ -587,7 +589,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
         </div>
 
         <p className="border-t border-zinc-800 px-3 py-1.5 text-right text-[10px] uppercase tracking-wide text-zinc-600">
-          ↑↓ navega · Enter abre · Esc cierra
+          {t("busqueda.atajos")}
         </p>
       </div>
     </div>

@@ -28,6 +28,7 @@ import {
 import type { ComponentType } from "react";
 import type { Field } from "../../core/fields";
 import { getFieldTypeHandler } from "../../core/fields";
+import { useT } from "../../i18n";
 import { formatLocalizedDate, formatLocalizedDateTime, formatRelativeTime } from "../../core/utils/relativeTime";
 import { useRecordStore } from "../../stores";
 import { FieldRenderer } from "../forms/fields";
@@ -108,6 +109,7 @@ function ValueRow({
   onCopied: () => void;
   onOpenImage: (src: string) => void;
 }) {
+  const { t } = useT();
   const typeIcon = createElement(fieldTypeIcon(field.type), {
     className: "h-3.5 w-3.5 shrink-0 text-zinc-600",
   });
@@ -126,8 +128,8 @@ function ValueRow({
         </span>
         <button
           type="button"
-          aria-label={revealed ? "Ocultar contraseña" : "Mostrar contraseña"}
-          title={revealed ? "Ocultar" : "Mostrar"}
+          aria-label={revealed ? t("registros.ocultarContrasena") : t("registros.mostrarContrasena")}
+          title={revealed ? t("registros.ocultar") : t("registros.mostrar")}
           className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
           onClick={onToggleReveal}
         >
@@ -136,8 +138,8 @@ function ValueRow({
         {typeof value === "string" ? (
           <button
             type="button"
-            aria-label="Copiar contraseña"
-            title="Copiar"
+            aria-label={t("registros.copiarContrasena")}
+            title={t("registros.copiarContrasena")}
             className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
             onClick={() => {
               void navigator.clipboard.writeText(value);
@@ -150,7 +152,7 @@ function ValueRow({
       </span>
     );
   } else if (field.type === "boolean") {
-    content = <ValueBadge label={value === true ? "Sí" : "No"} />;
+    content = <ValueBadge label={value === true ? t("comun.si") : t("comun.no")} />;
   } else if (field.type === "select") {
     content = <ValueBadge label={formatted} />;
   } else if ((field.type === "tags" || field.type === "multiselect") && Array.isArray(value)) {
@@ -159,7 +161,7 @@ function ValueRow({
     content = (
       <button
         type="button"
-        title="Ver en grande"
+        title={t("registros.verEnGrande")}
         className="group relative inline-block max-w-full cursor-zoom-in overflow-hidden rounded-lg border border-zinc-700"
         onClick={() => {
           onOpenImage(value);
@@ -171,7 +173,7 @@ function ValueRow({
           className="max-h-48 w-auto object-contain transition-transform duration-150 group-hover:scale-[1.02]"
         />
         <span className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/60 py-1 text-[10px] uppercase tracking-wide text-zinc-300 opacity-0 transition-opacity group-hover:opacity-100">
-          Ampliar
+          {t("registros.ampliar")}
         </span>
       </button>
     );
@@ -205,8 +207,8 @@ function ValueRow({
         </code>
         <button
           type="button"
-          aria-label="Copiar ruta"
-          title="Copiar ruta"
+          aria-label={t("registros.copiarRuta")}
+          title={t("registros.copiarRuta")}
           className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
           onClick={() => {
             void navigator.clipboard.writeText(value);
@@ -263,6 +265,7 @@ function ValueRow({
  * validación required. Esc y el clic fuera cierran.
  */
 export function RecordModal() {
+  const { t } = useT();
   const mode = useRecordStore((state) => state.activeMode);
   const fields = useRecordStore((state) => state.fields);
   const activeId = useRecordStore((state) => state.activeId);
@@ -361,7 +364,7 @@ export function RecordModal() {
 
   // Título del registro: primer campo de texto con valor; si no, el primer
   // campo obligatorio con valor; si no, un título genérico.
-  let recordTitle = "Registro sin título";
+  let recordTitle = t("registros.sinTituloFicha");
   if (!editing) {
     const titleField =
       fields.find(
@@ -398,7 +401,7 @@ export function RecordModal() {
       <section
         role="dialog"
         aria-modal="true"
-        aria-label={mode === "view" ? "Detalle del registro" : "Edición de registro"}
+        aria-label={mode === "view" ? t("registros.detalleAria") : t("registros.edicionAria")}
         className={`${modalPanel} max-h-[92vh] max-w-3xl`}
         onClick={(event) => {
           event.stopPropagation();
@@ -413,7 +416,7 @@ export function RecordModal() {
             <div className="min-w-0 flex-1">
               {editing ? (
                 <h2 className="truncate text-base font-semibold text-zinc-50">
-                  {mode === "create" ? "Nuevo registro" : "Editar registro"}
+                  {mode === "create" ? t("registros.nuevo") : t("registros.editarModal")}
                 </h2>
               ) : (
                 <>
@@ -424,20 +427,20 @@ export function RecordModal() {
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
                       <span
                         className={`${chipNeutral} normal-case`}
-                        title={`Creado: ${formatLocalizedDateTime(activeDetail.createdAt)}`}
+                        title={t("registros.creadoChipTitle", { n: formatLocalizedDateTime(activeDetail.createdAt) })}
                       >
-                        Creado {formatRelativeTime(activeDetail.createdAt)}
+                        {t("registros.creadoChip", { n: formatRelativeTime(activeDetail.createdAt) })}
                       </span>
                       <span
                         className={`${chipNeutral} normal-case`}
-                        title={`Modificado: ${formatLocalizedDateTime(activeDetail.updatedAt)}`}
+                        title={t("registros.modificadoChipTitle", { n: formatLocalizedDateTime(activeDetail.updatedAt) })}
                       >
-                        Modificado {formatRelativeTime(activeDetail.updatedAt)}
+                        {t("registros.modificadoChip", { n: formatRelativeTime(activeDetail.updatedAt) })}
                       </span>
                       {inTrash ? (
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 text-[11px] font-semibold text-rose-300">
                           <Trash className="h-3 w-3" />
-                          En papelera
+                          {t("registros.enPapelera")}
                         </span>
                       ) : null}
                     </div>
@@ -451,7 +454,7 @@ export function RecordModal() {
             <div className="flex shrink-0 items-center gap-2">
               <button type="button" className={btnPrimary} onClick={startEditing}>
                 <Pencil className="h-3.5 w-3.5" />
-                Editar
+                {t("comun.editar")}
               </button>
               <button
                 type="button"
@@ -461,7 +464,7 @@ export function RecordModal() {
                 }}
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Eliminar
+                {t("comun.eliminar")}
               </button>
             </div>
           ) : null}
@@ -476,7 +479,7 @@ export function RecordModal() {
                 closeActive();
               }
             }}
-            aria-label="Cerrar"
+            aria-label={t("comun.cerrar")}
             disabled={saving}
           >
             <X className="h-4 w-4" />
@@ -506,12 +509,12 @@ export function RecordModal() {
               ))}
               {fields.length === 0 ? (
                 <p className="py-6 text-sm text-zinc-500">
-                  Añade campos a esta plantilla para empezar a llenar registros.
+                  {t("plantilla.anadirCamposNota")}
                 </p>
               ) : null}
               {Object.keys(errors).length > 0 ? (
                 <p className="text-xs font-medium text-rose-400">
-                  Revisa los errores antes de guardar.
+                  {t("registros.revisaErrores")}
                 </p>
               ) : null}
             </div>
@@ -535,7 +538,7 @@ export function RecordModal() {
               ))}
               {fields.length === 0 ? (
                 <p className="py-6 text-sm text-zinc-500">
-                  Añade campos a esta plantilla para empezar a llenar registros.
+                  {t("plantilla.anadirCamposNota")}
                 </p>
               ) : null}
             </div>
@@ -545,7 +548,7 @@ export function RecordModal() {
         {editing ? (
           <footer className={modalFooter}>
             <button type="button" className={btnSecondary} onClick={cancel} disabled={saving}>
-              Cancelar
+              {t("comun.cancelar")}
             </button>
             <button
               type="button"
@@ -556,7 +559,7 @@ export function RecordModal() {
               disabled={saving}
             >
               <Save className="h-3.5 w-3.5" />
-              {saving ? "Guardando…" : "Guardar"}
+              {saving ? t("comun.guardando") : t("comun.guardar")}
             </button>
           </footer>
         ) : null}
@@ -567,7 +570,7 @@ export function RecordModal() {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Imagen ampliada"
+          aria-label={t("registros.imagenAmpliadaAria")}
           className="fixed inset-0 z-[70] flex cursor-zoom-out items-center justify-center bg-black/85 p-6"
           onClick={() => {
             setLightboxSrc(null);
@@ -580,7 +583,7 @@ export function RecordModal() {
           />
           <button
             type="button"
-            aria-label="Cerrar imagen"
+            aria-label={t("registros.cerrarImagen")}
             className="absolute right-4 top-4 rounded-md border border-zinc-700 bg-zinc-900 p-2 text-zinc-300 transition-colors hover:text-zinc-100"
             onClick={(event) => {
               event.stopPropagation();
@@ -594,9 +597,9 @@ export function RecordModal() {
 
       {confirmingDelete ? (
         <ConfirmModal
-          title="Eliminar registro"
-          message="El registro pasará a la papelera de este formulario. Podrás restaurarlo desde ahí."
-          confirmLabel="Eliminar"
+          title={t("registros.eliminarTitulo")}
+          message={t("registros.eliminarMensaje")}
+          confirmLabel={t("comun.eliminar")}
           onConfirm={() => deleteActive()}
           onClose={() => {
             setConfirmingDelete(false);
