@@ -229,6 +229,10 @@ export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
       "fl.enabled = 1",
       "fl.deleted_at IS NULL",
       "r.deleted_at IS NULL",
+      // Mismo criterio de visibilidad que aplican los JOIN de search():
+      // nada de formularios o secciones en papelera dentro del índice.
+      "fo.deleted_at IS NULL",
+      "s.deleted_at IS NULL",
       "fl.type <> 'password'",
     ];
     const params: unknown[] = [];
@@ -245,6 +249,8 @@ export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
        FROM field_values fv
        JOIN fields fl ON fl.id = fv.field_id
        JOIN records r ON r.id = fv.record_id
+       JOIN forms fo ON fo.id = r.form_id
+       JOIN sections s ON s.id = fo.section_id
        WHERE ${clauses.join(" AND ")}`,
       params,
     );

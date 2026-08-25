@@ -9,6 +9,7 @@ import {
   type UpdateSectionInput,
 } from "../../core/sections";
 import { randomUUID } from "../../core/utils/uuid";
+import { createSearchRepository } from "./search";
 import {
   appendSet,
   boolToDb,
@@ -108,6 +109,10 @@ export interface SectionRepository {
 }
 
 export function createSectionsRepository(db: DbHandle): SectionRepository {
+  // El índice FTS solo debe contener contenido visible: purgar al borrar la
+  // sección (subárbol incluido) y reindexar sus registros vivos al restaurar.
+  const searchRepository = createSearchRepository(db);
+
   async function getRow(database: Database, id: string): Promise<Section | null> {
     const rows = await database.select<SectionRow[]>(
       `SELECT ${SECTION_COLUMNS} FROM sections WHERE id = $1`,
@@ -404,6 +409,15 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
       // Soft-delete en cascada: la sección y todo su subárbol a la papelera.
       const subtreeIds = await collectSubtreeIds(database, sectionId);
       await applyDeletedFlag(database, subtreeIds, true);
+      // Los registros del subárbol dejan de ser visibles: fuera del índice.
+      const placeholders = subtreeIds.map((_, index) => `$${String(index + 1)}`).join(", ");
+      await database.execute(
+        `DELETE FROM fts_values WHERE record_id IN (
+           SELECT r.id FROM records r JOIN forms fo ON fo.id = r.form_id
+           WHERE fo.section_id IN (${placeholders})
+         )`,
+        subtreeIds,
+      );
       return requireRow(database, sectionId);
     },
 
@@ -445,6 +459,17 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         ids.push(...frontier);
       }
       await applyDeletedFlag(database, ids, false);
+      // Reindexar los registros vivos de los formularios restaurados.
+      const placeholders = ids.map((_, index) => `$${String(index + 1)}`).join(", ");
+      const recordRows = await database.select<Array<{ id: string }>>(
+        `SELECT DISTINCT r.id FROM records r
+         JOIN forms fo ON fo.id = r.form_id
+         WHERE fo.section_id IN (${placeholders}) AND r.deleted_at IS NULL`,
+        ids,
+      );
+      for (const row of recordRows) {
+        await searchRepository.indexRecord(row.id);
+      }
       return requireRow(database, sectionId);
     },
 
@@ -464,6 +489,9 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         );
         await database.execute("DELETE FROM records WHERE form_id NOT IN (SELECT id FROM forms)");
         await database.execute("DELETE FROM fields WHERE form_id NOT IN (SELECT id FROM forms)");
+        await database.execute(
+          "DELETE FROM fts_values WHERE record_id NOT IN (SELECT id FROM records)",
+        );
       }
       return result.rowsAffected > 0;
     },

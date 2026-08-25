@@ -10,6 +10,7 @@ import {
   type UpdateFormInput,
 } from "../../core/forms";
 import { randomUUID } from "../../core/utils/uuid";
+import { createSearchRepository } from "./search";
 import {
   appendSet,
   boolToDb,
@@ -80,6 +81,10 @@ export interface FormRepository {
 }
 
 export function createFormsRepository(db: DbHandle): FormRepository {
+  // El índice FTS solo debe contener contenido visible: purgar al borrar el
+  // formulario y reindexar sus registros vivos al restaurarlo.
+  const searchRepository = createSearchRepository(db);
+
   async function getRow(database: Database, id: string): Promise<Form | null> {
     const rows = await database.select<FormRow[]>(
       `SELECT ${FORM_COLUMNS} FROM forms WHERE id = $1`,
@@ -214,13 +219,30 @@ export function createFormsRepository(db: DbHandle): FormRepository {
     },
 
     async softDelete(id: string): Promise<Form> {
+      const formId = z.uuid().parse(id);
       const database = await db();
-      return setFlags(database, z.uuid().parse(id), { deleted: true });
+      const form = await setFlags(database, formId, { deleted: true });
+      // Sus registros dejan de ser visibles: fuera del índice.
+      await database.execute(
+        "DELETE FROM fts_values WHERE record_id IN (SELECT id FROM records WHERE form_id = $1)",
+        [formId],
+      );
+      return form;
     },
 
     async restore(id: string): Promise<Form> {
+      const formId = z.uuid().parse(id);
       const database = await db();
-      return setFlags(database, z.uuid().parse(id), { deleted: false });
+      const form = await setFlags(database, formId, { deleted: false });
+      // Reindexar los registros vivos del formulario restaurado.
+      const rows = await database.select<Array<{ id: string }>>(
+        "SELECT id FROM records WHERE form_id = $1 AND deleted_at IS NULL",
+        [formId],
+      );
+      for (const row of rows) {
+        await searchRepository.indexRecord(row.id);
+      }
+      return form;
     },
 
     async hardDelete(id: string): Promise<boolean> {
@@ -228,6 +250,14 @@ export function createFormsRepository(db: DbHandle): FormRepository {
       const result = await database.execute("DELETE FROM forms WHERE id = $1", [
         z.uuid().parse(id),
       ]);
+      if (result.rowsAffected > 0) {
+        // El CASCADE arrastra fields/records/field_values; esta limpieza
+        // garantiza que el índice FTS no conserve entradas huérfanas aunque
+        // las claves foráneas estuvieran desactivadas en tiempo de ejecución.
+        await database.execute(
+          "DELETE FROM fts_values WHERE record_id NOT IN (SELECT id FROM records)",
+        );
+      }
       return result.rowsAffected > 0;
     },
 
