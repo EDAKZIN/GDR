@@ -30,6 +30,7 @@ import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMen
 import { IconRenderer } from "../components/IconRenderer";
 import { btnPrimary, btnSecondary } from "../components/uiStyles";
 import { FormModal } from "../screens/FormModal";
+import logoUrl from "../../assets/logo.png";
 import { SectionModal } from "../screens/SectionModal";
 import { showErrorToast } from "./toastStore";
 
@@ -830,10 +831,17 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
           }`}
         >
           <div inert={!open} className="flex h-full w-72 flex-col">
-            {/* Marca discreta */}
-            <p className="px-4 pt-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-600">
-              GDR · Organizador
-            </p>
+            {/* Marca con logo */}
+            <div className="flex items-center gap-2 px-4 pt-3">
+              <img
+                src={logoUrl}
+                alt="Logo GDR"
+                className="h-6 w-6 rounded-md border border-zinc-800 object-cover"
+              />
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600">
+                GDR · Organizador
+              </p>
+            </div>
 
             <div className="px-3 pb-1 pt-2">
               <button
