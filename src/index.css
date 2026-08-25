@@ -56,6 +56,16 @@
  */
 html {
   background-color: var(--color-zinc-950);
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
 }
 
 /* Scrollbars finos para las zonas con desplazamiento (siguen el tema vía var) */

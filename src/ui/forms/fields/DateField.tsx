@@ -5,7 +5,7 @@ export function DateField({ value, onChange, disabled }: FieldInputProps) {
   return (
     <input
       type="date"
-      className={`${fieldInputClass(false)} [color-scheme:dark]`}
+      className={fieldInputClass(false)}
       value={typeof value === "string" ? value : ""}
       onChange={(event) => {
         onChange(event.target.value === "" ? null : event.target.value);

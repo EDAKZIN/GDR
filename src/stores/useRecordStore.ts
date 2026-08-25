@@ -340,11 +340,18 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
       return false;
     }
 
-    // Descartar valores de campos que ya no existen (borrados mientras se
-    // editaba): insertarlos rompería la FK de field_values.field_id.
     const liveFieldIds = new Set(fields.map((field) => field.id));
     const payload = Object.fromEntries(
-      Object.entries(draft).filter(([fieldId]) => liveFieldIds.has(fieldId)),
+      fields
+        .filter((field) => liveFieldIds.has(field.id))
+        .map((field) => {
+          const raw = draft[field.id];
+          const value =
+            field.type === "boolean" && (raw === null || raw === undefined)
+              ? false
+              : raw;
+          return [field.id, value];
+        }),
     );
 
     set({ saving: true, error: null });

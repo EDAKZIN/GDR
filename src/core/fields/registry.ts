@@ -66,9 +66,11 @@ export function parseFieldOptions(field: Pick<Field, "description">): FieldOptio
     return [];
   }
   const options: FieldOption[] = [];
+  const seen = new Set<string>();
   for (const item of parsed) {
     if (typeof item === "string") {
-      if (item.trim() !== "") {
+      if (item.trim() !== "" && !seen.has(item)) {
+        seen.add(item);
         options.push({ value: item, label: item });
       }
       continue;
@@ -76,7 +78,8 @@ export function parseFieldOptions(field: Pick<Field, "description">): FieldOptio
     const option = z
       .object({ value: z.string().min(1), label: z.string().min(1) })
       .safeParse(item);
-    if (option.success) {
+    if (option.success && !seen.has(option.data.value)) {
+      seen.add(option.data.value);
       options.push(option.data);
     }
   }
@@ -148,7 +151,7 @@ const booleanHandler: FieldTypeHandler = {
   get label(): string {
     return translate("campos.tipos.siNo");
   },
-  isEmpty: () => false,
+  isEmpty: (value) => value === null || value === undefined,
   validate: (value, _field) =>
     typeof value === "boolean" ? null : translate("campos.validacion.booleanoInvalido"),
 };
