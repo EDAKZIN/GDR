@@ -6,7 +6,12 @@ import { getDb } from "./database/client";
 import { runMigrations } from "./database/migrations/runner";
 import { createSearchRepository } from "./database/repositories";
 import { translate } from "./i18n";
+import { applyStoredTheme } from "./theme";
 import { useSectionStore } from "./stores";
+
+// El tema persistido se aplica ANTES del primer render para evitar el flash
+// de fondo con el tema equivocado.
+applyStoredTheme();
 
 async function bootstrap(): Promise<void> {
   let fatal: unknown = null;

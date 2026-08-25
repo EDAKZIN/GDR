@@ -1,6 +1,40 @@
 @import "tailwindcss";
 
-/* Scrollbars finos para las zonas con desplazamiento */
+/*
+ * TEMA CLARO: redefinición de las variables de color zinc de Tailwind v4
+ * bajo [data-theme="light"] (aplicado en <html> desde src/theme.ts).
+ * Al redefinir las variables, TODAS las utilidades zinc (incluidas las
+ * variantes de opacidad tipo bg-zinc-900/60, que usan color-mix) se remapean
+ * sin tocar las clases de los componentes. Los acentos sky/rose se mantienen.
+ *
+ * Remapeo oscuro → claro (escala invertida, contraste verificado):
+ *   bg  zinc-950 (#09090b fondo)      → #f4f4f5  (fondo claro)
+ *   bg  zinc-900 (#18181b paneles)    → #ffffff  (paneles blancos)
+ *   bg  zinc-800 (#27272a elevado)    → #e4e4e7  (superficie elevada)
+ *   bor zinc-700 (#3f3f46 bordes)     → #d4d4d8  (bordes suaves)
+ *   txt zinc-600 (#52525b tenue)      → #a1a1aa  (tenue sobre blanco)
+ *   txt zinc-500 (#71717a secundario) → #71717a  (4.6:1 sobre blanco)
+ *   txt zinc-400 (#a1a1aa labels)     → #52525b  (~7:1 sobre blanco)
+ *   txt zinc-300 (#d4d4d8 cuerpo)     → #3f3f46  (~10:1 sobre blanco)
+ *   txt zinc-200 (#e4e4e7 títulos)    → #27272a
+ *   txt zinc-100 (#f4f4f5 principal)  → #18181b
+ *   txt zinc-50  (#fafafa encabezados)→ #09090b
+ */
+[data-theme="light"] {
+  --color-zinc-50: #09090b;
+  --color-zinc-100: #18181b;
+  --color-zinc-200: #27272a;
+  --color-zinc-300: #3f3f46;
+  --color-zinc-400: #52525b;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #a1a1aa;
+  --color-zinc-700: #d4d4d8;
+  --color-zinc-800: #e4e4e7;
+  --color-zinc-900: #ffffff;
+  --color-zinc-950: #f4f4f5;
+}
+
+/* Scrollbars finos para las zonas con desplazamiento (siguen el tema vía var) */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-zinc-700) transparent;
@@ -18,4 +52,13 @@
 
 *::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/*
+ * El logo del drawer tiene fondo negro: en tema claro se enmarca con un borde
+ * visible y un halo blanco para que no quede como un cuadro flotante duro.
+ */
+[data-theme="light"] .app-logo {
+  border-color: var(--color-zinc-300);
+  box-shadow: 0 0 0 2px #ffffff;
 }
