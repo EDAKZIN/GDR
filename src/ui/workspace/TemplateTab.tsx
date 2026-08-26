@@ -16,6 +16,7 @@ import { getDb } from "../../database/client";
 import { createFieldsRepository } from "../../database/repositories";
 import { useT } from "../../i18n";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMenu";
 import { ReorderContainer, ReorderItem } from "../components/LongPressReorder";
 import { useLongPressReorder } from "../components/useLongPressReorder";
 import { FieldModal } from "./FieldModal";
@@ -57,6 +58,7 @@ function FieldBadges({ field }: { field: Field }) {
 /** Menú contextual de una fila de campo (editar, ordenar, deshabilitar…). */
 function FieldRowMenu({
   field,
+  anchor,
   isFirst,
   isLast,
   onEdit,
@@ -66,6 +68,7 @@ function FieldRowMenu({
   onClose,
 }: {
   field: Field;
+  anchor: FloatingMenuAnchor;
   isFirst: boolean;
   isLast: boolean;
   onEdit: () => void;
@@ -105,30 +108,27 @@ function FieldRowMenu({
   ];
 
   return (
-    <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-2 top-9 z-50 flex min-w-36 flex-col overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-2xl">
-        {actions.map((action) => (
-          <button
-            key={action.label}
-            type="button"
-            className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
-              action.danger === true
-                ? "text-rose-300 hover:bg-rose-500/10"
-                : "text-zinc-200 hover:bg-zinc-800"
-            } disabled:pointer-events-none disabled:opacity-40`}
-            disabled={action.disabled === true}
-            onClick={() => {
-              onClose();
-              action.run();
-            }}
-          >
-            <action.icon className="h-3.5 w-3.5" />
-            {action.label}
-          </button>
-        ))}
-      </div>
-    </>
+    <FloatingMenu anchor={anchor} widthClass="min-w-36" onClose={onClose}>
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          type="button"
+          className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
+            action.danger === true
+              ? "text-rose-300 hover:bg-rose-500/10"
+              : "text-zinc-200 hover:bg-zinc-800"
+          } disabled:pointer-events-none disabled:opacity-40`}
+          disabled={action.disabled === true}
+          onClick={() => {
+            onClose();
+            action.run();
+          }}
+        >
+          <action.icon className="h-3.5 w-3.5" />
+          {action.label}
+        </button>
+      ))}
+    </FloatingMenu>
   );
 }
 
@@ -142,7 +142,7 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [menuFieldId, setMenuFieldId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ fieldId: string; anchor: FloatingMenuAnchor } | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
   const [showTrash, setShowTrash] = useState(false);
 
@@ -186,22 +186,20 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
     };
   }, [formId]);
 
-  // Esc cierra el menú contextual del campo (igual que en la tabla de
-  // registros y en el árbol del drawer).
   useEffect(() => {
-    if (menuFieldId === null) {
+    if (menu === null) {
       return;
     }
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key === "Escape") {
-        setMenuFieldId(null);
+        setMenu(null);
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [menuFieldId]);
+  }, [menu]);
 
   /** Ejecuta una acción de mantenimiento y sincroniza ambos listados. */
   async function runAction(action: () => Promise<unknown>): Promise<void> {
@@ -258,7 +256,7 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
               type="button"
               onClick={() => {
                 setShowTrash((previous) => !previous);
-                setMenuFieldId(null);
+                setMenu(null);
               }}
               title={t("plantilla.papeleraTitle")}
               aria-label={t("plantilla.papeleraTitle")}
@@ -389,16 +387,23 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
                     type="button"
                     aria-label={t("comun.menuDe", { n: field.name })}
                     className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100"
-                    onClick={() => {
-                      setMenuFieldId(menuFieldId === field.id ? null : field.id);
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      setMenu(
+                        menu !== null && menu.fieldId === field.id
+                          ? null
+                          : { fieldId: field.id, anchor: rect },
+                      );
                     }}
                   >
                     <MoreVertical className="h-4 w-4" />
                   </button>
                 </div>
-                {menuFieldId === field.id ? (
+                {menu !== null && menu.fieldId === field.id ? (
                   <FieldRowMenu
                     field={field}
+                    anchor={menu.anchor}
                     isFirst={enabledFields[0]?.id === field.id}
                     isLast={enabledFields[enabledFields.length - 1]?.id === field.id}
                     onEdit={() => {
@@ -418,7 +423,7 @@ export function TemplateTab({ formId, onChanged }: { formId: string; onChanged: 
                       void runAction(() => fieldsRepository.softDelete(field.id));
                     }}
                     onClose={() => {
-                      setMenuFieldId(null);
+                      setMenu(null);
                     }}
                   />
                 ) : null}
