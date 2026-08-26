@@ -5,6 +5,7 @@ import {
   ArrowUp,
   FileStack,
   FolderOpen,
+  GripVertical,
   LayoutList,
   MoreVertical,
   Pencil,
@@ -15,6 +16,8 @@ import {
 } from "lucide-react";
 import type { Form } from "../../core/forms";
 import type { Section } from "../../core/sections";
+import { getDb } from "../../database/client";
+import { createFormsRepository } from "../../database/repositories";
 import { useT } from "../../i18n";
 import { useSectionStore } from "../../stores";
 import { useUiStore } from "../../stores/useUiStore";
@@ -22,11 +25,20 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { EmptyState } from "../components/EmptyState";
 import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMenu";
 import { IconRenderer } from "../components/IconRenderer";
+import {
+  ReorderContainer,
+  ReorderItem,
+} from "../components/LongPressReorder";
+import type { GripProps } from "../components/useLongPressReorder";
+import { useLongPressReorder } from "../components/useLongPressReorder";
 import { btnDangerGhost } from "../components/uiStyles";
+import { showErrorToast } from "../menu/toastStore";
 import { openSection } from "../navigation/openSection";
 import { FlatSectionScreen } from "./FlatSectionScreen";
 import { FormModal } from "./FormModal";
 import { SectionModal } from "./SectionModal";
+
+const formsRepository = createFormsRepository(getDb);
 
 type FormModalState =
   | { kind: "create"; sectionId: string }
@@ -142,6 +154,8 @@ function FormCard({
   form,
   isFirst,
   isLast,
+  dragging,
+  gripProps,
   onEdit,
   onOpenMenu,
   menuOpen,
@@ -150,6 +164,8 @@ function FormCard({
   form: Form;
   isFirst: boolean;
   isLast: boolean;
+  dragging: boolean;
+  gripProps: GripProps;
   onEdit: (form: Form) => void;
   onOpenMenu: (anchor: FloatingMenuAnchor | null) => void;
   menuOpen: boolean;
@@ -162,9 +178,11 @@ function FormCard({
     <div
       role="button"
       tabIndex={0}
-      className={`group relative flex cursor-pointer flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4 transition-colors hover:border-sky-500/50 hover:bg-zinc-900 ${
-        form.enabled ? "" : "opacity-50"
-      }`}
+      className={`group relative flex cursor-pointer flex-col gap-3 rounded-xl border bg-zinc-900/70 p-4 transition-colors ${
+        dragging
+          ? "z-10 border-sky-400/70 bg-zinc-900 shadow-xl shadow-sky-500/10 ring-2 ring-sky-400/40"
+          : "border-zinc-800 hover:border-sky-500/50 hover:bg-zinc-900"
+      } ${form.enabled ? "" : "opacity-50"}`}
       onClick={() => {
         navigate("form", form.id);
       }}
@@ -183,20 +201,35 @@ function FormCard({
             <FileStack className="h-5 w-5" />
           )}
         </span>
-        <button
-          type="button"
-          aria-label={t("comun.menuDe", { n: form.name })}
-          className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100 focus-visible:opacity-100 group-hover:opacity-100 md:opacity-0"
-          onClick={(event) => {
-            event.stopPropagation();
-            // Capturar el rect ANTES de usarlo: React pone currentTarget en
-            // null al salir del handler.
-            const rect = event.currentTarget.getBoundingClientRect();
-            onOpenMenu(menuAnchor !== null ? null : rect);
-          }}
-        >
-          <MoreVertical className="h-4 w-4" />
-        </button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            aria-label={t("plantilla.reordenarAria", { n: form.name })}
+            {...gripProps}
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+            className={`shrink-0 cursor-grab touch-none rounded-md p-1 text-zinc-600 transition-colors hover:bg-zinc-700 hover:text-sky-300 focus-visible:opacity-100 group-hover:opacity-100 md:opacity-0 ${
+              dragging ? "cursor-grabbing text-sky-300 opacity-100" : ""
+            }`}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label={t("comun.menuDe", { n: form.name })}
+            className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100 focus-visible:opacity-100 group-hover:opacity-100 md:opacity-0"
+            onClick={(event) => {
+              event.stopPropagation();
+              // Capturar el rect ANTES de usarlo: React pone currentTarget en
+              // null al salir del handler.
+              const rect = event.currentTarget.getBoundingClientRect();
+              onOpenMenu(menuOpen ? null : rect);
+            }}
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <div className="min-w-0">
@@ -244,6 +277,7 @@ export function SectionFormsScreen() {
   const trashedForms = useSectionStore((store) => store.trashedForms);
   const loadingForms = useSectionStore((store) => store.loadingForms);
   const error = useSectionStore((store) => store.error);
+  const loadForms = useSectionStore((store) => store.loadForms);
   const restoreForm = useSectionStore((store) => store.restoreForm);
   const hardDeleteForm = useSectionStore((store) => store.hardDeleteForm);
 
@@ -299,6 +333,29 @@ export function SectionFormsScreen() {
     };
   }, [menu, showTrash]);
 
+  // Reordenación por arrastre (mantener presionado el grip) entre
+  // formularios habilitados de la sección activa; los botones Subir/Bajar
+  // del menú siguen disponibles.
+  const enabledFormIds = forms
+    .filter((form) => form.enabled)
+    .map((form) => form.id);
+  const reorder = useLongPressReorder({
+    orderedIds: enabledFormIds,
+    onReorder: (orderedIds) => {
+      const sectionId = activeSectionId ?? "";
+      void formsRepository
+        .reorder([...orderedIds])
+        .then(() => loadForms(sectionId))
+        .catch((reorderError: unknown) => {
+          showErrorToast(
+            reorderError instanceof Error
+              ? reorderError.message
+              : String(reorderError),
+          );
+        });
+    },
+  });
+
   if (activeSectionId === null || activeSection === undefined) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-8">
@@ -314,7 +371,13 @@ export function SectionFormsScreen() {
 
   const enabledForms = forms.filter((form) => form.enabled);
   const disabledForms = forms.filter((form) => !form.enabled);
-  const orderedCards = [...enabledForms, ...disabledForms];
+  // Orden vigente: refleja el borrador de arrastre mientras se arrastra.
+  const enabledFormById = new Map(enabledForms.map((form) => [form.id, form]));
+  const orderedEnabledForms = reorder.order.flatMap((id) => {
+    const form = enabledFormById.get(id);
+    return form === undefined ? [] : [form];
+  });
+  const orderedCards = [...orderedEnabledForms, ...disabledForms];
 
   function openCreate(): void {
     setFormModal({ kind: "create", sectionId: activeSection?.id ?? "" });
@@ -500,36 +563,59 @@ export function SectionFormsScreen() {
             onAction={openCreate}
           />
         ) : (
-          /* Grid fluido de tarjetas + botón destacado */
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
-            {orderedCards.map((form) => (
-              <FormCard
-                key={form.id}
-                form={form}
-                isFirst={enabledForms[0]?.id === form.id}
-                isLast={
-                  form.enabled
-                    ? enabledForms[enabledForms.length - 1]?.id === form.id
-                    : disabledForms[disabledForms.length - 1]?.id === form.id
-                }
-                menuOpen={menu?.formId === form.id}
-                menuAnchor={menu?.formId === form.id ? menu.anchor : null}
-                onOpenMenu={(anchor) => {
-                  setMenu(anchor !== null ? { formId: form.id, anchor } : null);
-                }}
-                onEdit={openEditForm}
-              />
-            ))}
+          /* Grid fluido de tarjetas + botón destacado, reordenables manteniendo presionado el grip */
+          <ReorderContainer
+            controller={reorder}
+            className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3"
+          >
+            {orderedCards.map((form) => {
+              const isDragging = reorder.draggingId === form.id;
+              const card = (
+                <FormCard
+                  form={form}
+                  isFirst={enabledForms[0]?.id === form.id}
+                  isLast={
+                    form.enabled
+                      ? enabledForms[enabledForms.length - 1]?.id === form.id
+                      : disabledForms[disabledForms.length - 1]?.id === form.id
+                  }
+                  dragging={isDragging}
+                  gripProps={reorder.getGripProps(form.id)}
+                  menuOpen={menu?.formId === form.id}
+                  menuAnchor={menu?.formId === form.id ? menu.anchor : null}
+                  onOpenMenu={(anchor) => {
+                    setMenu(anchor !== null ? { formId: form.id, anchor } : null);
+                  }}
+                  onEdit={openEditForm}
+                />
+              );
+              return form.enabled ? (
+                <ReorderItem
+                  key={form.id}
+                  controller={reorder}
+                  id={form.id}
+                  className={`relative ${
+                    isDragging ? "z-10" : reorder.draggingId !== null ? "opacity-60" : ""
+                  }`}
+                >
+                  {card}
+                </ReorderItem>
+              ) : (
+                <li key={form.id}>{card}</li>
+              );
+            })}
 
-            <button
-              type="button"
-              className="flex min-h-32 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-sky-500/40 bg-sky-500/5 p-4 text-sky-300 transition-colors hover:border-sky-400 hover:bg-sky-500/10"
-              onClick={openCreate}
-            >
-              <Plus className="h-6 w-6" />
-              <span className="text-sm font-semibold">{t("formularios.nuevo")}</span>
-            </button>
-          </div>
+            <li>
+              <button
+                type="button"
+                className="flex min-h-32 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-sky-500/40 bg-sky-500/5 p-4 text-sky-300 transition-colors hover:border-sky-400 hover:bg-sky-500/10"
+                onClick={openCreate}
+              >
+                <Plus className="h-6 w-6" />
+                <span className="text-sm font-semibold">{t("formularios.nuevo")}</span>
+              </button>
+            </li>
+          </ReorderContainer>
         )}
       </div>
 

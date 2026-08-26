@@ -3,6 +3,7 @@ import {
   ArrowDown,
   ArrowUp,
   FolderOpen,
+  GripVertical,
   LayoutGrid,
   MoreVertical,
   Pencil,
@@ -12,15 +13,26 @@ import {
   X,
 } from "lucide-react";
 import type { Section } from "../../core/sections";
+import { getDb } from "../../database/client";
+import { createSectionsRepository } from "../../database/repositories";
 import { useT } from "../../i18n";
 import { useSectionStore } from "../../stores";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { EmptyState } from "../components/EmptyState";
 import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMenu";
 import { IconRenderer } from "../components/IconRenderer";
+import {
+  ReorderContainer,
+  ReorderItem,
+} from "../components/LongPressReorder";
+import type { GripProps } from "../components/useLongPressReorder";
+import { useLongPressReorder } from "../components/useLongPressReorder";
 import { btnDangerGhost, btnPrimaryLg } from "../components/uiStyles";
+import { showErrorToast } from "../menu/toastStore";
 import { openSection } from "../navigation/openSection";
 import { SectionModal } from "./SectionModal";
+
+const sectionsRepository = createSectionsRepository(getDb);
 
 type ModalState = { kind: "create" } | { kind: "edit"; section: Section } | null;
 
@@ -132,6 +144,8 @@ function SectionCard({
   formCount,
   isFirst,
   isLast,
+  dragging,
+  gripProps,
   onEdit,
   onOpenMenu,
   menuOpen,
@@ -141,6 +155,8 @@ function SectionCard({
   formCount: number;
   isFirst: boolean;
   isLast: boolean;
+  dragging: boolean;
+  gripProps: GripProps;
   onEdit: (section: Section) => void;
   onOpenMenu: (anchor: FloatingMenuAnchor | null) => void;
   menuOpen: boolean;
@@ -152,9 +168,11 @@ function SectionCard({
     <div
       role="button"
       tabIndex={0}
-      className={`group relative flex cursor-pointer flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4 transition-colors hover:border-sky-500/50 hover:bg-zinc-900 ${
-        section.enabled ? "" : "opacity-50"
-      }`}
+      className={`group relative flex cursor-pointer flex-col gap-3 rounded-xl border bg-zinc-900/70 p-4 transition-colors ${
+        dragging
+          ? "z-10 border-sky-400/70 bg-zinc-900 shadow-xl shadow-sky-500/10 ring-2 ring-sky-400/40"
+          : "border-zinc-800 hover:border-sky-500/50 hover:bg-zinc-900"
+      } ${section.enabled ? "" : "opacity-50"}`}
       onClick={() => {
         openSection(section.id);
       }}
@@ -169,20 +187,35 @@ function SectionCard({
         <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-sky-500/15 text-sky-300">
           <IconRenderer icon={section.icon} className="h-5 w-5" />
         </span>
-        <button
-          type="button"
-          aria-label={t("comun.menuDe", { n: section.name })}
-          className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100 focus-visible:opacity-100 group-hover:opacity-100 md:opacity-0"
-          onClick={(event) => {
-            event.stopPropagation();
-            // Capturar el rect ANTES de usarlo: React pone currentTarget en
-            // null al salir del handler.
-            const rect = event.currentTarget.getBoundingClientRect();
-            onOpenMenu(menuOpen ? null : rect);
-          }}
-        >
-          <MoreVertical className="h-4 w-4" />
-        </button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            aria-label={t("plantilla.reordenarAria", { n: section.name })}
+            {...gripProps}
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+            className={`shrink-0 cursor-grab touch-none rounded-md p-1 text-zinc-600 transition-colors hover:bg-zinc-700 hover:text-sky-300 focus-visible:opacity-100 group-hover:opacity-100 md:opacity-0 ${
+              dragging ? "cursor-grabbing text-sky-300 opacity-100" : ""
+            }`}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label={t("comun.menuDe", { n: section.name })}
+            className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100 focus-visible:opacity-100 group-hover:opacity-100 md:opacity-0"
+            onClick={(event) => {
+              event.stopPropagation();
+              // Capturar el rect ANTES de usarlo: React pone currentTarget en
+              // null al salir del handler.
+              const rect = event.currentTarget.getBoundingClientRect();
+              onOpenMenu(menuOpen ? null : rect);
+            }}
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <div className="min-w-0">
@@ -286,6 +319,31 @@ export function SectionsScreen() {
   const orderedCards = [...enabledSections, ...disabledSections];
   const hasAnySection =
     enabledSections.length > 0 || disabledSections.length > 0;
+
+  // Reordenación por arrastre (mantener presionado el grip) entre secciones
+  // raíz habilitadas; los botones Subir/Bajar del menú siguen disponibles.
+  const enabledRootIds = enabledSections.map((section) => section.id);
+  const reorder = useLongPressReorder({
+    orderedIds: enabledRootIds,
+    onReorder: (orderedIds) => {
+      void sectionsRepository
+        .reorder([...orderedIds])
+        .then(() => loadSections())
+        .catch((reorderError: unknown) => {
+          showErrorToast(
+            reorderError instanceof Error
+              ? reorderError.message
+              : String(reorderError),
+          );
+        });
+    },
+  });
+  const enabledRootById = new Map(enabledSections.map((section) => [section.id, section]));
+  const orderedEnabledRoots = reorder.order.flatMap((id) => {
+    const section = enabledRootById.get(id);
+    return section === undefined ? [] : [section];
+  });
+  const draggableCards = [...orderedEnabledRoots, ...disabledSections];
 
   function openEdit(section: Section): void {
     setModal({ kind: "edit", section });
@@ -398,29 +456,50 @@ export function SectionsScreen() {
             }}
           />
         ) : (
-          /* Grid fluido de tarjetas */
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
-            {orderedCards.map((section) => (
-              <SectionCard
-                key={section.id}
-                section={section}
-                formCount={formCounts[section.id] ?? 0}
-                isFirst={enabledSections[0]?.id === section.id}
-                isLast={
-                  section.enabled
-                    ? enabledSections[enabledSections.length - 1]?.id === section.id
-                    : disabledSections[disabledSections.length - 1]?.id === section.id
-                }
-                menuOpen={menuSectionId === section.id}
-                menuAnchor={menuAnchor}
-                onOpenMenu={(anchor) => {
-                  setMenuAnchor(anchor);
-                  setMenuSectionId(anchor !== null ? section.id : null);
-                }}
-                onEdit={openEdit}
-              />
-            ))}
-          </div>
+          /* Grid fluido de tarjetas, reordenables manteniendo presionado el grip */
+          <ReorderContainer
+            controller={reorder}
+            className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3"
+          >
+            {draggableCards.map((section) => {
+              const isDragging = reorder.draggingId === section.id;
+              const card = (
+                <SectionCard
+                  section={section}
+                  formCount={formCounts[section.id] ?? 0}
+                  isFirst={enabledSections[0]?.id === section.id}
+                  isLast={
+                    section.enabled
+                      ? enabledSections[enabledSections.length - 1]?.id === section.id
+                      : disabledSections[disabledSections.length - 1]?.id === section.id
+                  }
+                  dragging={isDragging}
+                  gripProps={reorder.getGripProps(section.id)}
+                  menuOpen={menuSectionId === section.id}
+                  menuAnchor={menuAnchor}
+                  onOpenMenu={(anchor) => {
+                    setMenuAnchor(anchor);
+                    setMenuSectionId(anchor !== null ? section.id : null);
+                  }}
+                  onEdit={openEdit}
+                />
+              );
+              return section.enabled ? (
+                <ReorderItem
+                  key={section.id}
+                  controller={reorder}
+                  id={section.id}
+                  className={`relative ${
+                    isDragging ? "z-10" : reorder.draggingId !== null ? "opacity-60" : ""
+                  }`}
+                >
+                  {card}
+                </ReorderItem>
+              ) : (
+                <li key={section.id}>{card}</li>
+              );
+            })}
+          </ReorderContainer>
         )}
 
         {!showTrash && hasAnySection && orderedCards.length > 0 ? (
