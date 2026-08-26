@@ -144,6 +144,7 @@ function FormCard({
   isLast,
   onEdit,
   onOpenMenu,
+  menuOpen,
   menuAnchor,
 }: {
   form: Form;
@@ -151,6 +152,7 @@ function FormCard({
   isLast: boolean;
   onEdit: (form: Form) => void;
   onOpenMenu: (anchor: FloatingMenuAnchor | null) => void;
+  menuOpen: boolean;
   menuAnchor: FloatingMenuAnchor | null;
 }) {
   const navigate = useUiStore((store) => store.navigate);
@@ -212,7 +214,7 @@ function FormCard({
         </footer>
       ) : null}
 
-      {menuAnchor !== null ? (
+      {menuOpen && menuAnchor !== null ? (
         <FormCardMenu
           anchor={menuAnchor}
           form={form}
@@ -249,7 +251,9 @@ export function SectionFormsScreen() {
   const goBack = useUiStore((store) => store.goBack);
   const { t } = useT();
 
-  const [menuAnchor, setMenuAnchor] = useState<FloatingMenuAnchor | null>(null);
+  const [menu, setMenu] = useState<{ formId: string; anchor: FloatingMenuAnchor } | null>(
+    null,
+  );
   const [formModal, setFormModal] = useState<FormModalState>(null);
   const [sectionModal, setSectionModal] = useState<SectionModalState>(null);
   const [showTrash, setShowTrash] = useState(false);
@@ -280,12 +284,12 @@ export function SectionFormsScreen() {
   // Esc cierra el menú contextual o la papelera: los modales gestionan su
   // propio Esc (y no se desmontan durante un guardado en curso).
   useEffect(() => {
-    if (menuAnchor === null && !showTrash) {
+    if (menu === null && !showTrash) {
       return;
     }
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key === "Escape") {
-        setMenuAnchor(null);
+        setMenu(null);
         setShowTrash(false);
       }
     }
@@ -293,7 +297,7 @@ export function SectionFormsScreen() {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [menuAnchor, showTrash]);
+  }, [menu, showTrash]);
 
   if (activeSectionId === null || activeSection === undefined) {
     return (
@@ -358,7 +362,7 @@ export function SectionFormsScreen() {
                 type="button"
                 onClick={() => {
                   setShowTrash((previous) => !previous);
-                  setMenuAnchor(null);
+                  setMenu(null);
                 }}
                   title={t("formularios.papeleraTitle")}
                   aria-label={t("formularios.papeleraTitle")}
@@ -508,9 +512,10 @@ export function SectionFormsScreen() {
                     ? enabledForms[enabledForms.length - 1]?.id === form.id
                     : disabledForms[disabledForms.length - 1]?.id === form.id
                 }
-                menuAnchor={menuAnchor}
+                menuOpen={menu?.formId === form.id}
+                menuAnchor={menu?.formId === form.id ? menu.anchor : null}
                 onOpenMenu={(anchor) => {
-                  setMenuAnchor(anchor);
+                  setMenu(anchor !== null ? { formId: form.id, anchor } : null);
                 }}
                 onEdit={openEditForm}
               />

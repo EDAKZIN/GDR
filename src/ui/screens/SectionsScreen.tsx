@@ -16,6 +16,7 @@ import { useT } from "../../i18n";
 import { useSectionStore } from "../../stores";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { EmptyState } from "../components/EmptyState";
+import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMenu";
 import { IconRenderer } from "../components/IconRenderer";
 import { btnDangerGhost, btnPrimaryLg } from "../components/uiStyles";
 import { openSection } from "../navigation/openSection";
@@ -32,12 +33,14 @@ interface MenuAction {
 }
 
 function SectionCardMenu({
+  anchor,
   section,
   isFirst,
   isLast,
   onEdit,
   onClose,
 }: {
+  anchor: FloatingMenuAnchor;
   section: Section;
   isFirst: boolean;
   isLast: boolean;
@@ -100,30 +103,27 @@ function SectionCardMenu({
   ];
 
   return (
-    <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-3 top-12 z-50 flex min-w-40 flex-col overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-2xl">
-        {actions.map((action) => (
-          <button
-            key={action.label}
-            type="button"
-            className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
-              action.danger === true
-                ? "text-rose-300 hover:bg-rose-500/10"
-                : "text-zinc-200 hover:bg-zinc-800"
-            } disabled:pointer-events-none disabled:opacity-40`}
-            disabled={action.disabled === true}
-            onClick={() => {
-              onClose();
-              action.run();
-            }}
-          >
-            <action.icon className="h-3.5 w-3.5" />
-            {action.label}
-          </button>
-        ))}
-      </div>
-    </>
+    <FloatingMenu anchor={anchor} widthClass="w-40" onClose={onClose}>
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          type="button"
+          className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
+            action.danger === true
+              ? "text-rose-300 hover:bg-rose-500/10"
+              : "text-zinc-200 hover:bg-zinc-800"
+          } disabled:pointer-events-none disabled:opacity-40`}
+          disabled={action.disabled === true}
+          onClick={() => {
+            onClose();
+            action.run();
+          }}
+        >
+          <action.icon className="h-3.5 w-3.5" />
+          {action.label}
+        </button>
+      ))}
+    </FloatingMenu>
   );
 }
 
@@ -135,14 +135,16 @@ function SectionCard({
   onEdit,
   onOpenMenu,
   menuOpen,
+  menuAnchor,
 }: {
   section: Section;
   formCount: number;
   isFirst: boolean;
   isLast: boolean;
   onEdit: (section: Section) => void;
-  onOpenMenu: (sectionId: string | null) => void;
+  onOpenMenu: (anchor: FloatingMenuAnchor | null) => void;
   menuOpen: boolean;
+  menuAnchor: FloatingMenuAnchor | null;
 }) {
   const { t } = useT();
 
@@ -173,7 +175,10 @@ function SectionCard({
           className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-100 focus-visible:opacity-100 group-hover:opacity-100 md:opacity-0"
           onClick={(event) => {
             event.stopPropagation();
-            onOpenMenu(menuOpen ? null : section.id);
+            // Capturar el rect ANTES de usarlo: React pone currentTarget en
+            // null al salir del handler.
+            const rect = event.currentTarget.getBoundingClientRect();
+            onOpenMenu(menuOpen ? null : rect);
           }}
         >
           <MoreVertical className="h-4 w-4" />
@@ -202,8 +207,9 @@ function SectionCard({
         ) : null}
       </footer>
 
-      {menuOpen ? (
+      {menuOpen && menuAnchor !== null ? (
         <SectionCardMenu
+          anchor={menuAnchor}
           section={section}
           isFirst={isFirst}
           isLast={isLast}
@@ -233,6 +239,7 @@ export function SectionsScreen() {
   const { t } = useT();
 
   const [menuSectionId, setMenuSectionId] = useState<string | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<FloatingMenuAnchor | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
   const [showTrash, setShowTrash] = useState(false);
   const [confirmHardDelete, setConfirmHardDelete] = useState<Section | null>(
@@ -252,6 +259,7 @@ export function SectionsScreen() {
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key === "Escape") {
         setMenuSectionId(null);
+        setMenuAnchor(null);
         setShowTrash(false);
       }
     }
@@ -293,6 +301,7 @@ export function SectionsScreen() {
               onClick={() => {
                 setShowTrash((previous) => !previous);
                 setMenuSectionId(null);
+                setMenuAnchor(null);
               }}
               title={t("secciones.papeleraTitle")}
               aria-label={t("secciones.papeleraTitle")}
@@ -401,8 +410,10 @@ export function SectionsScreen() {
                     : disabledSections[disabledSections.length - 1]?.id === section.id
                 }
                 menuOpen={menuSectionId === section.id}
-                onOpenMenu={(sectionId) => {
-                  setMenuSectionId(sectionId);
+                menuAnchor={menuAnchor}
+                onOpenMenu={(anchor) => {
+                  setMenuAnchor(anchor);
+                  setMenuSectionId(anchor !== null ? section.id : null);
                 }}
                 onEdit={openEdit}
               />
