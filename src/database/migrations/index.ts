@@ -4,6 +4,7 @@ import sql0003SectionHierarchy from "./0003_section_hierarchy.sql?raw";
 import sql0004SectionAllowChildren from "./0004_section_allow_children.sql?raw";
 import sql0005SearchableDefaults from "./0005_searchable_defaults.sql?raw";
 import sql0006Indexes from "./0006_indexes.sql?raw";
+import sql0007FormIcon from "./0007_form_icon.sql?raw";
 
 export interface Migration {
   id: string;
@@ -17,4 +18,5 @@ export const MIGRATIONS: readonly Migration[] = [
   { id: "0004_section_allow_children", sql: sql0004SectionAllowChildren },
   { id: "0005_searchable_defaults", sql: sql0005SearchableDefaults },
   { id: "0006_indexes", sql: sql0006Indexes },
+  { id: "0007_form_icon", sql: sql0007FormIcon },
 ];

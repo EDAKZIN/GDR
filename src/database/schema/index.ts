@@ -41,6 +41,7 @@ export const forms = sqliteTable(
       .references(() => sections.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
+    icon: text("icon"),
     position: integer("position").notNull().default(0),
     enabled: integer("enabled").notNull().default(1),
     createdAt: text("created_at").notNull(),
