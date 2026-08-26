@@ -7,6 +7,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { flushSync } from "react-dom";
 
 /** Tiempo que hay que mantener pulsado el grip para activar el arrastre. */
 const LONG_PRESS_MS = 350;
@@ -16,6 +17,103 @@ const MOVE_THRESHOLD_PX = 6;
 const EDGE_ZONE_PX = 56;
 /** Velocidad máxima de auto-scroll (px por frame, proporcional a la cercanía). */
 const MAX_SCROLL_SPEED_PX = 14;
+/** Margen interior que respeta el ítem arrastrado dentro del contenedor. */
+const CLAMP_MARGIN_PX = 4;
+/** Duración de las transiciones de colocación (soltar y desplazar vecinos). */
+const SETTLE_MS = 120;
+
+interface DragState {
+  id: string;
+  pointerId: number;
+  pointerX: number;
+  pointerY: number;
+  grabOffsetX: number;
+  grabOffsetY: number;
+  appliedX: number;
+  appliedY: number;
+}
+
+function px(value: number): string {
+  return `${String(value)}px`;
+}
+
+/** Coloca el ítem arrastrado bajo el puntero, acotado a los bounds del contenedor. */
+function applyDragTransform(
+  drag: DragState,
+  nodes: Map<string, HTMLElement>,
+  container: HTMLElement | null,
+): void {
+  const node = nodes.get(drag.id);
+  if (node === undefined || container === null) {
+    return;
+  }
+  const rect = node.getBoundingClientRect();
+  const flowLeft = rect.left - drag.appliedX;
+  const flowTop = rect.top - drag.appliedY;
+  const bounds = container.getBoundingClientRect();
+  const minLeft = bounds.left + CLAMP_MARGIN_PX;
+  const minTop = bounds.top + CLAMP_MARGIN_PX;
+  const maxLeft = Math.max(minLeft, bounds.right - CLAMP_MARGIN_PX - rect.width);
+  const maxTop = Math.max(minTop, bounds.bottom - CLAMP_MARGIN_PX - rect.height);
+  const desiredLeft = Math.min(Math.max(drag.pointerX - drag.grabOffsetX, minLeft), maxLeft);
+  const desiredTop = Math.min(Math.max(drag.pointerY - drag.grabOffsetY, minTop), maxTop);
+  const x = desiredLeft - flowLeft;
+  const y = desiredTop - flowTop;
+  if (x !== drag.appliedX || y !== drag.appliedY) {
+    node.style.transform = `translate3d(${px(x)}, ${px(y)}, 0)`;
+    drag.appliedX = x;
+    drag.appliedY = y;
+  }
+}
+
+/**
+ * FLIP: tras un cambio de hueco, anima el desplazamiento de los vecinos con
+ * una transición corta en lugar de moverlos instantáneamente.
+ */
+function flipNeighbors(
+  draggedId: string,
+  before: Map<string, { left: number; top: number }>,
+  nodes: Map<string, HTMLElement>,
+  offsets: Map<string, { x: number; y: number }>,
+  timers: Map<string, number>,
+): void {
+  for (const [id, node] of nodes) {
+    if (id === draggedId) {
+      continue;
+    }
+    const pendingTimer = timers.get(id);
+    if (pendingTimer !== undefined) {
+      window.clearTimeout(pendingTimer);
+      timers.delete(id);
+    }
+    const origin = before.get(id);
+    if (origin === undefined) {
+      continue;
+    }
+    const rect = node.getBoundingClientRect();
+    const dx = origin.left - rect.left;
+    const dy = origin.top - rect.top;
+    if (dx === 0 && dy === 0) {
+      node.style.transition = "";
+      node.style.transform = "";
+      offsets.delete(id);
+      continue;
+    }
+    node.style.transition = "none";
+    node.style.transform = `translate3d(${px(dx)}, ${px(dy)}, 0)`;
+    void node.offsetWidth;
+    node.style.transition = `transform ${String(SETTLE_MS)}ms ease-out`;
+    node.style.transform = "";
+    offsets.set(id, { x: dx, y: dy });
+    const timer = window.setTimeout(() => {
+      timers.delete(id);
+      offsets.delete(id);
+      node.style.transition = "";
+      node.style.transform = "";
+    }, SETTLE_MS + 60);
+    timers.set(id, timer);
+  }
+}
 
 export interface LongPressReorderOptions {
   /** Ids en su orden actual: fuera del arrastre define el orden visual. */
@@ -50,8 +148,11 @@ export interface LongPressReorderApi {
  *
  * - pointerdown inicia un timer (~350 ms); soltar antes o desplazarse más
  *   de ~6 px lo cancela, dejando el clic y el scroll táctiles intactos.
- * - Activado: el consumidor reordena en vivo (el hueco sigue al puntero),
- *   con auto-scroll del contenedor al acercarse a sus bordes.
+ * - Activado: el ítem sigue al puntero mediante `transform: translate3d`
+ *   continuo (sin saltos entre slots), siempre dentro de los bounds del
+ *   contenedor; el hueco se recalcula en vivo y los vecinos se desplazan
+ *   con transición corta (FLIP). Hay auto-scroll al acercarse a los
+ *   bordes del contenedor.
  * - pointerup confirma via `onReorder`; Escape cancela sin tocar datos.
  * - `touch-action: none` solo aplica durante el arrastre activo para no
  *   romper el scroll táctil normal; los botones subir/bajar siguen siendo
@@ -67,14 +168,12 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
   const itemNodes = useRef<Map<string, HTMLElement>>(new Map());
   const orderedIdsRef = useRef(orderedIds);
   const draftOrderRef = useRef<readonly string[] | null>(null);
-  const dragStateRef = useRef<{
-    id: string;
-    pointerId: number;
-    pointerY: number;
-  } | null>(null);
+  const dragStateRef = useRef<DragState | null>(null);
   const scrollRaf = useRef<number | null>(null);
   const teardownRef = useRef<(() => void) | null>(null);
   const onReorderRef = useRef(onReorder);
+  const flipOffsetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const flipTimersRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     orderedIdsRef.current = orderedIds;
@@ -95,8 +194,12 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
       if (node === undefined) {
         continue;
       }
+      // Se descuenta el desplazamiento de la animación FLIP en curso para
+      // medir la posición natural del vecino.
+      const flipOffset = flipOffsetsRef.current.get(id);
       const rect = node.getBoundingClientRect();
-      if (drag.pointerY > rect.top + rect.height / 2) {
+      const center = rect.top + rect.height / 2 - (flipOffset?.y ?? 0);
+      if (drag.pointerY > center) {
         insertAt += 1;
       }
     }
@@ -104,13 +207,29 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
     if (insertAt !== current.indexOf(drag.id)) {
       const next = [...others];
       next.splice(insertAt, 0, drag.id);
-      draftOrderRef.current = next;
-      setDraftOrder(next);
+      const before = new Map<string, { left: number; top: number }>();
+      for (const [id, node] of itemNodes.current) {
+        const rect = node.getBoundingClientRect();
+        before.set(id, { left: rect.left, top: rect.top });
+      }
+      flushSync(() => {
+        draftOrderRef.current = next;
+        setDraftOrder(next);
+      });
+      // Tras el re-render síncrono el layout ya está aplicado: se anima a los
+      // vecinos y se restaura la continuidad visual del ítem arrastrado.
+      flipNeighbors(drag.id, before, itemNodes.current, flipOffsetsRef.current, flipTimersRef.current);
+      applyDragTransform(drag, itemNodes.current, containerNode.current);
     }
   }, []);
 
   const beginDrag = useCallback(
-    (id: string, pointerId: number, pointerY: number): void => {
+    (id: string, pointerId: number, pointerX: number, pointerY: number): void => {
+      const node = itemNodes.current.get(id);
+      if (node === undefined) {
+        return;
+      }
+
       /** Bucle rAF de auto-scroll al acercarse a los bordes del contenedor. */
       function autoScrollTick(): void {
         const drag = dragStateRef.current;
@@ -130,14 +249,28 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
         }
         if (delta !== 0) {
           container.scrollTop += delta;
-          // Al moverse el contenido cambian los rects: recalcular el hueco.
+          // Al moverse el contenido cambian las posiciones: recalcular todo.
+          applyDragTransform(drag, itemNodes.current, container);
           updateTargetIndex();
         }
         scrollRaf.current = requestAnimationFrame(autoScrollTick);
       }
 
+      const rect = node.getBoundingClientRect();
       draftOrderRef.current = [...orderedIdsRef.current];
-      dragStateRef.current = { id, pointerId, pointerY };
+      const dragState: DragState = {
+        id,
+        pointerId,
+        pointerX,
+        pointerY,
+        grabOffsetX: pointerX - rect.left,
+        grabOffsetY: pointerY - rect.top,
+        appliedX: 0,
+        appliedY: 0,
+      };
+      dragStateRef.current = dragState;
+      node.style.transition = "none";
+      node.style.willChange = "transform";
       setDraftOrder(draftOrderRef.current);
       setDragId(id);
 
@@ -162,6 +295,26 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
         document.body.style.touchAction = previousTouchAction;
         document.body.style.cursor = previousCursor;
         teardownRef.current = null;
+        for (const [flipId, timer] of flipTimersRef.current) {
+          window.clearTimeout(timer);
+          flipTimersRef.current.delete(flipId);
+          flipOffsetsRef.current.delete(flipId);
+          const flipNode = itemNodes.current.get(flipId);
+          if (flipNode !== undefined) {
+            flipNode.style.transition = "";
+            flipNode.style.transform = "";
+          }
+        }
+        const dragNode = itemNodes.current.get(id);
+        if (dragNode !== undefined) {
+          // Asentamiento suave hacia el slot definitivo.
+          dragNode.style.transition = `transform ${String(SETTLE_MS)}ms ease-out`;
+          dragNode.style.transform = "";
+          window.setTimeout(() => {
+            dragNode.style.transition = "";
+            dragNode.style.willChange = "";
+          }, SETTLE_MS + 60);
+        }
         const finalOrder = draftOrderRef.current;
         dragStateRef.current = null;
         draftOrderRef.current = null;
@@ -183,7 +336,9 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
         if (drag === null || event.pointerId !== drag.pointerId) {
           return;
         }
+        drag.pointerX = event.clientX;
         drag.pointerY = event.clientY;
+        applyDragTransform(drag, itemNodes.current, containerNode.current);
         updateTargetIndex();
       };
 
@@ -229,6 +384,11 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
         window.cancelAnimationFrame(scrollRaf.current);
         scrollRaf.current = null;
       }
+      for (const timer of flipTimersRef.current.values()) {
+        window.clearTimeout(timer);
+      }
+      flipTimersRef.current.clear();
+      flipOffsetsRef.current.clear();
     },
     [],
   );
@@ -281,7 +441,7 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
 
         timer = window.setTimeout(() => {
           endPending();
-          beginDrag(id, event.pointerId, event.clientY);
+          beginDrag(id, event.pointerId, event.clientX, event.clientY);
         }, LONG_PRESS_MS);
 
         window.addEventListener("pointermove", onPendingMove);
