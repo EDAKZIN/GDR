@@ -134,7 +134,7 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
         <div className="flex flex-col gap-1 text-xs font-medium text-zinc-400">
           {t("secciones.icono")}
           <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-sky-300">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-700 bg-zinc-800 text-sky-300">
               <IconRenderer icon={icon} />
             </span>
             <input

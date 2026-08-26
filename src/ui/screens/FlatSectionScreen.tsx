@@ -90,7 +90,7 @@ export function FlatSectionScreen() {
             <ArrowLeft className="h-4 w-4" />
           </button>
 
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-sky-500/15 text-sky-300">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-sky-500/15 text-sky-300">
             <IconRenderer icon={section.icon} className="h-5 w-5" />
           </span>
 
@@ -248,7 +248,7 @@ function LegacyFlatTabs({ formIds }: { formIds: readonly string[] }) {
               setTabId(form.id);
             }}
           >
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded">
               {form.icon !== null ? (
                 <IconRenderer
                   icon={form.icon}

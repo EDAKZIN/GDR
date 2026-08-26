@@ -334,7 +334,7 @@ function SectionTreeNode({
             <span className="w-4 shrink-0" />
           )}
 
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-800 bg-sky-500/10 text-sky-300">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-800 bg-sky-500/10 text-sky-300">
             <IconRenderer icon={section.icon} className="h-3.5 w-3.5" />
           </span>
 
@@ -429,7 +429,7 @@ function SectionTreeNode({
                 }
               }}
             >
-              <span className="flex h-3 w-3 shrink-0 items-center justify-center text-zinc-600">
+              <span className="flex h-3 w-3 shrink-0 items-center justify-center overflow-hidden rounded text-zinc-600">
                 {form.icon !== null ? (
                   <IconRenderer icon={form.icon} className="h-3 w-3 shrink-0 text-zinc-600" />
                 ) : (
@@ -928,10 +928,12 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
                             key={section.id}
                             className="flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-1.5"
                           >
-                            <IconRenderer
-                              icon={section.icon}
-                              className="h-3 w-3 shrink-0 text-zinc-600"
-                            />
+                            <span className="flex h-3 w-3 shrink-0 items-center justify-center overflow-hidden rounded bg-zinc-800 text-zinc-600">
+                              <IconRenderer
+                                icon={section.icon}
+                                className="h-3 w-3 shrink-0 text-zinc-600"
+                              />
+                            </span>
                             <span className="min-w-0 flex-1 truncate text-xs text-zinc-500 line-through">
                               {section.name}
                             </span>

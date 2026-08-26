@@ -341,7 +341,7 @@ export function SectionFormsScreen() {
             <ArrowLeft className="h-4 w-4" />
           </button>
 
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-sky-500/15 text-sky-300">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-sky-500/15 text-sky-300">
             <IconRenderer icon={activeSection.icon} className="h-5 w-5" />
           </span>
 
@@ -415,7 +415,7 @@ export function SectionFormsScreen() {
                     openSection(child.id);
                   }}
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-800 bg-sky-500/10 text-sky-300">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-800 bg-sky-500/10 text-sky-300">
                     <IconRenderer icon={child.icon} className="h-4 w-4" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -452,7 +452,7 @@ export function SectionFormsScreen() {
                     key={form.id}
                     className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 opacity-80"
                   >
-                    <span className="flex h-4 w-4 shrink-0 items-center justify-center text-zinc-500">
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded bg-zinc-800 text-zinc-500">
                       {form.icon !== null ? (
                         <IconRenderer icon={form.icon} className="h-4 w-4 shrink-0 text-zinc-500" />
                       ) : (
