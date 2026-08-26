@@ -3,6 +3,7 @@ import type { CreateFormInput, Form, UpdateFormInput } from "../core/forms";
 import type { CreateSectionInput, Section, UpdateSectionInput } from "../core/sections";
 import { getDb } from "../database/client";
 import { createFormsRepository, createSectionsRepository } from "../database/repositories";
+import type { SoftDeleteOptions } from "../database/repositories/sections";
 import { useUiStore } from "./useUiStore";
 
 const sectionsRepository = createSectionsRepository(getDb);
@@ -67,7 +68,7 @@ export interface SectionState {
   updateSection: (id: string, input: UpdateSectionInput) => Promise<void>;
   enableSection: (id: string) => Promise<void>;
   disableSection: (id: string) => Promise<void>;
-  softDeleteSection: (id: string) => Promise<void>;
+  softDeleteSection: (id: string, opts?: SoftDeleteOptions) => Promise<void>;
   restoreSection: (id: string) => Promise<void>;
   hardDeleteSection: (id: string) => Promise<void>;
   moveSection: (id: string, delta: -1 | 1) => Promise<void>;
@@ -251,8 +252,8 @@ export const useSectionStore = create<SectionState>()((set, get) => ({
     await get().loadSections();
   },
 
-  softDeleteSection: async (id) => {
-    await sectionsRepository.softDelete(id);
+  softDeleteSection: async (id, opts) => {
+    await sectionsRepository.softDelete(id, opts);
     if (get().activeSectionId === id) {
       set({ activeSectionId: null, forms: [], trashedForms: [], activeFormId: null });
       // La sección activa ya no existe: volver al nivel superior siempre.

@@ -110,6 +110,11 @@ export const es = {
     borrarDefAria: "Borrar {n} definitivamente",
     limiteSubsecciones:
       "Una sección puede contener máximo {n} sub-secciones directas.",
+    eliminarConHijasTitulo: "Eliminar sección",
+    eliminarConHijasDesc:
+      "Por defecto «{n}» se elimina junto con sus sub-secciones y todo su subárbol, que irán a la papelera.",
+    conservarHijas: "Conservar sub-secciones (pasan al nivel superior)",
+    eliminarTodo: "Eliminar todo",
   },
   formularios: {
     nuevo: "Nuevo formulario",

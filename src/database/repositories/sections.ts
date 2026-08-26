@@ -85,6 +85,15 @@ function parseSections(rows: SectionRow[]): Section[] {
 /** Máximo de sub-secciones directas (vivas) que admite cualquier sección. */
 export const MAX_DIRECT_CHILDREN = 5;
 
+export interface SoftDeleteOptions {
+  /**
+   * true = la madre pasa a papelera pero sus hijas DIRECTAS vivas se
+   * reparentan a su propio padre (o a raíz) conservando subárboles intactos.
+   * false (default) = soft-delete en cascada de todo el subárbol.
+   */
+  keepChildren?: boolean;
+}
+
 export interface SectionRepository {
   create(input: CreateSectionInput): Promise<Section>;
   get(id: string): Promise<Section | null>;
@@ -99,8 +108,11 @@ export interface SectionRepository {
   move(id: string, newParentId: string | null): Promise<Section>;
   disable(id: string): Promise<Section>;
   enable(id: string): Promise<Section>;
-  /** Soft-delete en cascada: elimina también todo el subárbol de descendientes. */
-  softDelete(id: string): Promise<Section>;
+  /**
+   * Papelera de la sección. Sin opciones elimina también todo el subárbol;
+   * con keepChildren las hijas directas vivas pasan al nivel superior.
+   */
+  softDelete(id: string, opts?: SoftDeleteOptions): Promise<Section>;
   /**
    * Restaura la sección y los descendientes eliminados EN LA MISMA cascada
    * (los borrados individualmente antes o después permanecen en papelera).
@@ -420,9 +432,28 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
       return setFlags(database, z.uuid().parse(id), { enabled: true });
     },
 
-    async softDelete(id: string): Promise<Section> {
+    async softDelete(id: string, opts?: SoftDeleteOptions): Promise<Section> {
       const sectionId = z.uuid().parse(id);
       const database = await db();
+      const root = await requireRow(database, sectionId);
+      if (opts?.keepChildren === true) {
+        // Solo la madre a la papelera; sus registros propios fuera del índice.
+        await applyDeletedFlag(database, [sectionId], true);
+        await database.execute(
+          `DELETE FROM fts_values WHERE record_id IN (
+             SELECT r.id FROM records r JOIN forms fo ON fo.id = r.form_id
+             WHERE fo.section_id = $1
+           )`,
+          [sectionId],
+        );
+        // Las hijas directas vivas suben al padre de la madre (o a raíz),
+        // con sus subárboles intactos.
+        await database.execute(
+          "UPDATE sections SET parent_id = $1, updated_at = $2 WHERE parent_id = $3 AND deleted_at IS NULL",
+          [root.parentId, nowIso(), sectionId],
+        );
+        return requireRow(database, sectionId);
+      }
       // Soft-delete en cascada: la sección y todo su subárbol a la papelera.
       const subtreeIds = await collectSubtreeIds(database, sectionId);
       await applyDeletedFlag(database, subtreeIds, true);

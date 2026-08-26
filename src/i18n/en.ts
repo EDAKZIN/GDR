@@ -111,6 +111,11 @@ export const en: Dictionary = {
     borrarDefAria: "Delete {n} permanently",
     limiteSubsecciones:
       "A section can contain at most {n} direct sub-sections.",
+    eliminarConHijasTitulo: "Delete section",
+    eliminarConHijasDesc:
+      "By default «{n}» is deleted along with its sub-sections and entire subtree; everything goes to the trash.",
+    conservarHijas: "Keep sub-sections (they move up one level)",
+    eliminarTodo: "Delete everything",
   },
   formularios: {
     nuevo: "New form",

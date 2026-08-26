@@ -12,7 +12,9 @@ export {
 } from "./records";
 export {
   createSectionsRepository,
+  MAX_DIRECT_CHILDREN,
   type SectionRepository,
+  type SoftDeleteOptions,
 } from "./sections";
 export {
   createSearchRepository,
