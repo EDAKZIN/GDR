@@ -423,13 +423,22 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
     },
 
     async disable(id: string): Promise<Section> {
+      const sectionId = z.uuid().parse(id);
       const database = await db();
-      return setFlags(database, z.uuid().parse(id), { enabled: false });
+      const disabled = await setFlags(database, sectionId, { enabled: false });
+      // Contenido invisible: fuera del índice (subárbol incluido).
+      await searchRepository.setSectionIndexEnabled(sectionId, false);
+      return disabled;
     },
 
     async enable(id: string): Promise<Section> {
+      const sectionId = z.uuid().parse(id);
       const database = await db();
-      return setFlags(database, z.uuid().parse(id), { enabled: true });
+      const enabled = await setFlags(database, sectionId, { enabled: true });
+      // El flag debe aplicarse ANTES de reindexar para que la cadena de
+      // ancestros vea la sección habilitada.
+      await searchRepository.setSectionIndexEnabled(sectionId, true);
+      return enabled;
     },
 
     async softDelete(id: string, opts?: SoftDeleteOptions): Promise<Section> {

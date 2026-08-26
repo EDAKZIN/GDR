@@ -175,6 +175,12 @@ export interface SearchRepositoryFull {
   deindexRecord(recordId: string): Promise<void>;
   /** Recalcula las entradas del índice de un campo (cambios en searchable/enabled/deleted/type). */
   syncField(fieldId: string): Promise<void>;
+  /**
+   * Purga del índice los registros del subárbol de una sección (enabled=false)
+   * o reindexa sus registros vivos (enabled=true). La llaman disable/enable
+   * del repositorio de secciones.
+   */
+  setSectionIndexEnabled(sectionId: string, enabled: boolean): Promise<void>;
   /** Búsqueda global tolerante con filtros y marcador de exactitud. */
   search(query: string, options?: SearchOptions): Promise<SearchOutcome>;
 }
@@ -199,6 +205,95 @@ function escapeLike(text: string): string {
 }
 
 export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
+  interface SectionFlagRow {
+    id: string;
+    parentId: string | null;
+    enabled: number;
+    deletedAt: string | null;
+  }
+
+  /**
+   * Secciones cuyo contenido NO debe estar en el índice ni en resultados:
+   * las que tienen la cadena COMPLETA de ancestros (incluida ella misma)
+   * habilitada y viva quedan fuera de este conjunto. Decisión documentada:
+   * se valida toda la cadena, no solo la sección directa, para que
+   * deshabilitar un nodo oculte también a todo su subárbol.
+   */
+  async function loadBlockedSectionIds(database: Database): Promise<Set<string>> {
+    const rows = await database.select<SectionFlagRow[]>(
+      "SELECT id, parent_id AS parentId, enabled, deleted_at AS deletedAt FROM sections",
+    );
+    const childrenByParent = new Map<string | null, SectionFlagRow[]>();
+    const blockedRoots: SectionFlagRow[] = [];
+    for (const row of rows) {
+      if (row.enabled === 0 || row.deletedAt !== null) {
+        blockedRoots.push(row);
+      }
+      const key = row.parentId ?? null;
+      const bucket = childrenByParent.get(key);
+      if (bucket !== undefined) {
+        bucket.push(row);
+      } else {
+        childrenByParent.set(key, [row]);
+      }
+    }
+    const blocked = new Set<string>();
+    const stack = [...blockedRoots];
+    while (stack.length > 0) {
+      const current = stack.pop();
+      if (current === undefined || blocked.has(current.id)) {
+        continue;
+      }
+      blocked.add(current.id);
+      for (const child of childrenByParent.get(current.id) ?? []) {
+        stack.push(child);
+      }
+    }
+    return blocked;
+  }
+
+  /** Exclusión `NOT IN (…)` para secciones bloqueadas, con parámetros. */
+  function buildBlockedClause(
+    blocked: ReadonlySet<string>,
+    paramOffset: number,
+    column: "s.id" | "fo.section_id",
+  ): {
+    sql: string;
+    params: unknown[];
+  } {
+    if (blocked.size === 0) {
+      return { sql: "", params: [] };
+    }
+    const ids = [...blocked];
+    const placeholders = ids
+      .map((_id, index) => `$${String(paramOffset + index + 1)}`)
+      .join(", ");
+    return { sql: `${column} NOT IN (${placeholders})`, params: ids };
+  }
+
+  /** Ids de la sección y de TODO su subárbol (BFS con dedupe). */
+  async function collectSubtreeIds(
+    database: Database,
+    rootId: string,
+  ): Promise<string[]> {
+    const ids: string[] = [rootId];
+    const visited = new Set<string>([rootId]);
+    let frontier = [rootId];
+    while (frontier.length > 0) {
+      const placeholders = frontier.map((_, index) => `$${String(index + 1)}`).join(", ");
+      const rows = await database.select<Array<{ id: string }>>(
+        `SELECT id FROM sections WHERE parent_id IN (${placeholders})`,
+        frontier,
+      );
+      frontier = rows.map((row) => row.id).filter((id) => !visited.has(id));
+      for (const id of frontier) {
+        visited.add(id);
+      }
+      ids.push(...frontier);
+    }
+    return ids;
+  }
+
   async function insertEntries(
     database: Database,
     rows: readonly IndexableSourceRow[],
@@ -219,12 +314,20 @@ export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
     }
   }
 
+  /** Reconstruye las entradas del índice de un registro desde cero. */
+  async function reindexRecord(database: Database, recordId: string): Promise<void> {
+    await database.execute("DELETE FROM fts_values WHERE record_id = $1", [
+      recordId,
+    ]);
+    const rows = await loadIndexableRows(database, { recordId });
+    await insertEntries(database, rows);
+  }
+
   /** Valores indexables de un registro/campo según las reglas del índice. */
   async function loadIndexableRows(
     database: Database,
     filter: { recordId?: string; fieldId?: string },
-  ): Promise<IndexableSourceRow[]> {
-    const clauses: string[] = [
+  ): Promise<IndexableSourceRow[]> {    const clauses: string[] = [
       "fl.searchable = 1",
       "fl.enabled = 1",
       "fl.deleted_at IS NULL",
@@ -236,6 +339,14 @@ export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
       "fl.type <> 'password'",
     ];
     const params: unknown[] = [];
+    // Toda la cadena de ancestros (sección directa incluida) debe estar
+    // habilitada y viva para que el contenido entre al índice.
+    const blocked = await loadBlockedSectionIds(database);
+    const blockedClause = buildBlockedClause(blocked, params.length, "s.id");
+    if (blockedClause.sql !== "") {
+      clauses.push(blockedClause.sql);
+      params.push(...blockedClause.params);
+    }
     if (filter.recordId !== undefined) {
       params.push(z.uuid().parse(filter.recordId));
       clauses.push(`fv.record_id = $${String(params.length)}`);
@@ -317,13 +428,22 @@ export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
 
     const filters = buildFilterClauses(options, headParams.length);
     const allParams = [...headParams, ...filters.params];
+    const whereParts = [...predicates];
+    if (filters.sql !== "") {
+      whereParts.push(filters.sql);
+    }
+    // Resultados de secciones deshabilitadas (o con ancestro deshabilitado)
+    // nunca aparecen, aunque queden entradas residuales en el índice.
+    const blocked = await loadBlockedSectionIds(database);
+    const blockedClause = buildBlockedClause(blocked, allParams.length, "fo.section_id");
+    if (blockedClause.sql !== "") {
+      whereParts.push(blockedClause.sql);
+      allParams.push(...blockedClause.params);
+    }
     const limitParam = `$${String(allParams.length + 1)}`;
     allParams.push(limit);
 
-    const where = [
-      ...predicates,
-      ...(filters.sql !== "" ? [filters.sql] : []),
-    ].join(" AND ");
+    const where = whereParts.join(" AND ");
 
     // bm25() solo es válido en fases con MATCH; en LIKE el ranking es JS.
     const scoreSelect = isFts ? "-bm25(fts_values)" : "NULL";
@@ -366,12 +486,7 @@ export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
 
     async indexRecord(recordId): Promise<void> {
       const database = await db();
-      const parsedId = z.uuid().parse(recordId);
-      await database.execute("DELETE FROM fts_values WHERE record_id = $1", [
-        parsedId,
-      ]);
-      const rows = await loadIndexableRows(database, { recordId: parsedId });
-      await insertEntries(database, rows);
+      await reindexRecord(database, z.uuid().parse(recordId));
     },
 
     async deindexRecord(recordId): Promise<void> {
@@ -389,6 +504,40 @@ export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
       ]);
       const rows = await loadIndexableRows(database, { fieldId: parsedId });
       await insertEntries(database, rows);
+    },
+
+    async setSectionIndexEnabled(sectionId, enabled): Promise<void> {
+      const database = await db();
+      const rootId = z.uuid().parse(sectionId);
+      const subtreeIds = await collectSubtreeIds(database, rootId);
+      if (subtreeIds.length === 0) {
+        return;
+      }
+      const placeholders = subtreeIds
+        .map((_id, index) => `$${String(index + 1)}`)
+        .join(", ");
+      if (!enabled) {
+        await database.execute(
+          `DELETE FROM fts_values WHERE record_id IN (
+             SELECT r.id FROM records r JOIN forms fo ON fo.id = r.form_id
+             WHERE fo.section_id IN (${placeholders})
+           )`,
+          subtreeIds,
+        );
+        return;
+      }
+      // Reindexar los registros vivos del subárbol; indexRecord respeta la
+      // cadena completa de ancestros (si un ancestro sigue deshabilitado,
+      // esas ramas no vuelven al índice).
+      const rows = await database.select<Array<{ id: string }>>(
+        `SELECT DISTINCT r.id FROM records r
+         JOIN forms fo ON fo.id = r.form_id
+         WHERE fo.section_id IN (${placeholders}) AND r.deleted_at IS NULL`,
+        subtreeIds,
+      );
+      for (const row of rows) {
+        await reindexRecord(database, row.id);
+      }
     },
 
     async search(
