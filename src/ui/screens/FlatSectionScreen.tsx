@@ -248,6 +248,16 @@ function LegacyFlatTabs({ formIds }: { formIds: readonly string[] }) {
               setTabId(form.id);
             }}
           >
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+              {form.icon !== null ? (
+                <IconRenderer
+                  icon={form.icon}
+                  className={`h-3.5 w-3.5 shrink-0 ${
+                    form.id === current.id ? "text-sky-300" : "text-zinc-500"
+                  }`}
+                />
+              ) : null}
+            </span>
             {form.name}
           </button>
         ))}

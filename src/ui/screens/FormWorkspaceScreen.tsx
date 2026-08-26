@@ -14,6 +14,7 @@ import { useT } from "../../i18n";
 import { useRecordStore, useSectionStore } from "../../stores";
 import { useBreadcrumb, useUiStore } from "../../stores/useUiStore";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { IconRenderer } from "../components/IconRenderer";
 import { btnDangerGhost } from "../components/uiStyles";
 import { FormModal } from "./FormModal";
 import { RecordModal } from "../workspace/RecordModal";
@@ -41,6 +42,7 @@ const tabButtonClass = (active: boolean): string =>
  */
 export function FormWorkspaceScreen() {
   const activeSectionId = useSectionStore((store) => store.activeSectionId);
+  const sections = useSectionStore((store) => store.sections);
   const activeFormId = useSectionStore((store) => store.activeFormId);
   const forms = useSectionStore((store) => store.forms);
   const trashedForms = useSectionStore((store) => store.trashedForms);
@@ -87,6 +89,8 @@ export function FormWorkspaceScreen() {
   }
 
   const deletedForm = form.deletedAt !== null;
+  const ownerSection = sections.find((candidate) => candidate.id === form.sectionId);
+  const headerIcon = form.icon ?? ownerSection?.icon ?? null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
@@ -103,8 +107,12 @@ export function FormWorkspaceScreen() {
             <ArrowLeft className="h-4 w-4" />
           </button>
 
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-sky-500/15 text-sky-300">
-            <FileStack className="h-5 w-5" />
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-sky-500/15 text-sky-300">
+            {headerIcon !== null ? (
+              <IconRenderer icon={headerIcon} className="h-5 w-5" />
+            ) : (
+              <FileStack className="h-5 w-5" />
+            )}
           </span>
 
           <div className="min-w-0 flex-1">

@@ -429,7 +429,13 @@ function SectionTreeNode({
                 }
               }}
             >
-              <FileText className="h-3 w-3 shrink-0 text-zinc-600" />
+              <span className="flex h-3 w-3 shrink-0 items-center justify-center text-zinc-600">
+                {form.icon !== null ? (
+                  <IconRenderer icon={form.icon} className="h-3 w-3 shrink-0 text-zinc-600" />
+                ) : (
+                  <FileText className="h-3 w-3 shrink-0 text-zinc-600" />
+                )}
+              </span>
               <span className="min-w-0 truncate">{form.name}</span>
             </div>
           ))}
