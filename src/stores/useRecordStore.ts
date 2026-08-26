@@ -53,7 +53,10 @@ export type RecordViewMode = "closed" | "view" | "edit" | "create";
 interface RecordState {
   formId: string | null;
   fields: Field[];
+  /** Registros VIVOS del formulario (nunca mezclados con la papelera). */
   items: RecordListItem[];
+  /** Registros ELIMINADOS del formulario (papelera). */
+  trashedItems: RecordListItem[];
   orderBy: RecordOrderBy;
   direction: RecordOrderDirection;
   showDeleted: boolean;
@@ -90,6 +93,8 @@ interface RecordState {
   deleteItem: (recordId: string) => Promise<void>;
   deleteActive: () => Promise<void>;
   restoreItem: (recordId: string) => Promise<void>;
+  /** Borrado definitivo de un registro en papelera (irreversible). */
+  hardDeleteRecord: (recordId: string) => Promise<void>;
 }
 
 interface LoadItemsOptions {
@@ -97,16 +102,12 @@ interface LoadItemsOptions {
   fields: Field[];
   orderBy: RecordOrderBy;
   direction: RecordOrderDirection;
-  showDeleted: boolean;
 }
 
-async function loadItems(options: LoadItemsOptions): Promise<RecordListItem[]> {
-  const records = await recordsRepository.listByForm(options.formId, {
-    orderBy: options.orderBy,
-    direction: options.direction,
-    includeDisabled: options.showDeleted,
-    includeDeleted: options.showDeleted,
-  });
+async function toListItems(
+  records: RecordEntity[],
+  fields: Field[],
+): Promise<RecordListItem[]> {
   return Promise.all(
     records.map(async (record) => {
       const detail = await recordsRepository.get(record.id);
@@ -116,10 +117,29 @@ async function loadItems(options: LoadItemsOptions): Promise<RecordListItem[]> {
         title:
           detail === null
             ? translate("registros.sinTitulo")
-            : resolveRecordTitle(options.fields, detail.values),
+            : resolveRecordTitle(fields, detail.values),
       };
     }),
   );
+}
+
+/**
+ * Carga por separado vivos y eliminados del formulario: la papelera nunca
+ * se mezcla con la lista activa (items vs trashedItems).
+ */
+async function loadLists(
+  options: LoadItemsOptions,
+): Promise<{ items: RecordListItem[]; trashedItems: RecordListItem[] }> {
+  const base = { orderBy: options.orderBy, direction: options.direction };
+  const [live, all] = await Promise.all([
+    recordsRepository.listByForm(options.formId, base),
+    recordsRepository.listByForm(options.formId, { ...base, includeDeleted: true }),
+  ]);
+  const [items, trashedItems] = await Promise.all([
+    toListItems(live, options.fields),
+    toListItems(all.filter((record) => record.deletedAt !== null), options.fields),
+  ]);
+  return { items, trashedItems };
 }
 
 /**
@@ -133,6 +153,7 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
   formId: null,
   fields: [],
   items: [],
+  trashedItems: [],
   orderBy: "created_at",
   direction: "desc",
   showDeleted: false,
@@ -152,6 +173,8 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
       formId,
       loading: true,
       error: null,
+      items: [],
+      trashedItems: [],
       activeMode: "closed",
       activeId: null,
       activeDetail: null,
@@ -181,6 +204,7 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
       formId: null,
       fields: [],
       items: [],
+      trashedItems: [],
       activeMode: "closed",
       activeId: null,
       activeDetail: null,
@@ -219,18 +243,17 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
     const seq = ++listLoadSeq;
     set({ loading: true });
     try {
-      const items = await loadItems({
+      const { items, trashedItems } = await loadLists({
         formId: targetFormId,
         fields: state.fields,
         orderBy: state.orderBy,
         direction: state.direction,
-        showDeleted: state.showDeleted,
       });
       if (seq !== listLoadSeq || get().formId !== targetFormId) {
         // Llegó tarde: otra carga más reciente ya tomó el control del estado.
         return;
       }
-      set({ items, loading: false, error: null });
+      set({ items, trashedItems, loading: false, error: null });
     } catch (error) {
       if (seq !== listLoadSeq || get().formId !== targetFormId) {
         return;
@@ -407,6 +430,18 @@ export const useRecordStore = create<RecordState>()((set, get) => ({
   restoreItem: async (recordId) => {
     try {
       await recordsRepository.restore(recordId);
+      await get().reloadList();
+    } catch (error) {
+      set({ error: toMessage(error) });
+    }
+  },
+
+  hardDeleteRecord: async (recordId) => {
+    try {
+      await recordsRepository.hardDelete(recordId);
+      if (get().activeId === recordId) {
+        get().closeActive();
+      }
       await get().reloadList();
     } catch (error) {
       set({ error: toMessage(error) });
