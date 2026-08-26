@@ -30,6 +30,9 @@ import { useT } from "../../i18n";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMenu";
 import { IconRenderer } from "../components/IconRenderer";
+import {
+  SectionDeleteConfirmModal,
+} from "../components/SectionDeleteConfirmModal";
 import { btnPrimary, btnSecondary } from "../components/uiStyles";
 import { FormModal } from "../screens/FormModal";
 import logoUrl from "../../assets/logo.png";
@@ -40,6 +43,11 @@ import { showErrorToast } from "./toastStore";
 const formsRepository = createFormsRepository(getDb);
 
 const DRAWER_KEY = "gdr.menuDrawerOpen";
+
+/** ¿Tiene la sección sub-secciones vivas (hijas directas no eliminadas)? */
+function hasLiveChildren(sections: readonly Section[], id: string): boolean {
+  return sections.some((section) => section.parentId === id);
+}
 
 function readInitialDrawerOpen(): boolean {
   try {
@@ -486,7 +494,9 @@ function MoveSectionModal({ section, onClose }: { section: Section; onClose: () 
       await moveSectionTo(section.id, target);
       onClose();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : String(submitError));
+      const message = submitError instanceof Error ? submitError.message : String(submitError);
+      setError(message);
+      showErrorToast(message);
       setBusy(false);
     }
   }
@@ -611,6 +621,7 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [modal, setModal] = useState<SidebarModal>(null);
   const [moveTarget, setMoveTarget] = useState<Section | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Section | null>(null);
   const [confirmHardDelete, setConfirmHardDelete] = useState<Section | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
@@ -768,7 +779,12 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
       });
     },
     onDelete: (section) => {
-      // Soft delete: recuperable desde la papelera del drawer.
+      // Con sub-secciones vivas se pregunta: cascada a papelera o conservar
+      // hijas (suben al nivel superior). Sin hijas, soft delete directo.
+      if (hasLiveChildren(sections, section.id)) {
+        setDeleteTarget(section);
+        return;
+      }
       void softDeleteSection(section.id);
     },
   };
@@ -1031,6 +1047,15 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
           section={moveTarget}
           onClose={() => {
             setMoveTarget(null);
+          }}
+        />
+      ) : null}
+
+      {deleteTarget !== null ? (
+        <SectionDeleteConfirmModal
+          section={deleteTarget}
+          onClose={() => {
+            setDeleteTarget(null);
           }}
         />
       ) : null}

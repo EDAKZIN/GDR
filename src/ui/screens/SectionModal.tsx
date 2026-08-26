@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import type { Section } from "../../core/sections";
 import { useT } from "../../i18n";
 import { useSectionStore } from "../../stores";
+import { showErrorToast } from "../menu/toastStore";
 import { IconRenderer } from "../components/IconRenderer";
 import { SUGGESTED_ICON_NAMES } from "../components/iconNames";
 import {
@@ -69,7 +70,9 @@ export function SectionModal({ mode, onClose }: SectionModalProps) {
       }
       onClose();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : String(submitError));
+      const message = submitError instanceof Error ? submitError.message : String(submitError);
+      setError(message);
+      showErrorToast(message);
       setSaving(false);
     }
   }

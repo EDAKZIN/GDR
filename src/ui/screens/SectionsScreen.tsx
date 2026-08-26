@@ -21,6 +21,7 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { EmptyState } from "../components/EmptyState";
 import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMenu";
 import { IconRenderer } from "../components/IconRenderer";
+import { SectionDeleteConfirmModal } from "../components/SectionDeleteConfirmModal";
 import {
   ReorderContainer,
   ReorderItem,
@@ -36,6 +37,11 @@ const sectionsRepository = createSectionsRepository(getDb);
 
 type ModalState = { kind: "create" } | { kind: "edit"; section: Section } | null;
 
+/** ¿Tiene la sección sub-secciones vivas (hijas directas no eliminadas)? */
+function hasLiveChildren(sections: readonly Section[], id: string): boolean {
+  return sections.some((section) => section.parentId === id);
+}
+
 interface MenuAction {
   label: string;
   icon: typeof Pencil;
@@ -50,6 +56,7 @@ function SectionCardMenu({
   isFirst,
   isLast,
   onEdit,
+  onDelete,
   onClose,
 }: {
   anchor: FloatingMenuAnchor;
@@ -57,12 +64,12 @@ function SectionCardMenu({
   isFirst: boolean;
   isLast: boolean;
   onEdit: (section: Section) => void;
+  onDelete: (section: Section) => void;
   onClose: () => void;
 }) {
   const enableSection = useSectionStore((store) => store.enableSection);
   const disableSection = useSectionStore((store) => store.disableSection);
   const moveSection = useSectionStore((store) => store.moveSection);
-  const softDeleteSection = useSectionStore((store) => store.softDeleteSection);
   const { t } = useT();
 
   const actions: MenuAction[] = [
@@ -109,7 +116,7 @@ function SectionCardMenu({
       icon: Trash2,
       danger: true,
       run: () => {
-        void softDeleteSection(section.id);
+        onDelete(section);
       },
     },
   ];
@@ -147,6 +154,7 @@ function SectionCard({
   dragging,
   gripProps,
   onEdit,
+  onDelete,
   onOpenMenu,
   menuOpen,
   menuAnchor,
@@ -158,6 +166,7 @@ function SectionCard({
   dragging: boolean;
   gripProps: GripProps;
   onEdit: (section: Section) => void;
+  onDelete: (section: Section) => void;
   onOpenMenu: (anchor: FloatingMenuAnchor | null) => void;
   menuOpen: boolean;
   menuAnchor: FloatingMenuAnchor | null;
@@ -247,6 +256,7 @@ function SectionCard({
           isFirst={isFirst}
           isLast={isLast}
           onEdit={onEdit}
+          onDelete={onDelete}
           onClose={() => {
             onOpenMenu(null);
           }}
@@ -269,12 +279,16 @@ export function SectionsScreen() {
   const loadSections = useSectionStore((store) => store.loadSections);
   const restoreSection = useSectionStore((store) => store.restoreSection);
   const hardDeleteSection = useSectionStore((store) => store.hardDeleteSection);
+  const softDeleteSection = useSectionStore((store) => store.softDeleteSection);
   const { t } = useT();
 
   const [menuSectionId, setMenuSectionId] = useState<string | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<FloatingMenuAnchor | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
   const [showTrash, setShowTrash] = useState(false);
+  const [confirmSoftDelete, setConfirmSoftDelete] = useState<Section | null>(
+    null,
+  );
   const [confirmHardDelete, setConfirmHardDelete] = useState<Section | null>(
     null,
   );
@@ -347,6 +361,16 @@ export function SectionsScreen() {
 
   function openEdit(section: Section): void {
     setModal({ kind: "edit", section });
+  }
+
+  function requestDelete(section: Section): void {
+    // Con sub-secciones vivas se pregunta: cascada a papelera o conservar
+    // hijas (suben al nivel superior). Sin hijas, soft delete directo.
+    if (hasLiveChildren(sections, section.id)) {
+      setConfirmSoftDelete(section);
+      return;
+    }
+    void softDeleteSection(section.id);
   }
 
   return (
@@ -482,6 +506,7 @@ export function SectionsScreen() {
                     setMenuSectionId(anchor !== null ? section.id : null);
                   }}
                   onEdit={openEdit}
+                  onDelete={requestDelete}
                 />
               );
               return section.enabled ? (
@@ -515,6 +540,15 @@ export function SectionsScreen() {
           mode={modal}
           onClose={() => {
             setModal(null);
+          }}
+        />
+      ) : null}
+
+      {confirmSoftDelete !== null ? (
+        <SectionDeleteConfirmModal
+          section={confirmSoftDelete}
+          onClose={() => {
+            setConfirmSoftDelete(null);
           }}
         />
       ) : null}
