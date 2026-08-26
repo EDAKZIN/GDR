@@ -9,6 +9,7 @@ import {
   type UpdateSectionInput,
 } from "../../core/sections";
 import { randomUUID } from "../../core/utils/uuid";
+import { translate } from "../../i18n";
 import { createSearchRepository } from "./search";
 import {
   appendSet,
@@ -80,6 +81,9 @@ export interface SectionListOptions extends ListOptions {
 function parseSections(rows: SectionRow[]): Section[] {
   return z.array(sectionRowSchema).parse(rows);
 }
+
+/** Máximo de sub-secciones directas (vivas) que admite cualquier sección. */
+export const MAX_DIRECT_CHILDREN = 5;
 
 export interface SectionRepository {
   create(input: CreateSectionInput): Promise<Section>;
@@ -173,6 +177,16 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
       [id],
     );
     return rows[0]?.total ?? 0;
+  }
+
+  /** Rechaza colgar otra hija bajo un padre que ya está en el límite. */
+  async function assertParentCapacity(database: Database, parentId: string): Promise<void> {
+    const total = await countLiveChildren(database, parentId);
+    if (total >= MAX_DIRECT_CHILDREN) {
+      throw new Error(
+        translate("secciones.limiteSubsecciones", { n: MAX_DIRECT_CHILDREN }),
+      );
+    }
   }
 
   /**
@@ -274,6 +288,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
       const database = await db();
       if (data.parentId != null) {
         await requireLiveParent(database, data.parentId);
+        await assertParentCapacity(database, data.parentId);
       }
       let position = data.position;
       if (position === undefined) {
@@ -347,6 +362,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
           await requireLiveParent(database, data.parentId);
           // Igual que move(): prohibido colgarse de un propio descendiente.
           await assertNoCycle(database, sectionId, data.parentId);
+          await assertParentCapacity(database, data.parentId);
         }
         if (data.parentId === sectionId) {
           throw new Error("Una sección no puede ser su propia sección padre.");
@@ -384,6 +400,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         // Evitar ciclos: ningún ancestro del nuevo padre puede ser la sección
         // que se mueve (eso significaría colgarla de su propio descendiente).
         await assertNoCycle(database, sectionId, target);
+        await assertParentCapacity(database, target);
       }
       await database.execute("UPDATE sections SET parent_id = $1, updated_at = $2 WHERE id = $3", [
         newParentId,

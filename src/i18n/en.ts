@@ -109,6 +109,8 @@ export const en: Dictionary = {
     restaurarAria: "Restore {n}",
     borrarDefTitle: "Delete permanently",
     borrarDefAria: "Delete {n} permanently",
+    limiteSubsecciones:
+      "A section can contain at most {n} direct sub-sections.",
   },
   formularios: {
     nuevo: "New form",

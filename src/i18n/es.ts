@@ -108,6 +108,8 @@ export const es = {
     restaurarAria: "Restaurar {n}",
     borrarDefTitle: "Borrar definitivamente",
     borrarDefAria: "Borrar {n} definitivamente",
+    limiteSubsecciones:
+      "Una sección puede contener máximo {n} sub-secciones directas.",
   },
   formularios: {
     nuevo: "Nuevo formulario",
