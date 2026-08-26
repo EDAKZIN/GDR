@@ -507,6 +507,20 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         ids.push(...frontier);
       }
       await applyDeletedFlag(database, ids, false);
+      /*
+       * Semántica anti-huérfanas visibles: si el padre de la raíz restaurada
+       * está eliminado o ya no existe, la sección queda como RAÍZ (parent_id
+       * = NULL) en vez de quedar colgada de una madre que no se muestra.
+       */
+      if (root.parentId !== null) {
+        const parent = await getRow(database, root.parentId);
+        if (parent === null || parent.deletedAt !== null) {
+          await database.execute(
+            "UPDATE sections SET parent_id = NULL, updated_at = $1 WHERE id = $2",
+            [nowIso(), sectionId],
+          );
+        }
+      }
       // Reindexar los registros vivos de los formularios restaurados.
       const placeholders = ids.map((_, index) => `$${String(index + 1)}`).join(", ");
       const recordRows = await database.select<Array<{ id: string }>>(
