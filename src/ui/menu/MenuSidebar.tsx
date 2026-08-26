@@ -9,6 +9,7 @@ import {
   FilePlus2,
   FileText,
   FolderPlus,
+  GraduationCap,
   MoreVertical,
   Move,
   PanelLeft,
@@ -38,6 +39,7 @@ import { FormModal } from "../screens/FormModal";
 import logoUrl from "../../assets/logo.png";
 import { SectionModal } from "../screens/SectionModal";
 import { SettingsModal } from "../settings/SettingsModal";
+import { TUTORIAL_SEEN_KEY, TutorialModal } from "../tutorial/TutorialModal";
 import { showErrorToast } from "./toastStore";
 
 const formsRepository = createFormsRepository(getDb);
@@ -624,6 +626,7 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
   const [deleteTarget, setDeleteTarget] = useState<Section | null>(null);
   const [confirmHardDelete, setConfirmHardDelete] = useState<Section | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
   const [allForms, setAllForms] = useState<Form[]>([]);
 
@@ -634,6 +637,23 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
       // localStorage no disponible: la preferencia simplemente no persiste.
     }
   }, [open]);
+
+  useEffect(() => {
+    let seen: boolean;
+    try {
+      seen = window.localStorage.getItem(TUTORIAL_SEEN_KEY) === "1";
+    } catch {
+      seen = false;
+    }
+    if (!seen) {
+      const timer = window.setTimeout(() => {
+        setShowTutorial(true);
+      }, 600);
+      return () => {
+        window.clearTimeout(timer);
+      };
+    }
+  }, []);
 
   // Formularios vivos agrupables por sección (para el árbol).
   useEffect(() => {
@@ -834,6 +854,18 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
             </span>
           ))}
         </nav>
+
+        <button
+          type="button"
+          title={t("tutorial.abrir")}
+          aria-label={t("tutorial.abrir")}
+          onClick={() => {
+            setShowTutorial(true);
+          }}
+          className="shrink-0 rounded-md p-2 text-zinc-400 transition-colors duration-150 hover:bg-zinc-900 hover:text-zinc-100"
+        >
+          <GraduationCap className="h-4 w-4" />
+        </button>
 
         <button
           type="button"
@@ -1064,6 +1096,14 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
         <SettingsModal
           onClose={() => {
             setShowSettings(false);
+          }}
+        />
+      ) : null}
+
+      {showTutorial ? (
+        <TutorialModal
+          onClose={() => {
+            setShowTutorial(false);
           }}
         />
       ) : null}
