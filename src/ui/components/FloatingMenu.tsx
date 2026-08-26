@@ -27,7 +27,7 @@ export function FloatingMenu({
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; maxHeight: number } | null>(null);
 
   useLayoutEffect(() => {
     const panel = panelRef.current;
@@ -38,9 +38,17 @@ export function FloatingMenu({
     const gap = 4;
     const width = panel.offsetWidth;
     const height = panel.offsetHeight;
-    let top = anchor.bottom + gap;
-    if (top + height > window.innerHeight - margin) {
-      top = Math.max(margin, anchor.top - height - gap);
+    const spaceBelow = window.innerHeight - margin - anchor.bottom - gap;
+    const spaceAbove = anchor.top - gap - margin;
+    const flipped = height > spaceBelow && spaceAbove > spaceBelow;
+    let top: number;
+    let maxHeight: number;
+    if (flipped) {
+      top = Math.max(margin, anchor.top - gap - height);
+      maxHeight = anchor.top - gap - top;
+    } else {
+      top = Math.min(anchor.bottom + gap, window.innerHeight - margin);
+      maxHeight = window.innerHeight - margin - top;
     }
     let left = anchor.right - width;
     if (left < margin) {
@@ -49,7 +57,7 @@ export function FloatingMenu({
     if (left + width > window.innerWidth - margin) {
       left = window.innerWidth - margin - width;
     }
-    setPos({ top, left });
+    setPos({ top, left, maxHeight: Math.max(maxHeight, 0) });
   }, [anchor]);
 
   return (
@@ -60,9 +68,9 @@ export function FloatingMenu({
         style={
           pos === null
             ? { visibility: "hidden" }
-            : { top: pos.top, left: pos.left }
+            : { top: pos.top, left: pos.left, maxHeight: pos.maxHeight }
         }
-        className={`fixed z-50 flex flex-col overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-2xl ${widthClass}`}
+        className={`fixed z-50 flex flex-col overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-2xl ${widthClass}`}
       >
         {children}
       </div>
