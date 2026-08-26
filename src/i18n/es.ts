@@ -115,6 +115,10 @@ export const es = {
       "Por defecto «{n}» se elimina junto con sus sub-secciones y todo su subárbol, que irán a la papelera.",
     conservarHijas: "Conservar sub-secciones (pasan al nivel superior)",
     eliminarTodo: "Eliminar todo",
+    avisoDeshabilitada:
+      "Esta sección está deshabilitada: puedes consultar los registros existentes, pero no editar la plantilla ni crear registros nuevos.",
+    nuevoRegistroBloqueado:
+      "La sección está deshabilitada: no se pueden crear registros nuevos.",
   },
   formularios: {
     nuevo: "Nuevo formulario",
@@ -340,6 +344,10 @@ export const es = {
     boton: "Papelera",
     vacia: "La papelera está vacía.",
     seccionesEliminadas: "Secciones eliminadas",
+    eliminarDefinitivo: "Eliminar permanentemente",
+    eliminarDefinitivoTitulo: "Eliminar registro permanentemente",
+    eliminarDefinitivoMensaje:
+      "El registro se borrará para siempre. Esta acción no se puede deshacer.",
   },
   tiempo: {
     ahoraMismo: "ahora mismo",

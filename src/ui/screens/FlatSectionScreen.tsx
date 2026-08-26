@@ -47,7 +47,8 @@ export function FlatSectionScreen() {
   const enabledForms = forms.filter((form) => form.enabled);
   const singleForm = enabledForms.length === 1 ? enabledForms[0] : undefined;
   // El editor de plantilla integrado aplica al modelo normal (una sola lista).
-  const canEditTemplate = singleForm !== undefined;
+  // Sección deshabilitada: la plantilla no se puede editar.
+  const canEditTemplate = singleForm !== undefined && section?.enabled !== false;
 
   // CRÍTICO: la tabla lee del store global de registros, sincronizado con
   // activeFormId. Sin esta selección, la tabla muestra los datos del
@@ -159,7 +160,7 @@ export function FlatSectionScreen() {
             title={t("formularios.seccionPlanaSinLista")}
             description={t("formularios.seccionPlanaSinListaDesc")}
           />
-        ) : view === "template" && singleForm !== undefined ? (
+        ) : view === "template" && singleForm !== undefined && section.enabled ? (
           /* Editor de campos integrado en la misma pantalla. */
           <TemplateTab
             key={`${singleForm.id}:template`}
@@ -175,15 +176,27 @@ export function FlatSectionScreen() {
               key={singleForm.id}
               formName={singleForm.name}
               templateCtaLabel={t("plantilla.anadirCamposCta")}
-              onGoToTemplate={() => {
-                setView("template");
-              }}
+              createDisabledReason={
+                !section.enabled ? t("secciones.nuevoRegistroBloqueado") : null
+              }
+              onGoToTemplate={
+                canEditTemplate
+                  ? () => {
+                      setView("template");
+                    }
+                  : undefined
+              }
             />
             <RecordModal />
           </>
         ) : (
           /* Legacy: sección plana con varios formularios vivos → pestañas. */
-          <LegacyFlatTabs formIds={enabledForms.map((form) => form.id)} />
+          <LegacyFlatTabs
+            formIds={enabledForms.map((form) => form.id)}
+            createDisabledReason={
+              !section.enabled ? t("secciones.nuevoRegistroBloqueado") : null
+            }
+          />
         )}
       </div>
 
@@ -200,7 +213,13 @@ export function FlatSectionScreen() {
 }
 
 /** Pestañas por formulario para el caso legacy de sección plana con varios. */
-function LegacyFlatTabs({ formIds }: { formIds: readonly string[] }) {
+function LegacyFlatTabs({
+  formIds,
+  createDisabledReason,
+}: {
+  formIds: readonly string[];
+  createDisabledReason: string | null;
+}) {
   const forms = useSectionStore((store) => store.forms);
   const selectForm = useSectionStore((store) => store.selectForm);
   const navigate = useUiStore((store) => store.navigate);
@@ -266,6 +285,7 @@ function LegacyFlatTabs({ formIds }: { formIds: readonly string[] }) {
       <RecordsTable
         key={current.id}
         formName={current.name}
+        createDisabledReason={createDisabledReason}
         onGoToTemplate={() => {
           navigate("form", current.id);
         }}

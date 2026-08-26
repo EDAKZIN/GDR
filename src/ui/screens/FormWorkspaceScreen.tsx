@@ -90,6 +90,11 @@ export function FormWorkspaceScreen() {
 
   const deletedForm = form.deletedAt !== null;
   const ownerSection = sections.find((candidate) => candidate.id === form.sectionId);
+  // Sección deshabilitada: lectura de registros sí, estructura no.
+  const sectionDisabled = ownerSection !== undefined && !ownerSection.enabled;
+  if (sectionDisabled && tab === "template") {
+    setTab("records");
+  }
   const headerIcon = form.icon ?? ownerSection?.icon ?? null;
 
   return (
@@ -247,6 +252,15 @@ export function FormWorkspaceScreen() {
           </div>
         ) : null}
 
+        {/* Aviso de sección deshabilitada: solo lectura de registros */}
+        {sectionDisabled ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-600/60 bg-zinc-800/30 px-4 py-3">
+            <p className="text-xs text-zinc-400">
+              {t("secciones.avisoDeshabilitada")}
+            </p>
+          </div>
+        ) : null}
+
         {/* Pestañas internas */}
         <nav
           aria-label={t("formularios.pestanasAria")}
@@ -262,24 +276,33 @@ export function FormWorkspaceScreen() {
             <Rows3 className="h-4 w-4" />
             {t("registros.tab")}
           </button>
-          <button
-            type="button"
-            className={tabButtonClass(tab === "template")}
-            onClick={() => {
-              setTab("template");
-            }}
-          >
-            <LayoutTemplate className="h-4 w-4" />
-            {t("plantilla.tab")}
-          </button>
+          {!sectionDisabled ? (
+            <button
+              type="button"
+              className={tabButtonClass(tab === "template")}
+              onClick={() => {
+                setTab("template");
+              }}
+            >
+              <LayoutTemplate className="h-4 w-4" />
+              {t("plantilla.tab")}
+            </button>
+          ) : null}
         </nav>
 
-        {tab === "records" ? (
+        {tab === "records" || sectionDisabled ? (
           <RecordsTable
             formName={form.name}
-            onGoToTemplate={() => {
-              setTab("template");
-            }}
+            createDisabledReason={
+              sectionDisabled ? t("secciones.nuevoRegistroBloqueado") : null
+            }
+            onGoToTemplate={
+              sectionDisabled
+                ? undefined
+                : () => {
+                    setTab("template");
+                  }
+            }
           />
         ) : (
           <TemplateTab

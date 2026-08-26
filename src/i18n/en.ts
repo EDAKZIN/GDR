@@ -116,6 +116,10 @@ export const en: Dictionary = {
       "By default «{n}» is deleted along with its sub-sections and entire subtree; everything goes to the trash.",
     conservarHijas: "Keep sub-sections (they move up one level)",
     eliminarTodo: "Delete everything",
+    avisoDeshabilitada:
+      "This section is disabled: you can browse existing records, but the template cannot be edited and new records cannot be created.",
+    nuevoRegistroBloqueado:
+      "The section is disabled: new records cannot be created.",
   },
   formularios: {
     nuevo: "New form",
@@ -342,6 +346,10 @@ export const en: Dictionary = {
     boton: "Trash",
     vacia: "The trash is empty.",
     seccionesEliminadas: "Deleted sections",
+    eliminarDefinitivo: "Delete permanently",
+    eliminarDefinitivoTitulo: "Delete record permanently",
+    eliminarDefinitivoMensaje:
+      "The record will be deleted forever. This action cannot be undone.",
   },
   tiempo: {
     ahoraMismo: "right now",
