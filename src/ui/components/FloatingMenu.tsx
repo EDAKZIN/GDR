@@ -62,9 +62,18 @@ export function FloatingMenu({
 
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div
+        className="fixed inset-0 z-40"
+        onClick={(event) => {
+          event.stopPropagation();
+          onClose();
+        }}
+      />
       <div
         ref={panelRef}
+        onClick={(event) => {
+          event.stopPropagation();
+        }}
         style={
           pos === null
             ? { visibility: "hidden" }
