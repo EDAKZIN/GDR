@@ -219,7 +219,7 @@ function SectionCard({
 
 /**
  * Pantalla HOME: tarjetas de secciones con papelera. La búsqueda global vive
- * exclusivamente en la barra superior (Ctrl+K).
+ * exclusivamente en la barra superior (Ctrl+F).
  */
 export function SectionsScreen() {
   const sections = useSectionStore((store) => store.sections);

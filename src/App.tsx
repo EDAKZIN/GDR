@@ -30,11 +30,11 @@ function useFormSync(): void {
   }, [activeFormId]);
 }
 
-/** Atajo global Ctrl+K para abrir el buscador. */
+/** Atajo global Ctrl+F para abrir el buscador. */
 function useSearchShortcut(onOpen: () => void): void {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f") {
         event.preventDefault();
         onOpen();
       }

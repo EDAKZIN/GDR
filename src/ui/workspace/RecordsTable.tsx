@@ -363,7 +363,7 @@ export function RecordsTable({
           {String(items.length)}
         </span>
 
-        {/* Filtro pequeño integrado a la tabla (no sustituye a Ctrl+K) */}
+        {/* Filtro pequeño integrado a la tabla (no sustituye a Ctrl+F) */}
         <label
           className="relative ml-1 flex w-44 min-w-0 items-center rounded-md border border-zinc-800 bg-zinc-900 px-2 py-1 transition-colors focus-within:border-sky-400"
           title={t("registros.filtroTitle")}

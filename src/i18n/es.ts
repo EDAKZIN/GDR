@@ -312,7 +312,7 @@ export const es = {
   },
   busqueda: {
     abrir: "Buscar en todo",
-    abrirTitle: "Buscar en todo (Ctrl+K)",
+    abrirTitle: "Buscar en todo (Ctrl+F)",
     placeholder: "Buscar en todos los registros…",
     cerrarAria: "Cerrar búsqueda",
     filtrarSeccionAria: "Filtrar por sección",

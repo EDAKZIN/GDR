@@ -837,7 +837,7 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
         >
           <Search className="h-3.5 w-3.5" />
           <kbd className="hidden rounded border border-zinc-700 bg-zinc-950 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-600 sm:inline">
-            Ctrl K
+            Ctrl F
           </kbd>
         </button>
       </header>

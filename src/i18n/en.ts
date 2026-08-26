@@ -313,7 +313,7 @@ export const en: Dictionary = {
   },
   busqueda: {
     abrir: "Search everything",
-    abrirTitle: "Search everything (Ctrl+K)",
+    abrirTitle: "Search everything (Ctrl+F)",
     placeholder: "Search all records…",
     cerrarAria: "Close search",
     filtrarSeccionAria: "Filter by section",
