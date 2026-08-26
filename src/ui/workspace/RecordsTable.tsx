@@ -181,6 +181,7 @@ export function RecordsTable({
   onGoToTemplate,
   onOpenWorkspace,
   templateCtaLabel,
+  createDisabledReason,
 }: {
   /** Nombre del formulario (encabezado de la tabla). */
   formName: string;
@@ -190,9 +191,12 @@ export function RecordsTable({
   onOpenWorkspace?: () => void;
   /** Texto del CTA cuando la plantilla no tiene campos. */
   templateCtaLabel?: string;
+  /** Si no es null: «Nuevo registro» deshabilitado con este motivo. */
+  createDisabledReason?: string | null;
 }) {
   const { t } = useT();
   const items = useRecordStore((state) => state.items);
+  const trashedItems = useRecordStore((state) => state.trashedItems);
   const fields = useRecordStore((state) => state.fields);
   const showDeleted = useRecordStore((state) => state.showDeleted);
   const loading = useRecordStore((state) => state.loading);
@@ -202,6 +206,7 @@ export function RecordsTable({
   const openRecord = useRecordStore((state) => state.openRecord);
   const restoreItem = useRecordStore((state) => state.restoreItem);
   const deleteItem = useRecordStore((state) => state.deleteItem);
+  const hardDeleteRecord = useRecordStore((state) => state.hardDeleteRecord);
 
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
@@ -210,6 +215,12 @@ export function RecordsTable({
     null,
   );
   const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
+  const [hardDeleteRecordId, setHardDeleteRecordId] = useState<string | null>(
+    null,
+  );
+
+  // La papelera muestra SOLO eliminados (trashedItems), nunca mezclados.
+  const displayItems = showDeleted ? trashedItems : items;
 
   // Columnas: los primeros campos habilitados de la plantilla.
   const visibleFields = useMemo(
@@ -219,22 +230,22 @@ export function RecordsTable({
 
   const valuesByRecord = useMemo(() => {
     const map = new Map<string, Map<string, unknown>>();
-    for (const { record, values } of items) {
+    for (const { record, values } of displayItems) {
       map.set(
         record.id,
         new Map(values.map((entry) => [entry.fieldId, entry.value])),
       );
     }
     return map;
-  }, [items]);
+  }, [displayItems]);
 
   // Filtro local + orden por columna, ambos en cliente (la lista ya está cargada).
   const rows = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const matching =
       needle === ""
-        ? items
-        : items.filter(({ title, values }) => {
+        ? displayItems
+        : displayItems.filter(({ title, values }) => {
             if (title.toLowerCase().includes(needle)) {
               return true;
             }
@@ -269,7 +280,7 @@ export function RecordsTable({
       });
     }
     return sort.direction === "desc" ? result.reverse() : result;
-  }, [items, query, sort, visibleFields, valuesByRecord]);
+  }, [displayItems, query, sort, visibleFields, valuesByRecord]);
 
   const totalCount = rows.length;
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -322,7 +333,7 @@ export function RecordsTable({
   }
 
   const hasFields = fields.length > 0;
-  const isEmpty = !loading && items.length === 0;
+  const isEmpty = !loading && displayItems.length === 0;
 
   function sortableHeader(label: string, key: SortKey): ReactNode {
     const active = sort.key === key;
@@ -360,7 +371,7 @@ export function RecordsTable({
           className={chipAccent}
           title={t("registros.registrosCargados")}
         >
-          {String(items.length)}
+          {String(displayItems.length)}
         </span>
 
         {/* Filtro pequeño integrado a la tabla (no sustituye a Ctrl+F) */}
@@ -407,7 +418,13 @@ export function RecordsTable({
             {t("papelera.boton")}
           </label>
           {!showDeleted && hasFields ? (
-            <button type="button" className={btnPrimary} onClick={openCreate}>
+            <button
+              type="button"
+              className={btnPrimary}
+              onClick={openCreate}
+              disabled={createDisabledReason != null}
+              title={createDisabledReason ?? t("registros.nuevo")}
+            >
               <Plus className="h-4 w-4" />
               {t("registros.nuevo")}
             </button>
@@ -440,7 +457,7 @@ export function RecordsTable({
             </button>
           ) : null}
         </EmptyState>
-      ) : loading && items.length === 0 ? (
+      ) : loading && displayItems.length === 0 ? (
         <p className="py-8 text-center text-sm text-zinc-500">
           {t("registros.cargando")}
         </p>
@@ -459,6 +476,8 @@ export function RecordsTable({
               type="button"
               className={`mt-1 ${btnPrimaryLg}`}
               onClick={openCreate}
+              disabled={createDisabledReason != null}
+              title={createDisabledReason ?? undefined}
             >
               <Plus className="h-4 w-4" />
               {t("registros.nuevo")}
@@ -583,6 +602,14 @@ export function RecordsTable({
                                         void restoreItem(record.id);
                                       },
                                     },
+                                    {
+                                      label: t("papelera.eliminarDefinitivo"),
+                                      icon: Trash2,
+                                      danger: true,
+                                      run: () => {
+                                        setHardDeleteRecordId(record.id);
+                                      },
+                                    },
                                   ]
                                 : [
                                     {
@@ -678,6 +705,18 @@ export function RecordsTable({
           onConfirm={() => deleteItem(deleteRecordId)}
           onClose={() => {
             setDeleteRecordId(null);
+          }}
+        />
+      ) : null}
+
+      {hardDeleteRecordId !== null ? (
+        <ConfirmModal
+          title={t("papelera.eliminarDefinitivoTitulo")}
+          message={t("papelera.eliminarDefinitivoMensaje")}
+          confirmLabel={t("papelera.eliminarDefinitivo")}
+          onConfirm={() => hardDeleteRecord(hardDeleteRecordId)}
+          onClose={() => {
+            setHardDeleteRecordId(null);
           }}
         />
       ) : null}
