@@ -27,6 +27,7 @@ interface FormRow {
   sectionId: string;
   name: string;
   description: string | null;
+  icon: string | null;
   position: number;
   enabled: number;
   createdAt: string;
@@ -40,6 +41,7 @@ const formRowSchema = z
     sectionId: z.uuid(),
     name: z.string(),
     description: z.string().nullable(),
+    icon: z.string().nullable(),
     position: z.number().int(),
     enabled: dbEnabled,
     createdAt: z.iso.datetime(),
@@ -51,6 +53,7 @@ const formRowSchema = z
     sectionId: row.sectionId,
     name: row.name,
     description: row.description,
+    icon: row.icon,
     position: row.position,
     enabled: row.enabled,
     createdAt: row.createdAt,
@@ -59,7 +62,7 @@ const formRowSchema = z
   }));
 
 const FORM_COLUMNS =
-  "id, section_id AS sectionId, name, description, position, enabled, created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt";
+  "id, section_id AS sectionId, name, description, icon, position, enabled, created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt";
 
 function parseForms(rows: FormRow[]): Form[] {
   return z.array(formRowSchema).parse(rows);
@@ -144,12 +147,13 @@ export function createFormsRepository(db: DbHandle): FormRepository {
         position = rows[0]?.next ?? 0;
       }
       await database.execute(
-        "INSERT INTO forms (id, section_id, name, description, position) VALUES ($1, $2, $3, $4, $5)",
+        "INSERT INTO forms (id, section_id, name, description, icon, position) VALUES ($1, $2, $3, $4, $5, $6)",
         [
           id,
           data.sectionId,
           data.name,
           data.description ?? null,
+          data.icon ?? null,
           position,
         ],
       );
@@ -192,6 +196,9 @@ export function createFormsRepository(db: DbHandle): FormRepository {
       }
       if (data.description !== undefined) {
         appendSet(sets, params, "description", data.description ?? null);
+      }
+      if (data.icon !== undefined) {
+        appendSet(sets, params, "icon", data.icon ?? null);
       }
       if (data.position !== undefined) {
         appendSet(sets, params, "position", data.position);

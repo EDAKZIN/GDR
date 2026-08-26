@@ -17,6 +17,8 @@ import {
   modalBackdrop,
   modalPanel,
 } from "../components/uiStyles";
+import { IconRenderer } from "../components/IconRenderer";
+import { SUGGESTED_ICON_NAMES } from "../components/iconNames";
 
 const fieldsRepository = createFieldsRepository(getDb);
 
@@ -50,6 +52,7 @@ export function FormModal({ mode, onClose }: FormModalProps) {
   const [description, setDescription] = useState(
     mode.kind === "edit" ? (mode.form.description ?? "") : "",
   );
+  const [icon, setIcon] = useState(mode.kind === "edit" ? (mode.form.icon ?? "") : "");
   const [templateId, setTemplateId] = useState<string>(
     templates[0]?.id ?? "empty",
   );
@@ -78,11 +81,13 @@ export function FormModal({ mode, onClose }: FormModalProps) {
     setError(null);
     try {
       const descriptionValue = description.trim() === "" ? null : description.trim();
+      const iconValue = icon.trim() === "" ? null : icon.trim();
       if (mode.kind === "create") {
         const created = await createForm({
           sectionId: mode.sectionId,
           name,
           description: descriptionValue,
+          icon: iconValue,
         });
         // Alta de los campos de la plantilla elegida, en posiciones 0..n.
         const template =
@@ -113,6 +118,7 @@ export function FormModal({ mode, onClose }: FormModalProps) {
         await updateForm(mode.form.id, {
           name,
           description: descriptionValue,
+          icon: iconValue,
         });
       }
       onClose();
@@ -181,6 +187,30 @@ export function FormModal({ mode, onClose }: FormModalProps) {
             maxLength={2000}
           />
         </label>
+
+        <div className="flex flex-col gap-1 text-xs font-medium text-zinc-400">
+          {t("secciones.icono")}
+          <div className="flex items-center gap-2">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-700 bg-zinc-800 text-sky-300">
+              <IconRenderer icon={icon} />
+            </span>
+            <input
+              className={inputClass}
+              value={icon}
+              onChange={(event) => {
+                setIcon(event.target.value);
+              }}
+              list="suggested-form-icons"
+              placeholder={t("secciones.iconoPlaceholder")}
+              maxLength={100}
+            />
+            <datalist id="suggested-form-icons">
+              {SUGGESTED_ICON_NAMES.map((suggested) => (
+                <option key={suggested} value={suggested} />
+              ))}
+            </datalist>
+          </div>
+        </div>
 
         {mode.kind === "create" ? (
           <fieldset className="flex flex-col gap-1.5 text-xs font-medium text-zinc-400">
