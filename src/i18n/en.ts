@@ -342,6 +342,49 @@ export const en: Dictionary = {
     cercano: "nearby",
     atajos: "↑↓ navigate · Enter opens · Esc closes",
   },
+  tutorial: {
+    titulo: "Tutorial",
+    abrir: "Open tutorial",
+    cerrar: "Close tutorial",
+    anterior: "Previous",
+    siguiente: "Next",
+    empezar: "Start using GDR",
+    progreso: "{a} / {b}",
+    s1Titulo: "Welcome to GDR",
+    s1Desc:
+      "GDR is an organizer where you define the structure: create sections, give them field templates and fill records. This quick tour covers the essentials.",
+    s1PasoSecciones: "Sections",
+    s1PasoPlantillas: "Templates",
+    s1PasoRegistros: "Records",
+    s2Titulo: "The section tree",
+    s2Desc:
+      "The side drawer holds a single tree with all your sections. Click a node to enter it and use its ⋮ menu to add subsections, move it, disable it or delete it.",
+    s3Titulo: "Two kinds of section",
+    s3Desc:
+      "A hierarchical section groups subsections and forms. A flat section is a direct records table, with no intermediate levels.",
+    s3Jerarquica: "Hierarchical",
+    s3JerarquicaDesc: "Contains subsections and forms.",
+    s3Plana: "Flat",
+    s3PlanaDesc: "Direct records table.",
+    s4Titulo: "Creating a section",
+    s4Desc:
+      "Press “+ New section” at the top of the drawer and fill in name, description and icon. It will then appear in the tree, ready to organize.",
+    s5Titulo: "Field templates",
+    s5Desc:
+      "A form is a field template: text, number, selection, date… Define the fields once and every new record reuses them.",
+    s6Titulo: "Records",
+    s6Desc:
+      "Fill the template by creating records: they appear in a dense, filterable table. Each row's ⋮ menu edits, restores or deletes.",
+    s7Titulo: "Global search",
+    s7Desc:
+      "Ctrl+F searches the fields of every section at once, with section and form filters and results grouped by location.",
+    s8Titulo: "Nothing gets lost",
+    s8Desc:
+      "Deleting only moves things to the trash: sections, forms, fields and records are restored with one click. You can also disable without deleting.",
+    s9Titulo: "Settings",
+    s9Desc:
+      "From the gear you switch between the dark and light themes and pick your language. That's all: press the button and start organizing.",
+  },
   papelera: {
     boton: "Trash",
     vacia: "The trash is empty.",

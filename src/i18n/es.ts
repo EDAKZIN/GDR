@@ -340,6 +340,49 @@ export const es = {
     cercano: "cercano",
     atajos: "↑↓ navega · Enter abre · Esc cierra",
   },
+  tutorial: {
+    titulo: "Tutorial",
+    abrir: "Abrir tutorial",
+    cerrar: "Cerrar tutorial",
+    anterior: "Anterior",
+    siguiente: "Siguiente",
+    empezar: "Empezar a usar GDR",
+    progreso: "{a} / {b}",
+    s1Titulo: "Bienvenido a GDR",
+    s1Desc:
+      "GDR es un organizador donde la estructura la defines tú: crea secciones, dales plantillas de campos y llena registros. Este recorrido rápido muestra lo esencial.",
+    s1PasoSecciones: "Secciones",
+    s1PasoPlantillas: "Plantillas",
+    s1PasoRegistros: "Registros",
+    s2Titulo: "El árbol de secciones",
+    s2Desc:
+      "En el drawer lateral vive un único árbol con todas tus secciones. Pulsa un nodo para entrar y usa su menú ⋮ para añadir subsecciones, moverlo, deshabilitarlo o eliminarlo.",
+    s3Titulo: "Dos tipos de sección",
+    s3Desc:
+      "Una sección jerárquica agrupa subsecciones y formularios. Una sección plana es una tabla directa de registros, sin niveles intermedios.",
+    s3Jerarquica: "Jerárquica",
+    s3JerarquicaDesc: "Contiene subsecciones y formularios.",
+    s3Plana: "Plana",
+    s3PlanaDesc: "Tabla directa de registros.",
+    s4Titulo: "Crear una sección",
+    s4Desc:
+      "Pulsa «+ Nueva sección» arriba del drawer y completa nombre, descripción e icono. Después aparecerá en el árbol, lista para organizarse.",
+    s5Titulo: "Plantillas de campos",
+    s5Desc:
+      "Un formulario es una plantilla de campos: texto, número, selección, fecha… Define los campos una vez y cada registro nuevo los reutiliza.",
+    s6Titulo: "Registros",
+    s6Desc:
+      "Llena la plantilla creando registros: se muestran en una tabla densa y filtrable. El menú ⋮ de cada fila edita, restaura o elimina.",
+    s7Titulo: "Búsqueda global",
+    s7Desc:
+      "Con Ctrl+F buscas a la vez en los campos de todas las secciones, con filtros por sección y formulario y resultados agrupados por su ubicación.",
+    s8Titulo: "Nada se pierde",
+    s8Desc:
+      "Eliminar solo manda a la papelera: secciones, formularios, campos y registros se restauran con un clic. También puedes deshabilitar sin borrar.",
+    s9Titulo: "Ajustes",
+    s9Desc:
+      "Desde el engranaje cambias entre tema oscuro y claro y eliges el idioma. Eso es todo: pulsa el botón y empieza a organizar.",
+  },
   papelera: {
     boton: "Papelera",
     vacia: "La papelera está vacía.",
