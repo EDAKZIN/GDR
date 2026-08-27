@@ -384,9 +384,9 @@ export const en: Dictionary = {
     s8Titulo: "Search everywhere",
     s8Desc:
       "Press Ctrl + F to search all your cards at once. You can narrow by folder or form, filter by field type and see grouped results with your text highlighted.",
-    s9Titulo: "Pause and trash",
+    s9Titulo: "Disable and trash",
     s9Desc:
-      "Pause lets you view but not edit and hides from search; Trash keeps deleted items so you can bring them back with one click. Nothing is lost until permanent delete.",
+      "Disabling keeps things visible but not editable and hides them from search; trash keeps deleted items so you can bring them back with one click. Nothing is lost until permanent delete.",
     s10Titulo: "Settings",
     s10Desc:
       "In the gear you switch between dark and light and pick your language. Done! You can start organizing.",

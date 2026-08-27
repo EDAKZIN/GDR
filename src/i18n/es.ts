@@ -382,9 +382,9 @@ export const es = {
     s8Titulo: "Buscar en todo",
     s8Desc:
       "Pulsa Ctrl + F para buscar en todas tus fichas a la vez. Puedes filtrar por carpeta o formulario, por tipo de campo y ver los resultados agrupados con tu texto resaltado.",
-    s9Titulo: "Pausar y papelera",
+    s9Titulo: "Deshabilitar y papelera",
     s9Desc:
-      "Pausar deja ver pero no editar ni aparece en búsquedas; la papelera guarda lo borrado para traerlo de vuelta con un clic. Solo se pierde al borrar definitivo.",
+      "Deshabilitar deja ver pero no editar ni aparece en búsquedas; la papelera guarda lo borrado para traerlo de vuelta con un clic. Solo se pierde al borrar definitivo.",
     s10Titulo: "Ajustes",
     s10Desc:
       "En el engranaje cambias entre modo oscuro y claro y eliges el idioma. ¡Listo! Ya puedes empezar a ordenar.",
