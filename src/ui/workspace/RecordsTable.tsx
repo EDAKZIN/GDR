@@ -513,7 +513,10 @@ export function RecordsTable({
                   >
                     {sortableHeader(t("registros.modificado"), "updated_at")}
                   </th>
-                  <th scope="col" className="w-10 px-2 py-2">
+                  <th
+                    scope="col"
+                    className="sticky right-0 z-20 w-10 bg-zinc-950 px-2 py-2"
+                  >
                     <span className="sr-only">{t("comun.acciones")}</span>
                   </th>
                 </tr>
@@ -564,7 +567,7 @@ export function RecordsTable({
                       >
                         {formatRelativeTime(record.updatedAt)}
                       </td>
-                      <td className="relative px-2 py-2 text-right">
+                      <td className="sticky right-0 bg-zinc-950 px-2 py-2 text-right">
                         <button
                           type="button"
                           aria-label={t("comun.accionesDe", { n: title })}
