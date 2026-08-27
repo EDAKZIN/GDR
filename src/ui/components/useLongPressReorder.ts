@@ -180,7 +180,7 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
     onReorderRef.current = onReorder;
   });
 
-  /** Recalcula la posición del hueco según la Y del puntero. */
+  /** Recalcula la posición del hueco en 2 dimensiones (grid fluido). */
   const updateTargetIndex = useCallback((): void => {
     const drag = dragStateRef.current;
     if (drag === null) {
@@ -194,12 +194,13 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
       if (node === undefined) {
         continue;
       }
-      // Se descuenta el desplazamiento de la animación FLIP en curso para
-      // medir la posición natural del vecino.
       const flipOffset = flipOffsetsRef.current.get(id);
       const rect = node.getBoundingClientRect();
-      const center = rect.top + rect.height / 2 - (flipOffset?.y ?? 0);
-      if (drag.pointerY > center) {
+      const centerX = rect.left + rect.width / 2 - (flipOffset?.x ?? 0);
+      const centerY = rect.top + rect.height / 2 - (flipOffset?.y ?? 0);
+      const sameRow = Math.abs(drag.pointerY - centerY) < rect.height * 0.5;
+      const isAfter = sameRow ? drag.pointerX > centerX : drag.pointerY > centerY;
+      if (isAfter) {
         insertAt += 1;
       }
     }
@@ -230,6 +231,20 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
         return;
       }
 
+      function findScrollParent(start: HTMLElement): HTMLElement {
+        let node: HTMLElement | null = start.parentElement;
+        while (node !== null) {
+          if (node.scrollHeight > node.clientHeight) {
+            const style = window.getComputedStyle(node);
+            if (/(auto|scroll|overlay)/.test(style.overflowY)) {
+              return node;
+            }
+          }
+          node = node.parentElement;
+        }
+        return start.scrollHeight > start.clientHeight ? start : start;
+      }
+
       /** Bucle rAF de auto-scroll al acercarse a los bordes del contenedor. */
       function autoScrollTick(): void {
         const drag = dragStateRef.current;
@@ -238,7 +253,8 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
           scrollRaf.current = null;
           return;
         }
-        const rect = container.getBoundingClientRect();
+        const scrollEl = findScrollParent(container);
+        const rect = scrollEl.getBoundingClientRect();
         let delta = 0;
         const topDistance = drag.pointerY - rect.top;
         const bottomDistance = rect.bottom - drag.pointerY;
@@ -248,7 +264,7 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
           delta = (MAX_SCROLL_SPEED_PX * (EDGE_ZONE_PX - bottomDistance)) / EDGE_ZONE_PX;
         }
         if (delta !== 0) {
-          container.scrollTop += delta;
+          scrollEl.scrollTop += delta;
           // Al moverse el contenido cambian las posiciones: recalcular todo.
           applyDragTransform(drag, itemNodes.current, container);
           updateTargetIndex();
