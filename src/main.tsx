@@ -13,6 +13,21 @@ import { useSectionStore } from "./stores";
 // de fondo con el tema equivocado.
 applyStoredTheme();
 
+if (import.meta.env.PROD) {
+  window.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "i") {
+      event.preventDefault();
+      void import("@tauri-apps/api/core")
+        .then(({ invoke }) => invoke("open_devtools"))
+        .catch(() => {});
+    }
+  });
+}
+
 async function bootstrap(): Promise<void> {
   let fatal: unknown = null;
 

@@ -167,6 +167,30 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               </select>
             </div>
           </section>
+
+          <section className="flex flex-col gap-2 border-t border-zinc-800 pt-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              {t("ajustes.acerca")}
+            </h3>
+            <p className="text-xs text-zinc-500">{t("ajustes.acercaDesc")}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-zinc-300">EDAKZIN</span>
+              <a
+                href="https://github.com/EDAKZIN"
+                target="_blank"
+                rel="noreferrer"
+                onClick={(event) => {
+                  event.preventDefault();
+                  void import("@tauri-apps/plugin-opener").then(({ openUrl }) =>
+                    openUrl("https://github.com/EDAKZIN"),
+                  );
+                }}
+                className="inline-flex items-center gap-1 text-xs text-sky-400 underline-offset-4 hover:text-sky-300 hover:underline"
+              >
+                {t("ajustes.verGithub")}
+              </a>
+            </div>
+          </section>
         </div>
       </div>
     </div>
