@@ -23,10 +23,9 @@ export const es = {
     idiomaDesc: "Idioma de toda la aplicación.",
     espanol: "Español",
     ingles: "English",
-    acerca: "Acerca del desarrollador",
-    acercaDesc:
-      "GDR es un proyecto personal de código abierto. El desarrollo está a cargo de EDAKZIN.",
-    verGithub: "Ver en GitHub",
+    acerca: "Acerca de",
+    acercaDesc: "Proyecto de código abierto desarrollado y mantenido por EDAKZIN.",
+    verGithub: "GitHub",
   },
   comun: {
     cancelar: "Cancelar",

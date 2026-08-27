@@ -24,9 +24,9 @@ export const en: Dictionary = {
     idiomaDesc: "Application-wide language.",
     espanol: "Español",
     ingles: "English",
-    acerca: "About the developer",
-    acercaDesc: "GDR is a personal open-source project. Development by EDAKZIN.",
-    verGithub: "View on GitHub",
+    acerca: "About",
+    acercaDesc: "Open-source project developed and maintained by EDAKZIN.",
+    verGithub: "GitHub",
   },
   comun: {
     cancelar: "Cancel",

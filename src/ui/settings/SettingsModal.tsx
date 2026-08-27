@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { Check, Moon, Sun, X } from "lucide-react";
 import { useT } from "../../i18n";
+import { GithubIcon } from "../components/GithubIcon";
 import { getTheme, setTheme, subscribeTheme, type Theme } from "../../theme";
 import { modalBackdrop, modalHeader, modalPanel } from "../components/uiStyles";
 
@@ -174,7 +175,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </h3>
             <p className="text-xs text-zinc-500">{t("ajustes.acercaDesc")}</p>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-zinc-300">EDAKZIN</span>
+              <span className="text-xs text-zinc-400">{t("ajustes.acercaDesc")}</span>
               <a
                 href="https://github.com/EDAKZIN"
                 target="_blank"
@@ -185,8 +186,9 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                     openUrl("https://github.com/EDAKZIN"),
                   );
                 }}
-                className="inline-flex items-center gap-1 text-xs text-sky-400 underline-offset-4 hover:text-sky-300 hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-300 underline-offset-4 hover:text-zinc-100 hover:underline"
               >
+                <GithubIcon className="h-4 w-4" />
                 {t("ajustes.verGithub")}
               </a>
             </div>
