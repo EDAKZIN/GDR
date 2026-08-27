@@ -6,8 +6,11 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  Eye,
   FileText,
   Folder,
+  FolderOpen,
   FolderTree,
   Globe,
   GripVertical,
@@ -28,7 +31,7 @@ import { useT, type TranslateFn } from "../../i18n";
 import { btnPrimary, btnSecondary, modalHeader, modalPanel } from "../components/uiStyles";
 
 export const TUTORIAL_SEEN_KEY = "gdr.tutorialSeen";
-const LAST_INDEX = 9;
+const LAST_INDEX = 10;
 
 function markSeen(): void {
   try {
@@ -543,6 +546,51 @@ function TrashVisual({ t }: { t: TranslateFn }) {
   );
 }
 
+function FileDetailVisual({ t }: { t: TranslateFn }) {
+  return (
+    <div className="flex h-56 flex-col gap-2 rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+      <div className="flex items-start gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-800 bg-sky-500/10 text-sky-300">
+          <FileText className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="h-2 w-24 rounded-full bg-zinc-700" />
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            <span className="rounded-full border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 text-[8px] text-zinc-400">{t("registros.creadoChip", { n: "ahora mismo" })}</span>
+            <span className="rounded-full border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 text-[8px] text-zinc-400">{t("registros.modificadoChip", { n: "hace 1 h" })}</span>
+          </div>
+        </div>
+        <Eye className="h-3 w-3 shrink-0 text-zinc-600" />
+      </div>
+      <div className="flex flex-1 flex-col divide-y divide-zinc-800 rounded-md border border-sky-500/40 bg-zinc-900 px-3 py-1 ring-1 ring-sky-400/30">
+        <div className="flex items-center gap-2 py-1.5">
+          <FileText className="h-3 w-3 shrink-0 text-zinc-600" />
+          <span className="w-16 text-[9px] font-medium text-zinc-500">Nombre</span>
+          <span className="flex-1 truncate text-[10px] text-zinc-100">Ana López</span>
+        </div>
+        <div className="flex items-center gap-2 py-1.5">
+          <Folder className="h-3 w-3 shrink-0 text-zinc-600" />
+          <span className="w-16 text-[9px] font-medium text-zinc-500">{t("campos.tipos.rutaArchivo")}</span>
+          <span className="flex min-w-0 flex-1 items-center gap-1">
+            <span className="min-w-0 flex-1 truncate rounded border border-zinc-700 bg-zinc-950 px-1.5 py-0.5 font-mono text-[8px] text-zinc-300">C:\docs\foto.png</span>
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-sky-400 bg-zinc-900 px-1.5 py-0.5 text-[8px] font-medium text-sky-300 ring-2 ring-sky-400">
+              <FolderOpen className="h-3 w-3" />
+              {t("campos.examinar")}
+            </span>
+            <Copy className="h-3 w-3 shrink-0 text-zinc-600" />
+          </span>
+        </div>
+        <div className="flex items-center gap-2 py-1.5">
+          <FileText className="h-3 w-3 shrink-0 text-zinc-600" />
+          <span className="w-16 text-[9px] font-medium text-zinc-500">Notas</span>
+          <span className="flex-1 truncate text-[10px] text-zinc-400">Texto largo…</span>
+        </div>
+      </div>
+      <p className="text-center text-[8px] text-zinc-600">Toca Examinar (…) para elegir el archivo sin escribir la ruta</p>
+    </div>
+  );
+}
+
 function SettingsVisual({ t }: { t: TranslateFn }) {
   return (
     <div className="flex h-56 flex-col rounded-lg border border-zinc-800 bg-zinc-950 p-3">
@@ -617,6 +665,7 @@ export function TutorialModal({ onClose }: { onClose: () => void }) {
     { titulo: t("tutorial.s5Titulo"), desc: t("tutorial.s5Desc"), visual: <TemplateVisual t={t} /> },
     { titulo: t("tutorial.s6Titulo"), desc: t("tutorial.s6Desc"), visual: <DragVisual t={t} /> },
     { titulo: t("tutorial.s7Titulo"), desc: t("tutorial.s7Desc"), visual: <RecordsVisual t={t} /> },
+    { titulo: t("tutorial.s11Titulo"), desc: t("tutorial.s11Desc"), visual: <FileDetailVisual t={t} /> },
     { titulo: t("tutorial.s8Titulo"), desc: t("tutorial.s8Desc"), visual: <SearchVisual t={t} /> },
     { titulo: t("tutorial.s9Titulo"), desc: t("tutorial.s9Desc"), visual: <TrashVisual t={t} /> },
     { titulo: t("tutorial.s10Titulo"), desc: t("tutorial.s10Desc"), visual: <SettingsVisual t={t} /> },

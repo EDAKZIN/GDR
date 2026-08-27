@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Diccionario ESPAÑOL: fuente de la verdad de las claves.
  * El tipo del diccionario (`Dictionary`) fuerza a los demás idiomas a tener
  * exactamente las mismas claves.
@@ -353,41 +353,44 @@ export const es = {
     progreso: "{a} / {b}",
     s1Titulo: "Bienvenido a GDR",
     s1Desc:
-      "GDR es un organizador donde la estructura la defines tú: crea secciones, dales plantillas de campos y llena registros. Este recorrido rápido muestra lo esencial.",
-    s1PasoSecciones: "Secciones",
-    s1PasoPlantillas: "Plantillas",
-    s1PasoRegistros: "Registros",
-    s2Titulo: "El árbol de secciones",
+      "GDR es tu cajón ordenado: primero creas carpetas, luego decides qué datos quieres guardar y por último añades tus fichas. En un minuto verás cómo.",
+    s1PasoSecciones: "Carpetas",
+    s1PasoPlantillas: "Formularios",
+    s1PasoRegistros: "Fichas",
+    s2Titulo: "Tu menú de carpetas",
     s2Desc:
-      "En el drawer lateral vive un único árbol con todas tus secciones. Pulsa un nodo para entrar y usa su menú ⋮ para añadir subsecciones, moverlo, deshabilitarlo o eliminarlo.",
-    s3Titulo: "Dos tipos de sección",
+      "A la izquierda está tu menú con todas las carpetas. Toca una para entrar y usa su menú ⋮ para crear una dentro, moverla, pausarla o borrarla.",
+    s3Titulo: "Dos tipos de carpeta",
     s3Desc:
-      "Una sección jerárquica agrupa subsecciones y formularios. Una sección plana es una tabla directa de registros, sin niveles intermedios.",
-    s3Jerarquica: "Jerárquica",
-    s3JerarquicaDesc: "Contiene subsecciones y formularios.",
-    s3Plana: "Plana",
-    s3PlanaDesc: "Tabla directa de registros.",
-    s4Titulo: "Crear una sección",
+      "Algunas carpetas tienen otras dentro para organizar por niveles; otras son listas simples: una tabla directa sin nada dentro.",
+    s3Jerarquica: "Con niveles",
+    s3JerarquicaDesc: "Tiene carpetas dentro y formularios.",
+    s3Plana: "Lista simple",
+    s3PlanaDesc: "Una tabla directa para tus fichas.",
+    s4Titulo: "Crear una carpeta",
     s4Desc:
-      "Pulsa «+ Nueva sección» arriba del drawer y completa nombre, descripción e icono. Después aparecerá en el árbol, lista para organizarse.",
-    s5Titulo: "Plantillas de campos",
+      "Pulsa + Nueva sección arriba del menú, ponle nombre, descripción e icono y aparecerá en la lista, lista para usar.",
+    s5Titulo: "El formulario y sus campos",
     s5Desc:
-      "Un formulario es una plantilla de campos: texto, número, selección, fecha… Define los campos una vez y cada registro nuevo los reutiliza.",
-    s6Titulo: "Mantener pulsado para ordenar",
+      "Cada carpeta tiene un formulario: eliges qué campos quieres — texto, número, lista, fecha, archivo y más — y todas las fichas usarán esos mismos campos.",
+    s6Titulo: "Cambiar el orden",
     s6Desc:
-      "Campos, opciones y tarjetas se reordenan manteniendo pulsado el grip ⋮⋮ (~350 ms). El elemento se eleva con anillo sky y sombra; los demás se atenúan.",
-    s7Titulo: "Registros",
+      "Mantén pulsado el asa ⋮⋮ y arrastra. La tarjeta se ilumina y las demás se aclaran hasta que la sueltes.",
+    s7Titulo: "Tu tabla de fichas",
     s7Desc:
-      "Llena la plantilla creando registros: se muestran en una tabla densa con filtro local, columnas Creado/Modificado ordenables, paginación y menú ⋮ por fila.",
-    s8Titulo: "Búsqueda global",
+      "Tus fichas aparecen en una tabla: escribe arriba para filtrar, toca Creado o Modificado para ordenar, pasa de página si hay muchas y usa el menú ⋮ de cada fila para ver o editar.",
+    s8Titulo: "Buscar en todo",
     s8Desc:
-      "Con Ctrl+F buscas a la vez en los campos de todas las secciones, con filtros por sección y formulario, chips por tipo y resultados agrupados por ubicación.",
-    s9Titulo: "Papelera y deshabilitar",
+      "Pulsa Ctrl + F para buscar en todas tus fichas a la vez. Puedes filtrar por carpeta o formulario, por tipo de campo y ver los resultados agrupados con tu texto resaltado.",
+    s9Titulo: "Pausar y papelera",
     s9Desc:
-      "Deshabilitar mantiene la lectura pero oculta de la búsqueda y bloquea crear/editar plantilla; la papelera es soft delete y se restaura con un clic. Nada se pierde hasta el borrado definitivo.",
+      "Pausar deja ver pero no editar ni aparece en búsquedas; la papelera guarda lo borrado para traerlo de vuelta con un clic. Solo se pierde al borrar definitivo.",
     s10Titulo: "Ajustes",
     s10Desc:
-      "Desde el engranaje cambias entre tema oscuro y claro y eliges el idioma. Eso es todo: pulsa el botón y empieza a organizar.",
+      "En el engranaje cambias entre modo oscuro y claro y eliges el idioma. ¡Listo! Ya puedes empezar a ordenar.",
+    s11Titulo: "La ficha y el botón Examinar",
+    s11Desc:
+      "Al abrir una ficha ves cada dato con su icono y formato. Si un campo pide un archivo, pulsa Examinar (…) y elige el archivo en tu ordenador sin escribir la ruta a mano.",
   },
   papelera: {
     boton: "Papelera",
