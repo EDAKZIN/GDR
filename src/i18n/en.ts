@@ -375,17 +375,20 @@ export const en: Dictionary = {
     s5Titulo: "Field templates",
     s5Desc:
       "A form is a field template: text, number, selection, date… Define the fields once and every new record reuses them.",
-    s6Titulo: "Records",
+    s6Titulo: "Long-press to reorder",
     s6Desc:
-      "Fill the template by creating records: they appear in a dense, filterable table. Each row's ⋮ menu edits, restores or deletes.",
-    s7Titulo: "Global search",
+      "Hold the grip ⋮⋮ (~350 ms) to reorder: template fields, select options and section cards. The dragged item lifts with a sky ring and shadow; siblings dim.",
+    s7Titulo: "Records",
     s7Desc:
-      "Ctrl+F searches the fields of every section at once, with section and form filters and results grouped by location.",
-    s8Titulo: "Nothing gets lost",
+      "Fill the template by creating records: they appear in a dense table with local filter, sortable Created/Modified columns, pagination and a ⋮ menu per row.",
+    s8Titulo: "Global search",
     s8Desc:
-      "Deleting only moves things to the trash: sections, forms, fields and records are restored with one click. You can also disable without deleting.",
-    s9Titulo: "Settings",
+      "Ctrl+F searches fields across every section at once, with section and form filters, type chips and results grouped by location.",
+    s9Titulo: "Trash and disable",
     s9Desc:
+      "Disable keeps records readable but hides them from search and blocks create/template edits; trash is soft delete and restores with one click. Nothing is lost until permanent delete.",
+    s10Titulo: "Settings",
+    s10Desc:
       "From the gear you switch between the dark and light themes and pick your language. That's all: press the button and start organizing.",
   },
   papelera: {

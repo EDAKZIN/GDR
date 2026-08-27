@@ -374,17 +374,20 @@ export const es = {
     s5Titulo: "Plantillas de campos",
     s5Desc:
       "Un formulario es una plantilla de campos: texto, número, selección, fecha… Define los campos una vez y cada registro nuevo los reutiliza.",
-    s6Titulo: "Registros",
+    s6Titulo: "Mantener pulsado para ordenar",
     s6Desc:
-      "Llena la plantilla creando registros: se muestran en una tabla densa y filtrable. El menú ⋮ de cada fila edita, restaura o elimina.",
-    s7Titulo: "Búsqueda global",
+      "Campos, opciones y tarjetas se reordenan manteniendo pulsado el grip ⋮⋮ (~350 ms). El elemento se eleva con anillo sky y sombra; los demás se atenúan.",
+    s7Titulo: "Registros",
     s7Desc:
-      "Con Ctrl+F buscas a la vez en los campos de todas las secciones, con filtros por sección y formulario y resultados agrupados por su ubicación.",
-    s8Titulo: "Nada se pierde",
+      "Llena la plantilla creando registros: se muestran en una tabla densa con filtro local, columnas Creado/Modificado ordenables, paginación y menú ⋮ por fila.",
+    s8Titulo: "Búsqueda global",
     s8Desc:
-      "Eliminar solo manda a la papelera: secciones, formularios, campos y registros se restauran con un clic. También puedes deshabilitar sin borrar.",
-    s9Titulo: "Ajustes",
+      "Con Ctrl+F buscas a la vez en los campos de todas las secciones, con filtros por sección y formulario, chips por tipo y resultados agrupados por ubicación.",
+    s9Titulo: "Papelera y deshabilitar",
     s9Desc:
+      "Deshabilitar mantiene la lectura pero oculta de la búsqueda y bloquea crear/editar plantilla; la papelera es soft delete y se restaura con un clic. Nada se pierde hasta el borrado definitivo.",
+    s10Titulo: "Ajustes",
+    s10Desc:
       "Desde el engranaje cambias entre tema oscuro y claro y eliges el idioma. Eso es todo: pulsa el botón y empieza a organizar.",
   },
   papelera: {
