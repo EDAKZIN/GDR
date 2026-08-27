@@ -359,7 +359,7 @@ export const es = {
     s1PasoRegistros: "Fichas",
     s2Titulo: "Tu menú de carpetas",
     s2Desc:
-      "A la izquierda está tu menú con todas las carpetas. Toca una para entrar y usa su menú ⋮ para crear una dentro, moverla, pausarla o borrarla.",
+      "A la izquierda está tu menú con todas las carpetas. Toca una para entrar y usa su menú ⋮ para crear una dentro, moverla, deshabilitarla o borrarla.",
     s3Titulo: "Dos tipos de carpeta",
     s3Desc:
       "Algunas carpetas tienen otras dentro para organizar por niveles; otras son listas simples: una tabla directa sin nada dentro.",
@@ -375,7 +375,7 @@ export const es = {
       "Cada carpeta tiene un formulario: eliges qué campos quieres — texto, número, lista, fecha, archivo y más — y todas las fichas usarán esos mismos campos.",
     s6Titulo: "Cambiar el orden",
     s6Desc:
-      "Mantén pulsado el asa ⋮⋮ y arrastra. La tarjeta se ilumina y las demás se aclaran hasta que la sueltes.",
+      "Mantén pulsado el asa ⋮⋮ y arrastra campos, opciones y tarjetas. La tarjeta se ilumina y las demás se aclaran hasta que la sueltes.",
     s7Titulo: "Tu tabla de fichas",
     s7Desc:
       "Tus fichas aparecen en una tabla: escribe arriba para filtrar, toca Creado o Modificado para ordenar, pasa de página si hay muchas y usa el menú ⋮ de cada fila para ver o editar.",

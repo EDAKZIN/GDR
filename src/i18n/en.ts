@@ -361,7 +361,7 @@ export const en: Dictionary = {
     s1PasoRegistros: "Cards",
     s2Titulo: "Your folder menu",
     s2Desc:
-      "On the left is your menu with all folders. Tap one to open it and use its ⋮ menu to create one inside, move it, pause it or delete it.",
+      "On the left is your menu with all folders. Tap one to open it and use its ⋮ menu to create one inside, move it, disable it or delete it.",
     s3Titulo: "Two kinds of folder",
     s3Desc:
       "Some folders contain more folders for levels; others are simple lists — a straight table with nothing inside.",
@@ -377,7 +377,7 @@ export const en: Dictionary = {
       "Each folder has a form: choose the fields you want — text, number, list, date, file and more — and every card will use those same fields.",
     s6Titulo: "Change the order",
     s6Desc:
-      "Hold the handle ⋮⋮ and drag. The card lights up and the others dim until you drop it.",
+      "Hold the handle ⋮⋮ and drag fields, options and cards. The card lights up and the others dim until you drop it.",
     s7Titulo: "Your card table",
     s7Desc:
       "Your cards appear in a table: type at the top to filter, tap Created or Modified to sort, turn pages when there are many and use the ⋮ menu on each row to view or edit.",
