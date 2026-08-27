@@ -174,24 +174,21 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               {t("ajustes.acerca")}
             </h3>
             <p className="text-xs text-zinc-500">{t("ajustes.acercaDesc")}</p>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-zinc-400">{t("ajustes.acercaDesc")}</span>
-              <a
-                href="https://github.com/EDAKZIN"
-                target="_blank"
-                rel="noreferrer"
-                onClick={(event) => {
-                  event.preventDefault();
-                  void import("@tauri-apps/plugin-opener").then(({ openUrl }) =>
-                    openUrl("https://github.com/EDAKZIN"),
-                  );
-                }}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-300 underline-offset-4 hover:text-zinc-100 hover:underline"
-              >
-                <GithubIcon className="h-4 w-4" />
-                {t("ajustes.verGithub")}
-              </a>
-            </div>
+            <a
+              href="https://github.com/EDAKZIN"
+              target="_blank"
+              rel="noreferrer"
+              onClick={(event) => {
+                event.preventDefault();
+                void import("@tauri-apps/plugin-opener").then(({ openUrl }) =>
+                  openUrl("https://github.com/EDAKZIN"),
+                );
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-300 underline-offset-4 hover:text-zinc-100 hover:underline"
+            >
+              <GithubIcon className="h-4 w-4" />
+              {t("ajustes.verGithub")}
+            </a>
           </section>
         </div>
       </div>
