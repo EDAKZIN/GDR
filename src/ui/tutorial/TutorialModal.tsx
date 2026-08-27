@@ -118,7 +118,7 @@ function TypesVisual({ t }: { t: TranslateFn }) {
           <p className="text-xs font-semibold text-zinc-100">{t("tutorial.s3Jerarquica")}</p>
         </div>
         <p className="text-[10px] leading-snug text-zinc-500">{t("tutorial.s3JerarquicaDesc")}</p>
-        <div className="mt-auto flex flex-col gap-1 rounded-md border border-zinc-800 bg-zinc-950 p-1.5">
+        <div className="mt-3 flex flex-col gap-1 rounded-md border border-zinc-800 bg-zinc-950 p-1.5">
           <TreeRow depth={0} icon={Folder} label="Proyectos" chevron />
           <div className="flex items-center gap-1 pl-3 text-[8px] text-zinc-500">
             <span className="rounded bg-zinc-800 px-1 py-px text-[7px]">2</span> subsecciones
@@ -132,7 +132,7 @@ function TypesVisual({ t }: { t: TranslateFn }) {
           <p className="text-xs font-semibold text-zinc-100">{t("tutorial.s3Plana")}</p>
         </div>
         <p className="text-[10px] leading-snug text-zinc-500">{t("tutorial.s3PlanaDesc")}</p>
-        <div className="mt-auto overflow-hidden rounded-md border border-zinc-800 bg-zinc-950">
+        <div className="mt-3 overflow-hidden rounded-md border border-zinc-800 bg-zinc-950">
           <div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-950 px-2 py-1">
             <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-500/15 text-sky-300">
               <Table2 className="h-3 w-3" />
@@ -206,9 +206,6 @@ function CreateVisual({ t }: { t: TranslateFn }) {
           <span className="rounded-md bg-sky-600 px-1.5 py-0.5 text-[8px] font-semibold text-white">{t("comun.guardar")}</span>
         </div>
       </div>
-      <svg aria-hidden className="pointer-events-none absolute right-6 top-10 h-8 w-8 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M6 8 L14 8 L14 6 L18 10 L14 14 L14 12 L6 12 Z" />
-      </svg>
     </div>
   );
 }
@@ -298,9 +295,6 @@ function DragVisual({ t }: { t: TranslateFn }) {
               </span>
               <Bar className="mt-1.5 w-10" />
             </div>
-          </div>
-          <div className="mt-auto rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-1 text-[8px] leading-snug text-sky-200">
-            Esc cancela · suelta para confirmar
           </div>
         </div>
       </div>
