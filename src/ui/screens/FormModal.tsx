@@ -17,8 +17,7 @@ import {
   modalBackdrop,
   modalPanel,
 } from "../components/uiStyles";
-import { IconRenderer } from "../components/IconRenderer";
-import { SUGGESTED_ICON_NAMES } from "../components/iconNames";
+import { IconPicker } from "../components/IconPicker";
 
 const fieldsRepository = createFieldsRepository(getDb);
 
@@ -190,26 +189,7 @@ export function FormModal({ mode, onClose }: FormModalProps) {
 
         <div className="flex flex-col gap-1 text-xs font-medium text-zinc-400">
           {t("secciones.icono")}
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-700 bg-zinc-800 text-sky-300">
-              <IconRenderer icon={icon} />
-            </span>
-            <input
-              className={inputClass}
-              value={icon}
-              onChange={(event) => {
-                setIcon(event.target.value);
-              }}
-              list="suggested-form-icons"
-              placeholder={t("secciones.iconoPlaceholder")}
-              maxLength={100}
-            />
-            <datalist id="suggested-form-icons">
-              {SUGGESTED_ICON_NAMES.map((suggested) => (
-                <option key={suggested} value={suggested} />
-              ))}
-            </datalist>
-          </div>
+          <IconPicker value={icon} onChange={setIcon} placeholder={t("secciones.iconoPlaceholder")} />
         </div>
 
         {mode.kind === "create" ? (

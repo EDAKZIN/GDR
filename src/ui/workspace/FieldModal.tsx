@@ -338,16 +338,25 @@ export function FieldModal({ formId, field, onSaved, onClose }: FieldModalProps)
             />
             {t("comun.obligatorio")}
           </label>
-          <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-zinc-400">
+          <label
+            className={`inline-flex items-center gap-1.5 text-xs ${
+              editor.type === "password" ? "cursor-not-allowed text-zinc-600" : "cursor-pointer text-zinc-400"
+            }`}
+            title={editor.type === "password" ? "Las contraseñas nunca se indexan por seguridad" : undefined}
+          >
             <input
               type="checkbox"
-              className="h-3.5 w-3.5 accent-sky-500"
+              className="h-3.5 w-3.5 accent-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
               checked={editor.searchable}
+              disabled={editor.type === "password"}
               onChange={(event) => {
                 setEditor({ ...editor, searchable: event.target.checked });
               }}
             />
             {t("comun.buscable")}
+            {editor.type === "password" && (
+              <span className="text-[10px] text-zinc-600">(no indexable)</span>
+            )}
           </label>
         </div>
 
