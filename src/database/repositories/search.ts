@@ -593,9 +593,7 @@ export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
             });
           }
         }
-        // Tras la fase inicial (AND exacto) basta enriquecer con una fase más;
-        // si aún no hay nada, seguir bajando hasta agotar fases.
-        if (collected.size > 0 && index >= 1) {
+        if (collected.size >= limit) {
           break;
         }
       }
