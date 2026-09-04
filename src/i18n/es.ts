@@ -295,6 +295,8 @@ export const es = {
       etiquetas: "Etiquetas",
       rutaArchivo: "Ruta de archivo",
       imagen: "Imagen",
+      calificacion: "Calificación",
+      telefono: "Teléfono",
     },
     validacion: {
       valorInvalido: "El valor de «{campo}» no es válido.",
@@ -311,6 +313,8 @@ export const es = {
       valoresFueraDeOpciones: "Hay valores que no están entre las opciones definidas.",
       etiquetasInvalidas: "Las etiquetas deben ser una lista de textos.",
       campoObligatorio: "Este campo es obligatorio.",
+      calificacionInvalida: "Debe ser un valor entre 0 y 5.",
+      telefonoInvalido: "Debe ser un teléfono válido.",
     },
     rutaPlaceholder: "C:\\ruta\\a\\archivo o /ruta/a/archivo",
     urlPlaceholder: "https://…",

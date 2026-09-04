@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidPhoneNumber } from "react-phone-number-input";
 import { translate } from "../../i18n";
 import type { Field, FieldType } from "./models";
 
@@ -96,7 +97,7 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 function stringType(
-  labelKey: "texto" | "textoLargo" | "url" | "email" | "contrasena" | "rutaArchivo" | "imagen" | "fecha" | "fechaHora",
+  labelKey: "texto" | "textoLargo" | "url" | "email" | "contrasena" | "rutaArchivo" | "imagen" | "telefono" | "fecha" | "fechaHora",
   validateText?: (text: string) => string | null,
 ): FieldTypeHandler {
   return {
@@ -216,6 +217,23 @@ const tagsHandler: FieldTypeHandler = {
       : translate("campos.validacion.etiquetasInvalidas"),
 };
 
+const ratingHandler: FieldTypeHandler = {
+  get label(): string {
+    return translate("campos.tipos.calificacion");
+  },
+  isEmpty: (value) => !(typeof value === "number" && Number.isFinite(value)),
+  validate: (value, _field) =>
+    typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 5
+      ? null
+      : translate("campos.validacion.calificacionInvalida"),
+};
+
+const telHandler = stringType("telefono", (text) =>
+  isValidPhoneNumber(text.trim())
+    ? null
+    : translate("campos.validacion.telefonoInvalido"),
+);
+
 /**
  * Registro extensible de tipos de campo, indexado por el identificador
  * guardado en fields.type. Para añadir un tipo nuevo basta con ampliar
@@ -237,6 +255,8 @@ export const FIELD_TYPE_REGISTRY: Record<FieldType, FieldTypeHandler> = {
   tags: tagsHandler,
   file_path: filePathHandler,
   image: imageHandler,
+  rating: ratingHandler,
+  tel: telHandler,
 };
 
 const runtimeHandlers = new Map<string, FieldTypeHandler>();

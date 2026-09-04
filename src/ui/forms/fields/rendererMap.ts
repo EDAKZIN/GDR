@@ -11,8 +11,10 @@ import { LongTextArea } from "./LongTextArea";
 import { MultiSelectField } from "./MultiSelectField";
 import { NumberField } from "./NumberField";
 import { PasswordField } from "./PasswordField";
+import { RatingField } from "./RatingField";
 import { SelectField } from "./SelectField";
 import { TagsField } from "./TagsField";
+import { TelField } from "./TelField";
 import { TextField } from "./TextField";
 import { UrlField } from "./UrlField";
 
@@ -32,6 +34,8 @@ const FIELD_RENDERER_MAP: Record<FieldType, ComponentType<FieldInputProps>> = {
   tags: TagsField,
   file_path: FilePathField,
   image: ImageField,
+  rating: RatingField,
+  tel: TelField,
 };
 
 const FALLBACK_RENDERER: ComponentType<FieldInputProps> = TextField;

@@ -20,6 +20,8 @@ export const FIELD_TYPES = [
   "tags",
   "file_path",
   "image",
+  "rating",
+  "tel",
 ] as const;
 
 export type FieldType = (typeof FIELD_TYPES)[number];

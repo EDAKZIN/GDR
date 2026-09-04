@@ -296,6 +296,8 @@ export const en: Dictionary = {
       etiquetas: "Tags",
       rutaArchivo: "File path",
       imagen: "Image",
+      calificacion: "Rating",
+      telefono: "Phone",
     },
     validacion: {
       valorInvalido: "The value of «{campo}» is not valid.",
@@ -312,6 +314,8 @@ export const en: Dictionary = {
       valoresFueraDeOpciones: "Some values are not among the defined options.",
       etiquetasInvalidas: "Tags must be a list of texts.",
       campoObligatorio: "This field is required.",
+      calificacionInvalida: "Must be a value between 0 and 5.",
+      telefonoInvalido: "Must be a valid phone number.",
     },
     rutaPlaceholder: "C:\\path\\to\\file or /path/to/file",
     urlPlaceholder: "https://…",
