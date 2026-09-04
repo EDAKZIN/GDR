@@ -28,7 +28,9 @@ export function IconPicker({
 }) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
+  const [flipped, setFlipped] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const urlMode = isUrlLike(value);
 
@@ -43,6 +45,13 @@ export function IconPicker({
 
   useEffect(() => {
     if (!open) return;
+    const input = inputRef.current;
+    if (input !== null) {
+      const rect = input.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      setFlipped(spaceBelow < 220 && spaceAbove > spaceBelow);
+    }
     function onClickOutside(event: MouseEvent): void {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setOpen(false);
@@ -66,6 +75,7 @@ export function IconPicker({
       </span>
       <div className="relative flex flex-1">
         <input
+          ref={inputRef}
           value={value}
           onChange={(event) => {
             onChange(event.target.value);
@@ -109,7 +119,11 @@ export function IconPicker({
       )}
 
       {open && !urlMode && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-auto rounded-md border border-zinc-700 bg-zinc-900 p-1 shadow-xl">
+        <div
+          className={`absolute left-0 right-0 z-50 max-h-56 overflow-auto rounded-md border border-zinc-700 bg-zinc-900 p-1 shadow-xl ${
+            flipped ? "bottom-full mb-1" : "top-full mt-1"
+          }`}
+        >
           {filtered.length === 0 ? (
             <p className="px-2 py-1.5 text-xs text-zinc-500">Sin coincidencias</p>
           ) : (
@@ -142,7 +156,11 @@ export function IconPicker({
       )}
 
       {open && urlMode && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-md border border-zinc-700 bg-zinc-900 p-2 shadow-xl">
+        <div
+          className={`absolute left-0 right-0 z-50 mt-1 rounded-md border border-zinc-700 bg-zinc-900 p-2 shadow-xl ${
+            flipped ? "bottom-full mb-1" : "top-full mt-1"
+          }`}
+        >
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-zinc-800">
               <IconRenderer icon={value} className="h-6 w-6" />

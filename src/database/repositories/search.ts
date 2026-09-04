@@ -74,16 +74,29 @@ interface TitleRow {
  * Convierte el valor deserializado de un campo en texto plano indexable.
  * Devuelve null cuando no hay texto aprovechable (vacío, booleanos, objetos).
  */
+function expandIsoDate(text: string): string {
+  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
+  if (dateMatch === null) {
+    return text;
+  }
+  const [, year, month, day] = dateMatch;
+  const timeMatch = /T(\d{2}):(\d{2})/.exec(text);
+  const time = timeMatch === null ? "" : ` ${timeMatch[1]}:${timeMatch[2]}`;
+  const variants = [
+    text,
+    text.replace(/-/g, "/").replace("T", " "),
+    `${day}/${month}/${year}`,
+    `${day}-${month}-${year}`,
+    `${day}/${month}/${year}${time}`,
+  ];
+  return `${variants.join(" ")} ${year} ${month} ${day}`;
+}
+
 export function valueToIndexedText(value: unknown): string | null {
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (trimmed === "") return null;
-    if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?/.test(trimmed)) {
-      const withSlashes = trimmed.replace(/-/g, "/").replace("T", " ");
-      const parts = trimmed.split(/[-T:]/).filter(Boolean);
-      return `${trimmed} ${withSlashes} ${parts.join(" ")}`;
-    }
-    return trimmed;
+    return expandIsoDate(trimmed);
   }
   if (typeof value === "number" && Number.isFinite(value)) {
     return String(value);
@@ -92,12 +105,7 @@ export function valueToIndexedText(value: unknown): string | null {
     const parts = value
       .map((item) => {
         if (typeof item === "string") {
-          const t = item.trim();
-          if (t === "") return "";
-          if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
-            return `${t} ${t.replace(/-/g, "/").replace("T", " ")}`;
-          }
-          return t;
+          return expandIsoDate(item.trim());
         }
         if (typeof item === "number" && Number.isFinite(item)) {
           return String(item);
