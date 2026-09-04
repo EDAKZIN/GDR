@@ -39,8 +39,24 @@ export function formatRelativeTime(isoTimestamp: string): string {
   return new Date(parsed).toLocaleDateString();
 }
 
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+export function parseLocalYMD(value: string): Date | null {
+  const match = DATE_ONLY.exec(value.trim());
+  if (match === null) {
+    return null;
+  }
+  const [, year, month, day] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 /** Fecha localizada para lectura en fichas. */
 export function formatLocalizedDate(value: string): string {
+  const local = parseLocalYMD(value);
+  if (local !== null) {
+    return local.toLocaleDateString();
+  }
   const parsed = Date.parse(value);
   if (Number.isNaN(parsed)) {
     return value;

@@ -1,5 +1,6 @@
 import { getFieldTypeHandler } from "../../core/fields";
 import type { Field } from "../../core/fields";
+import { parseLocalYMD } from "../../core/utils/relativeTime";
 import { translate } from "../../i18n";
 
 /** Texto plano de un valor escalar; null si no tiene representación simple. */
@@ -47,6 +48,12 @@ export function formatValue(field: Field, value: unknown): string {
     return "—";
   }
   if (field.type === "date" || field.type === "datetime") {
+    if (field.type === "date") {
+      const local = parseLocalYMD(text);
+      if (local !== null) {
+        return local.toLocaleDateString();
+      }
+    }
     const parsed = Date.parse(text);
     if (!Number.isNaN(parsed)) {
       return field.type === "date"
