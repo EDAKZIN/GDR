@@ -354,9 +354,11 @@ export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
       "fl.enabled = 1",
       "fl.deleted_at IS NULL",
       "r.deleted_at IS NULL",
+      "r.enabled = 1",
       // Mismo criterio de visibilidad que aplican los JOIN de search():
       // nada de formularios o secciones en papelera dentro del índice.
       "fo.deleted_at IS NULL",
+      "fo.enabled = 1",
       "s.deleted_at IS NULL",
       "fl.type <> 'password'",
     ];
@@ -483,8 +485,8 @@ export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
          fv.value AS rawValue,
          ${scoreSelect} AS score
        FROM fts_values
-       JOIN records r ON r.id = fts_values.record_id AND r.deleted_at IS NULL
-       JOIN forms fo ON fo.id = r.form_id AND fo.deleted_at IS NULL
+        JOIN records r ON r.id = fts_values.record_id AND r.deleted_at IS NULL AND r.enabled = 1
+        JOIN forms fo ON fo.id = r.form_id AND fo.deleted_at IS NULL AND fo.enabled = 1
        JOIN fields fl ON fl.id = fts_values.field_id
          AND fl.enabled = 1 AND fl.deleted_at IS NULL AND fl.type <> 'password'
        JOIN sections s ON s.id = fo.section_id AND s.deleted_at IS NULL

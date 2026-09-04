@@ -216,13 +216,28 @@ export function createFormsRepository(db: DbHandle): FormRepository {
     },
 
     async disable(id: string): Promise<Form> {
+      const formId = z.uuid().parse(id);
       const database = await db();
-      return setFlags(database, z.uuid().parse(id), { enabled: false });
+      const form = await setFlags(database, formId, { enabled: false });
+      await database.execute(
+        "DELETE FROM fts_values WHERE record_id IN (SELECT id FROM records WHERE form_id = $1)",
+        [formId],
+      );
+      return form;
     },
 
     async enable(id: string): Promise<Form> {
+      const formId = z.uuid().parse(id);
       const database = await db();
-      return setFlags(database, z.uuid().parse(id), { enabled: true });
+      const form = await setFlags(database, formId, { enabled: true });
+      const rows = await database.select<Array<{ id: string }>>(
+        "SELECT id FROM records WHERE form_id = $1 AND deleted_at IS NULL",
+        [formId],
+      );
+      for (const row of rows) {
+        await searchRepository.indexRecord(row.id);
+      }
+      return form;
     },
 
     async softDelete(id: string): Promise<Form> {
