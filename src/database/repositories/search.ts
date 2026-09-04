@@ -469,7 +469,7 @@ export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
 
     // bm25() solo es válido en fases con MATCH; en LIKE el ranking es JS.
     const scoreSelect = isFts ? "-bm25(fts_values)" : "NULL";
-    const orderBy = isFts ? "score DESC" : "rowid DESC";
+    const orderBy = isFts ? "score DESC" : "fts_values.rowid DESC";
 
     return database.select<MatchRow[]>(
       `SELECT
