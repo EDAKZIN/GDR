@@ -1439,7 +1439,7 @@ dependencies = [
 
 [[package]]
 name = "gdr"
-version = "4.6.0"
+version = "4.3.3"
 dependencies = [
  "serde",
  "serde_json",
