@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
 import { useT } from "../../i18n";
+import { FloatingMenu, type FloatingMenuAnchor } from "./FloatingMenu";
 import { IconRenderer } from "./IconRenderer";
 import { SUGGESTED_ICON_NAMES } from "./iconNames";
 
@@ -27,10 +28,7 @@ export function IconPicker({
   placeholder?: string;
 }) {
   const { t } = useT();
-  const [open, setOpen] = useState(false);
-  const [flipped, setFlipped] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [menu, setMenu] = useState<FloatingMenuAnchor | null>(null);
 
   const urlMode = isUrlLike(value);
 
@@ -43,48 +41,16 @@ export function IconPicker({
     );
   }, [value, urlMode]);
 
-  useEffect(() => {
-    if (!open) return;
-    const input = inputRef.current;
-    if (input !== null) {
-      const rect = input.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      setFlipped(spaceBelow < 220 && spaceAbove > spaceBelow);
-    }
-    function onClickOutside(event: MouseEvent): void {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-    function onKeyDown(event: KeyboardEvent): void {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onClickOutside);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
   return (
-    <div ref={containerRef} className="relative flex flex-1 items-center gap-1.5">
+    <div className="relative flex flex-1 items-center gap-1.5">
       <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-700 bg-zinc-800 text-sky-300">
         <IconRenderer icon={value} />
       </span>
       <div className="relative flex flex-1">
         <input
-          ref={inputRef}
           value={value}
           onChange={(event) => {
             onChange(event.target.value);
-            if (!open) {
-              setOpen(true);
-            }
-          }}
-          onFocus={() => {
-            setOpen(true);
           }}
           placeholder={placeholder ?? t("secciones.iconoPlaceholder")}
           maxLength={100}
@@ -94,12 +60,15 @@ export function IconPicker({
           type="button"
           aria-label="Desplegar opciones"
           className="absolute inset-y-0 right-0 flex items-center px-2 text-zinc-500 hover:text-zinc-200"
-          onClick={() => {
-            setOpen((prev) => !prev);
+          onClick={(event) => {
+            const rect = event.currentTarget.getBoundingClientRect();
+            setMenu((previous) => (previous !== null ? null : rect));
           }}
           tabIndex={-1}
         >
-          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+          <ChevronDown
+            className={`h-3.5 w-3.5 transition-transform ${menu !== null ? "rotate-180" : ""}`}
+          />
         </button>
       </div>
 
@@ -110,7 +79,6 @@ export function IconPicker({
           className="shrink-0 rounded p-1 text-zinc-500 hover:text-zinc-200"
           onClick={() => {
             onChange("");
-            setOpen(true);
           }}
           tabIndex={-1}
         >
@@ -118,16 +86,18 @@ export function IconPicker({
         </button>
       )}
 
-      {open && !urlMode && (
-        <div
-          className={`absolute left-0 right-0 z-50 max-h-56 overflow-auto rounded-md border border-zinc-700 bg-zinc-900 p-1 shadow-xl ${
-            flipped ? "bottom-full mb-1" : "top-full mt-1"
-          }`}
+      {menu !== null && !urlMode ? (
+        <FloatingMenu
+          anchor={menu}
+          widthClass="w-72"
+          onClose={() => {
+            setMenu(null);
+          }}
         >
           {filtered.length === 0 ? (
             <p className="px-2 py-1.5 text-xs text-zinc-500">Sin coincidencias</p>
           ) : (
-            <div className="grid grid-cols-6 gap-1">
+            <div className="grid grid-cols-6 gap-1 p-1">
               {filtered.map((name) => (
                 <button
                   key={name}
@@ -140,7 +110,7 @@ export function IconPicker({
                   }`}
                   onClick={() => {
                     onChange(name);
-                    setOpen(false);
+                    setMenu(null);
                   }}
                 >
                   <IconRenderer icon={name} className="h-4 w-4" />
@@ -149,27 +119,31 @@ export function IconPicker({
               ))}
             </div>
           )}
-          <p className="mt-1 border-t border-zinc-800 px-1 pt-1 text-[10px] text-zinc-600">
+          <p className="border-t border-zinc-800 px-2 pb-1 pt-1 text-[10px] text-zinc-600">
             Escribe para filtrar · pega una URL https://… para usar una imagen
           </p>
-        </div>
-      )}
+        </FloatingMenu>
+      ) : null}
 
-      {open && urlMode && (
-        <div
-          className={`absolute left-0 right-0 z-50 mt-1 rounded-md border border-zinc-700 bg-zinc-900 p-2 shadow-xl ${
-            flipped ? "bottom-full mb-1" : "top-full mt-1"
-          }`}
+      {menu !== null && urlMode ? (
+        <FloatingMenu
+          anchor={menu}
+          widthClass="w-72"
+          onClose={() => {
+            setMenu(null);
+          }}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 px-2 py-1.5">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-zinc-800">
               <IconRenderer icon={value} className="h-6 w-6" />
             </span>
             <span className="min-w-0 flex-1 truncate text-xs text-zinc-400">{value}</span>
           </div>
-          <p className="mt-1 text-[10px] text-zinc-600">Modo imagen por URL · borra para ver iconos Lucide</p>
-        </div>
-      )}
+          <p className="border-t border-zinc-800 px-2 pb-1 pt-1 text-[10px] text-zinc-600">
+            Modo imagen por URL · borra para ver iconos Lucide
+          </p>
+        </FloatingMenu>
+      ) : null}
     </div>
   );
 }

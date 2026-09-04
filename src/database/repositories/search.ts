@@ -101,6 +101,9 @@ export function valueToIndexedText(value: unknown): string | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return String(value);
   }
+  if (typeof value === "boolean") {
+    return value ? "si true 1" : "no false 0";
+  }
   if (Array.isArray(value)) {
     const parts = value
       .map((item) => {
