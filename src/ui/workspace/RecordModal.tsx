@@ -32,6 +32,7 @@ import { useT } from "../../i18n";
 import { formatLocalizedDate, formatLocalizedDateTime, formatRelativeTime } from "../../core/utils/relativeTime";
 import { useRecordStore } from "../../stores";
 import { FieldRenderer } from "../forms/fields";
+import { RatingStars, TelDisplay } from "../forms/fields";
 import { ConfirmModal } from "../components/ConfirmModal";
 import {
   btnDangerGhost,
@@ -109,7 +110,7 @@ function ValueRow({
   onCopied: () => void;
   onOpenImage: (src: string) => void;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const typeIcon = createElement(fieldTypeIcon(field.type), {
     className: "h-3.5 w-3.5 shrink-0 text-zinc-600",
   });
@@ -153,6 +154,17 @@ function ValueRow({
     );
   } else if (field.type === "boolean") {
     content = <ValueBadge label={value === true ? t("comun.si") : t("comun.no")} />;
+  } else if (field.type === "rating" && typeof value === "number") {
+    content = (
+      <span className="flex items-center gap-2">
+        <RatingStars value={value} size="h-5 w-5" />
+        <span className="text-sm tabular-nums text-zinc-400">
+          {String(Math.round(value * 100) / 100)}
+        </span>
+      </span>
+    );
+  } else if (field.type === "tel" && typeof value === "string") {
+    content = <TelDisplay value={value} lang={lang} />;
   } else if (field.type === "select") {
     content = <ValueBadge label={formatted} />;
   } else if ((field.type === "tags" || field.type === "multiselect") && Array.isArray(value)) {

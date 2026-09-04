@@ -26,6 +26,7 @@ import { useRecordStore } from "../../stores";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { EmptyState } from "../components/EmptyState";
 import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMenu";
+import { RatingStars } from "../forms/fields";
 import {
   btnPrimary,
   btnPrimaryLg,
@@ -110,6 +111,14 @@ function CellValue({ field, value }: { field: Field; value: unknown }) {
         title={on ? t("comun.si") : t("comun.no")}
       >
         {on ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+      </span>
+    );
+  }
+  if (field.type === "rating" && typeof value === "number") {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <RatingStars value={value} size="h-3.5 w-3.5" />
+        <span className="tabular-nums text-zinc-400">{String(Math.round(value * 100) / 100)}</span>
       </span>
     );
   }

@@ -15,13 +15,24 @@ function toRating(value: unknown): number | null {
     : null;
 }
 
-function StarFace({ fill, className }: { fill: number; className?: string }) {
+function StarFace({ fill, size }: { fill: number; size: string }) {
   return (
-      <span aria-hidden className={`relative inline-block h-6 w-6 ${className ?? ""}`}>
-      <Star className="absolute inset-0 h-6 w-6 text-zinc-700" />
+    <span aria-hidden className={`relative inline-block ${size}`}>
+      <Star className={`absolute inset-0 ${size} text-zinc-700`} />
       <span className="absolute inset-0 overflow-hidden" style={{ width: `${String(fill * 100)}%` }}>
-        <Star className="h-6 w-6 text-sky-400" fill="currentColor" />
+        <Star className={`${size} text-sky-400`} fill="currentColor" />
       </span>
+    </span>
+  );
+}
+
+export function RatingStars({ value, size = "h-6 w-6" }: { value: number | null; size?: string }) {
+  const shown = value ?? 0;
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-hidden>
+      {Array.from({ length: MAX_RATING }, (_, index) => (
+        <StarFace key={index} fill={Math.min(1, Math.max(0, shown - index))} size={size} />
+      ))}
     </span>
   );
 }
@@ -75,8 +86,7 @@ export function RatingField({ value, onChange, disabled }: FieldInputProps) {
       >
         {Array.from({ length: MAX_RATING }, (_, index) => {
           const fill = Math.min(1, Math.max(0, shown - index));
-          return (
-            <button
+          return (            <button
               key={index}
               type="button"
               tabIndex={-1}
@@ -96,7 +106,7 @@ export function RatingField({ value, onChange, disabled }: FieldInputProps) {
                 }
               }}
             >
-              <StarFace fill={fill} />
+              <StarFace fill={fill} size="h-6 w-6" />
             </button>
           );
         })}
