@@ -217,6 +217,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
       }
       if (trimmed === "") {
         setResults([]);
+        setActiveIndex(0);
         setExact(true);
         setSearching(false);
         return;
@@ -234,6 +235,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
             return;
           }
           setResults(outcome.results);
+          setActiveIndex(0);
           setExact(outcome.exact);
           // El historial solo registra búsquedas concluidas (al abrir un
           // resultado), no cada prefijo tecleado durante el debounce.
@@ -241,6 +243,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
         .catch(() => {
           if (!cancelled) {
             setResults([]);
+            setActiveIndex(0);
             setExact(true);
           }
         })
@@ -308,6 +311,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
   /** Ejecutar una búsqueda del historial: rellenar y dejar que busque el debounce. */
   function runHistoryQuery(item: string): void {
     setQuery(item);
+    setActiveIndex(0);
   }
 
   /** Elimina solo esa entrada del historial sin ejecutar la búsqueda. */
@@ -368,6 +372,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
+              setActiveIndex(0);
             }}
             onKeyDown={onKeyDown}
             placeholder={t("busqueda.placeholder")}
@@ -491,6 +496,7 @@ export function GlobalSearch({ onClose }: { onClose: () => void }) {
                           }}
                           onClick={() => {
                             setQuery(entry.query);
+                            setActiveIndex(0);
                           }}
                           className="flex w-full items-center gap-2 px-3 py-2 text-left"
                         >

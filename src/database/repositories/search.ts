@@ -72,7 +72,7 @@ interface TitleRow {
 
 /**
  * Convierte el valor deserializado de un campo en texto plano indexable.
- * Devuelve null cuando no hay texto aprovechable (vacío, booleanos, objetos).
+ * Devuelve null cuando no hay texto aprovechable (vacío u objetos).
  */
 function expandIsoDate(text: string): string {
   const dateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
