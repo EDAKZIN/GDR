@@ -396,6 +396,9 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         `UPDATE sections SET ${sets.join(", ")} WHERE id = $${String(params.length)}`,
         params,
       );
+      if (data.parentId !== undefined) {
+        await searchRepository.setSectionIndexEnabled(sectionId, true);
+      }
       return requireRow(database, z.uuid().parse(id));
     },
 
@@ -419,6 +422,7 @@ export function createSectionsRepository(db: DbHandle): SectionRepository {
         nowIso(),
         sectionId,
       ]);
+      await searchRepository.setSectionIndexEnabled(sectionId, true);
       return requireRow(database, sectionId);
     },
 
