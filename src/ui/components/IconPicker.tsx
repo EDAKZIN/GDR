@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, ExternalLink, X } from "lucide-react";
 import { useT } from "../../i18n";
 import { FloatingMenu, type FloatingMenuAnchor } from "./FloatingMenu";
 import { IconRenderer } from "./IconRenderer";
@@ -119,8 +119,25 @@ export function IconPicker({
               ))}
             </div>
           )}
-          <p className="border-t border-zinc-800 px-2 pb-1 pt-1 text-[10px] text-zinc-600">
-            Escribe para filtrar · pega una URL https://… para usar una imagen
+          <p className="flex items-center justify-between border-t border-zinc-800 px-2 pb-1 pt-1 text-[10px] text-zinc-600">
+            <span>Escribe para filtrar · pega una URL https://… para usar una imagen</span>
+            <a
+              href="https://lucide.dev/icons/"
+              target="_blank"
+              rel="noreferrer"
+              title="Abrir el catálogo de Lucide para buscar un icono"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void import("@tauri-apps/plugin-opener").then(({ openUrl }) =>
+                  openUrl("https://lucide.dev/icons/"),
+                );
+              }}
+              className="inline-flex shrink-0 items-center gap-0.5 text-sky-400 hover:text-sky-300 hover:underline"
+            >
+              lucide.dev
+              <ExternalLink className="h-2.5 w-2.5" />
+            </a>
           </p>
         </FloatingMenu>
       ) : null}
