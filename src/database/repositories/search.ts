@@ -593,7 +593,13 @@ export function createSearchRepository(db: DbHandle): SearchRepositoryFull {
       const database = await db();
 
       for (const [index, step] of phases.entries()) {
-        const rows = await runPhase(database, step.phase, step.tokens, options, limit);
+        let rows: MatchRow[];
+        try {
+          rows = await runPhase(database, step.phase, step.tokens, options, limit);
+        } catch (error) {
+          console.error(`Fase de búsqueda ${step.phase} omitida:`, error);
+          continue;
+        }
         for (const row of rows) {
           const key = `${row.recordId}:${row.fieldId}`;
           if (!collected.has(key)) {
