@@ -165,7 +165,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           </button>
         </header>
 
-        <div className="flex flex-col gap-5 overflow-y-auto px-5 py-4">
+        <div className="flex max-h-[75vh] flex-col gap-5 overflow-y-auto px-5 py-4">
           {/* Grupo 1: Apariencia */}
           <section className="flex flex-col gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
