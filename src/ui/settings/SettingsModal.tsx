@@ -66,7 +66,10 @@ function ThemePreview({ theme }: { theme: Theme }) {
 const ACCENT_DOTS: Record<Accent, string> = {
   sky: "#0ea5e9",
   emerald: "#10b981",
+  teal: "#14b8a6",
+  lime: "#84cc16",
   amber: "#f59e0b",
+  orange: "#f97316",
   rose: "#f43f5e",
   violet: "#8b5cf6",
 };

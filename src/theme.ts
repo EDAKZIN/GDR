@@ -17,7 +17,16 @@ const THEMES = ["dark", "light", "custom"] as const;
 
 export type Theme = (typeof THEMES)[number];
 
-export const ACCENTS = ["sky", "emerald", "amber", "rose", "violet"] as const;
+export const ACCENTS = [
+  "sky",
+  "emerald",
+  "teal",
+  "lime",
+  "amber",
+  "orange",
+  "rose",
+  "violet",
+] as const;
 
 export type Accent = (typeof ACCENTS)[number];
 
