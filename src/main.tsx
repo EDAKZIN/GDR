@@ -7,11 +7,13 @@ import { runMigrations } from "./database/migrations/runner";
 import { createSearchRepository } from "./database/repositories";
 import { translate } from "./i18n";
 import { applyStoredTheme } from "./theme";
+import { applyStoredZoom } from "./uiScale";
 import { useSectionStore } from "./stores";
 
 // El tema persistido se aplica ANTES del primer render para evitar el flash
 // de fondo con el tema equivocado.
 applyStoredTheme();
+applyStoredZoom();
 
 if (import.meta.env.PROD) {
   window.addEventListener("contextmenu", (event) => {

@@ -3,6 +3,15 @@ import { Check, Moon, Sun, X } from "lucide-react";
 import { useT } from "../../i18n";
 import { GithubIcon } from "../components/GithubIcon";
 import { getTheme, setTheme, subscribeTheme, type Theme } from "../../theme";
+import {
+  ZOOM_DEFAULT,
+  ZOOM_MAX,
+  ZOOM_MIN,
+  ZOOM_STEP,
+  getZoom,
+  setZoom,
+  subscribeZoom,
+} from "../../uiScale";
 import { modalBackdrop, modalHeader, modalPanel } from "../components/uiStyles";
 
 /** Miniatura fija del tema (usa colores reales del tema, no utilidades vivas). */
@@ -50,6 +59,7 @@ function ThemePreview({ theme }: { theme: Theme }) {
 export function SettingsModal({ onClose }: { onClose: () => void }) {
   const { t, lang, setLang } = useT();
   const theme = useSyncExternalStore(subscribeTheme, getTheme);
+  const zoom = useSyncExternalStore(subscribeZoom, getZoom);
 
   // Esc cierra el modal.
   useEffect(() => {
@@ -139,7 +149,47 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </div>
           </section>
 
-          {/* Grupo 2: Idioma */}
+          {/* Grupo 2: Tamaño de interfaz */}
+          <section className="flex flex-col gap-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              {t("ajustes.tamano")}
+            </h3>
+            <p className="text-xs text-zinc-500">{t("ajustes.tamanoDesc")}</p>
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min={ZOOM_MIN}
+                max={ZOOM_MAX}
+                step={ZOOM_STEP}
+                value={zoom}
+                aria-label={t("ajustes.tamano")}
+                onChange={(event) => {
+                  setZoom(Number(event.target.value));
+                }}
+                className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-zinc-700 accent-sky-500"
+              />
+              <span className="w-12 shrink-0 text-right text-xs font-semibold tabular-nums text-zinc-200">
+                {zoom}%
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setZoom(ZOOM_DEFAULT);
+                }}
+                disabled={zoom === ZOOM_DEFAULT}
+                className="shrink-0 rounded-md border border-zinc-700 px-2 py-1 text-[11px] font-medium text-zinc-300 transition-colors duration-150 hover:border-zinc-600 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-40"
+              >
+                {t("ajustes.restablecer")}
+              </button>
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-zinc-500">
+              <span>{t("ajustes.compacto")}</span>
+              <span>{t("ajustes.predeterminado")}</span>
+              <span>{t("ajustes.espaciado")}</span>
+            </div>
+          </section>
+
+          {/* Grupo 3: Idioma */}
           <section className="flex flex-col gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
               {t("ajustes.idioma")}

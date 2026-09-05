@@ -8,6 +8,7 @@ import { FormWorkspaceScreen } from "./ui/screens/FormWorkspaceScreen";
 import { SectionFormsScreen } from "./ui/screens/SectionFormsScreen";
 import { SectionsScreen } from "./ui/screens/SectionsScreen";
 import { useRecordStore, useSectionStore, useUiStore } from "./stores";
+import { ZOOM_STEP, getZoom, setZoom } from "./uiScale";
 
 /**
  * Sincroniza el formulario activo entre useSectionStore y useRecordStore:
@@ -46,6 +47,32 @@ function useSearchShortcut(onOpen: () => void): void {
   }, [onOpen]);
 }
 
+/** Atajos globales Ctrl+- / Ctrl++ para el zoom de interfaz (pasos de 10). */
+function useZoomShortcut(): void {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent): void {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey) {
+        return;
+      }
+      if (event.key === "-" || event.key === "_" || event.key === "Subtract") {
+        event.preventDefault();
+        setZoom(getZoom() - ZOOM_STEP);
+      } else if (
+        event.key === "+" ||
+        event.key === "=" ||
+        event.key === "Add"
+      ) {
+        event.preventDefault();
+        setZoom(getZoom() + ZOOM_STEP);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+}
+
 /** Router mínimo: una pantalla enfocada a la vez según useUiStore. */
 function CurrentScreen() {
   const view = useUiStore((store) => store.view);
@@ -63,6 +90,7 @@ function App() {
   const searchOpen = useUiStore((store) => store.searchOpen);
   const setSearchOpen = useUiStore((store) => store.setSearchOpen);
   useFormSync();
+  useZoomShortcut();
   useSearchShortcut(() => {
     setSearchOpen(true);
   });
