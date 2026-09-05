@@ -26,6 +26,7 @@
   "bundle": {
     "active": true,
     "publisher": "EDAKZIN",
+    "copyright": "Copyright © 2026 EDAKZIN",
     "targets": ["nsis"],
     "icon": [
       "icons/32x32.png",
