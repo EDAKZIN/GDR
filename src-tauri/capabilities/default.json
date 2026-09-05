@@ -8,6 +8,9 @@
     "opener:default",
     "dialog:default",
     "fs:default",
+    "fs:allow-copy-file",
+    "fs:allow-mkdir",
+    "fs:allow-read-file",
     {
       "identifier": "fs:scope",
       "allow": [{ "path": "$APPDATA" }, { "path": "$APPDATA/**" }, { "path": "$HOME/**" }]
