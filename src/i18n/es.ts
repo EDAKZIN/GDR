@@ -336,6 +336,7 @@ export const es = {
     emailPlaceholder: "usuario@dominio.com",
     imagenPlaceholder: "https://…/imagen.png",
     examinar: "Examinar…",
+    examinarArchivo: "Examinar archivo…",
     examinarCarpeta: "Examinar carpeta…",
   },
   error: {

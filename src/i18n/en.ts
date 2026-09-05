@@ -337,6 +337,7 @@ export const en: Dictionary = {
     emailPlaceholder: "user@example.com",
     imagenPlaceholder: "https://…/image.png",
     examinar: "Browse…",
+    examinarArchivo: "Browse file…",
     examinarCarpeta: "Browse folder…",
   },
   error: {
