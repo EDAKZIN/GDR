@@ -295,7 +295,11 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
               {t("ajustes.tamano")}
             </h3>
-            <p className="text-xs text-zinc-500">{t("ajustes.tamanoDesc")}</p>
+            <p className="text-xs text-zinc-500">
+              {t("ajustes.tamanoDesc")}
+              <br />
+              {t("ajustes.tamanoAtajos")}
+            </p>
             <div className="flex items-center gap-3">
               <input
                 type="range"
@@ -322,11 +326,6 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               >
                 {t("ajustes.restablecer")}
               </button>
-            </div>
-            <div className="flex items-center justify-between text-[10px] text-zinc-500">
-              <span>{t("ajustes.compacto")}</span>
-              <span>{t("ajustes.predeterminado")}</span>
-              <span>{t("ajustes.espaciado")}</span>
             </div>
           </section>
 

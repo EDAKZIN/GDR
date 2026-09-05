@@ -488,11 +488,6 @@ function SettingsSizeVisual({ t }: { t: TranslateFn }) {
               {t("ajustes.restablecer")}
             </span>
           </div>
-          <div className="flex items-center justify-between text-[7px] text-zinc-500">
-            <span>{t("ajustes.compacto")}</span>
-            <span>{t("ajustes.predeterminado")}</span>
-            <span>{t("ajustes.espaciado")}</span>
-          </div>
         </div>
         <div className="flex flex-col gap-1.5">
           <p className="text-[8px] font-semibold uppercase tracking-wide text-zinc-500">{t("ajustes.idioma")}</p>
