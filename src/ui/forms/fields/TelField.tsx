@@ -44,12 +44,14 @@ export function TelDisplay({ value, lang }: { value: string; lang: string }) {
   }
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-1.5">
-      <a
-        href={`tel:${value.replace(/\s/gu, "")}`}
-        className="break-all text-sm text-sky-300 underline decoration-sky-500/40 underline-offset-2 hover:decoration-sky-300"
-      >
+      <span className="inline-flex items-center break-all text-sm text-zinc-100">
+        {Flag !== null ? (
+          <span className="inline-flex shrink-0 items-center overflow-hidden rounded-sm border border-zinc-700 me-2">
+            <Flag className="h-3.5 w-5" title={countryName ?? ""} />
+          </span>
+        ) : null}
         {formatted}
-      </a>
+      </span>
       {countryName !== null ? (
         <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[11px] text-zinc-400">
           {countryName}
@@ -70,11 +72,6 @@ export function TelDisplay({ value, lang }: { value: string; lang: string }) {
       >
         {copied ? <Check className="h-3.5 w-3.5 text-sky-300" /> : <Copy className="h-3.5 w-3.5" />}
       </button>
-      {Flag !== null ? (
-        <span className="inline-flex shrink-0 items-center overflow-hidden rounded-sm border border-zinc-700">
-          <Flag className="h-3.5 w-5" title={countryName ?? ""} />
-        </span>
-      ) : null}
     </span>
   );
 }
