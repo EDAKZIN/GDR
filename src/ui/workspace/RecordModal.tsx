@@ -199,6 +199,12 @@ function ValueRow({
         href={value}
         target="_blank"
         rel="noreferrer"
+        onClick={(event) => {
+          event.preventDefault();
+          void import("@tauri-apps/plugin-opener").then(({ openUrl }) =>
+            openUrl(value),
+          );
+        }}
         className="inline-flex items-center gap-1 break-all text-sm text-sky-300 underline decoration-sky-500/40 underline-offset-2 hover:decoration-sky-300"
       >
         {formatted}
@@ -209,6 +215,12 @@ function ValueRow({
     content = (
       <a
         href={`mailto:${value}`}
+        onClick={(event) => {
+          event.preventDefault();
+          void import("@tauri-apps/plugin-opener").then(({ openUrl }) =>
+            openUrl(`mailto:${value}`),
+          );
+        }}
         className="inline-flex items-center gap-1 break-all text-sm text-sky-300 underline decoration-sky-500/40 underline-offset-2 hover:decoration-sky-300"
       >
         <Mail className="h-3.5 w-3.5 shrink-0 opacity-70" />
