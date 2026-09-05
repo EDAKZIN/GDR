@@ -46,17 +46,12 @@ export function TelDisplay({ value, lang }: { value: string; lang: string }) {
     <span className="flex min-w-0 flex-wrap items-center gap-1.5">
       <span className="inline-flex items-center break-all text-sm text-zinc-100">
         {Flag !== null ? (
-          <span className="inline-flex shrink-0 items-center overflow-hidden rounded-sm border border-zinc-700 me-2">
+          <span className="me-2 inline-flex shrink-0 items-center overflow-hidden rounded-sm border border-zinc-700">
             <Flag className="h-3.5 w-5" title={countryName ?? ""} />
           </span>
         ) : null}
         {formatted}
       </span>
-      {countryName !== null ? (
-        <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[11px] text-zinc-400">
-          {countryName}
-        </span>
-      ) : null}
       <button
         type="button"
         aria-label="Copiar"
