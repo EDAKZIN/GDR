@@ -78,6 +78,16 @@ function isAssetSrc(value: string): boolean {
   return value.startsWith("asset://") || value.includes("asset.localhost");
 }
 
+type BgSource = "none" | "url" | "file";
+
+function localBackgroundName(value: string): string {
+  try {
+    return decodeURIComponent(value.split("/").pop() ?? value);
+  } catch {
+    return value;
+  }
+}
+
 /**
  * Modal de Ajustes: Apariencia (tarjetas de tema con mini-preview, aplicación
  * instantánea sin guardar; el tema personalizado suma acento y fondo propio),
@@ -93,6 +103,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const zoom = useSyncExternalStore(subscribeZoom, getZoom);
   const [picking, setPicking] = useState(false);
   const [bgError, setBgError] = useState("");
+  const bgSource: BgSource =
+    background === "" ? "none" : isAssetSrc(background) ? "file" : "url";
 
   // Esc cierra el modal.
   useEffect(() => {
@@ -254,53 +266,74 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <p className="text-xs font-medium text-zinc-200">{t("ajustes.fondo")}</p>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      aria-pressed={background === ""}
-                      onClick={() => {
+                  <select
+                    aria-label={t("ajustes.fondoFuente")}
+                    value={bgSource}
+                    onChange={(event) => {
+                      const next = event.target.value as BgSource;
+                      setBgError("");
+                      if (next === "none") {
                         setBackground("");
+                      } else if (next === "url") {
+                        if (isAssetSrc(background)) {
+                          setBackground("");
+                        }
+                      } else if (background !== "" && !isAssetSrc(background)) {
+                        setBackground("");
+                      }
+                    }}
+                    className="w-full cursor-pointer appearance-none rounded-md border border-zinc-700 bg-zinc-900 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22/%3E%3C/svg%3E')] bg-[position:right_0.6rem_center] bg-no-repeat px-2.5 py-1.5 pr-8 text-xs text-zinc-200 outline-none transition-colors duration-150 hover:border-zinc-600 focus:border-sky-400"
+                  >
+                    {(
+                      [
+                        ["none", t("ajustes.fondoNinguno")],
+                        ["url", t("ajustes.fondoUrl")],
+                        ["file", t("ajustes.fondoArchivo")],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <option key={id} value={id} className="bg-zinc-900 text-zinc-200">
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  {bgSource === "url" ? (
+                    <input
+                      type="text"
+                      spellCheck={false}
+                      aria-label={t("ajustes.fondoUrl")}
+                      placeholder={t("ajustes.fondoUrlPlaceholder")}
+                      value={background}
+                      onChange={(event) => {
+                        setBgError("");
+                        setBackground(event.target.value);
                       }}
-                      className={`rounded-md border px-2 py-1 text-[11px] font-medium transition-colors duration-150 ${
-                        background === ""
-                          ? "border-sky-500/60 bg-sky-500/10 text-sky-200"
-                          : "border-zinc-700 text-zinc-300 hover:border-zinc-600 hover:text-zinc-100"
-                      }`}
-                    >
-                      {t("ajustes.fondoNinguno")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void pickBackgroundFile();
-                      }}
-                      disabled={picking}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 px-2 py-1 text-[11px] font-medium text-zinc-300 transition-colors duration-150 hover:border-zinc-600 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-50"
-                    >
-                      <FolderOpen className="h-3.5 w-3.5" />
-                      {t("ajustes.fondoExaminar")}
-                    </button>
-                    <span className="text-[11px] text-zinc-500">{t("ajustes.fondoArchivo")}</span>
-                  </div>
+                      className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-100 outline-none transition-colors duration-150 placeholder:text-zinc-600 hover:border-zinc-600 focus:border-sky-400"
+                    />
+                  ) : null}
+                  {bgSource === "file" ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void pickBackgroundFile();
+                        }}
+                        disabled={picking}
+                        className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-700 px-2 py-1 text-[11px] font-medium text-zinc-300 transition-colors duration-150 hover:border-zinc-600 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-50"
+                      >
+                        <FolderOpen className="h-3.5 w-3.5" />
+                        {t("ajustes.fondoExaminar")}
+                      </button>
+                      {isAssetSrc(background) ? (
+                        <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-500">
+                          {localBackgroundName(background)}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {bgError !== "" ? (
                     <p role="alert" className="text-[11px] text-rose-300">
                       {t("ajustes.fondoError", { n: bgError })}
                     </p>
-                  ) : null}
-                  <input
-                    type="text"
-                    spellCheck={false}
-                    aria-label={t("ajustes.fondoUrl")}
-                    placeholder={t("ajustes.fondoUrlPlaceholder")}
-                    value={isAssetSrc(background) ? "" : background}
-                    onChange={(event) => {
-                      setBgError("");
-                      setBackground(event.target.value);
-                    }}
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-100 outline-none transition-colors duration-150 placeholder:text-zinc-600 hover:border-zinc-600 focus:border-sky-400"
-                  />
-                  {isAssetSrc(background) ? (
-                    <p className="truncate text-[11px] text-zinc-500">{background}</p>
                   ) : null}
                 </div>
               </div>

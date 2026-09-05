@@ -24,6 +24,7 @@ export const en: Dictionary = {
     acento: "Accent",
     acentoDesc: "Accent color for the whole interface.",
     fondo: "Background",
+    fondoFuente: "Source",
     fondoNinguno: "None",
     fondoUrl: "Image URL",
     fondoUrlPlaceholder: "https://…",
