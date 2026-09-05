@@ -240,7 +240,6 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <p className="text-xs font-medium text-zinc-200">{t("ajustes.fondo")}</p>
-                  <p className="text-xs text-zinc-500">{t("ajustes.fondoDesc")}</p>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"

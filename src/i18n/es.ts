@@ -23,7 +23,6 @@ export const es = {
     acento: "Acento",
     acentoDesc: "Color de acento de toda la interfaz.",
     fondo: "Fondo",
-    fondoDesc: "Imagen de fondo con overlay oscuro para mantener la legibilidad.",
     fondoNinguno: "Ninguno",
     fondoUrl: "URL de imagen",
     fondoUrlPlaceholder: "https://…",
