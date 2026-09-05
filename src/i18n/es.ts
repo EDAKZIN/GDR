@@ -405,9 +405,12 @@ export const es = {
     s9Titulo: "Deshabilitar y papelera",
     s9Desc:
       "Deshabilitar deja ver pero no editar ni aparece en búsquedas; la papelera guarda lo borrado para traerlo de vuelta con un clic. Solo se pierde al borrar definitivo.",
-    s10Titulo: "Ajustes",
+    s10Titulo: "Ajustes: apariencia",
     s10Desc:
-      "En el engranaje cambias entre modo oscuro y claro y eliges el idioma. ¡Listo! Ya puedes empezar a ordenar.",
+      "En el engranaje eliges cómo se ve la aplicación: oscuro, claro o personalizado con tu color y tu imagen de fondo.",
+    s12Titulo: "Ajustes: tamaño e idioma",
+    s12Desc:
+      "Con el control de tamaño haces todo más grande o más pequeño, eliges el idioma en la lista y al final ves información sobre la aplicación.",
     s11Titulo: "La ficha y el botón Examinar",
     s11Desc:
       "Al abrir una ficha ves cada dato con su icono y formato. Si un campo pide un archivo, pulsa Examinar (…) y elige el archivo en tu ordenador sin escribir la ruta a mano.",

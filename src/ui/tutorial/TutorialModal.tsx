@@ -13,6 +13,7 @@ import {
   GripVertical,
   Moon,
   MoreVertical,
+  Palette,
   Plus,
   RotateCcw,
   Search,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import { useT, type TranslateFn } from "../../i18n";
 import { btnPrimary, btnSecondary, modalHeader, modalPanel } from "../components/uiStyles";
+import { GithubIcon } from "../components/GithubIcon";
 import busquedaImg from "../../assets/tutorial/busqueda.png";
 import drawerArbolImg from "../../assets/tutorial/drawer-arbol.png";
 import fichaDetalleImg from "../../assets/tutorial/ficha-detalle.png";
@@ -32,7 +34,7 @@ import plantillaCamposImg from "../../assets/tutorial/plantilla-campos.png";
 import tablaRegistrosImg from "../../assets/tutorial/tabla-registros.png";
 
 export const TUTORIAL_SEEN_KEY = "gdr.tutorialSeen";
-const LAST_INDEX = 10;
+const LAST_INDEX = 11;
 
 function markSeen(): void {
   try {
@@ -392,49 +394,121 @@ function FileDetailVisual() {
   );
 }
 
-function SettingsVisual({ t }: { t: TranslateFn }) {
+function SettingsThemeVisual({ t }: { t: TranslateFn }) {
+  const dots = ["#0ea5e9", "#10b981", "#f59e0b", "#f43f5e", "#8b5cf6"];
+  const cards = [
+    { icon: Moon, label: t("ajustes.temaOscuro"), active: true, dark: true },
+    { icon: Sun, label: t("ajustes.temaClaro"), active: false, dark: false },
+    { icon: Palette, label: t("ajustes.temaPersonalizado"), active: false, dark: true },
+  ];
   return (
-    <div className="flex h-72 flex-col rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+    <div className="flex h-72 flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 p-3">
       <div className="flex justify-end">
         <span className="rounded-md p-1.5 text-zinc-200 ring-2 ring-sky-400">
           <Settings className="h-3.5 w-3.5" />
         </span>
       </div>
-      <div className="mx-auto mt-2 flex w-64 flex-col gap-2 rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 shadow-2xl">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="flex flex-col gap-1 rounded-lg border border-sky-500/60 bg-sky-500/10 p-1.5">
-            <span className="flex items-center justify-between text-[9px] font-medium text-zinc-200">
-              <span className="flex items-center gap-1">
-                <Moon className="h-3 w-3" />
-                {t("ajustes.temaOscuro")}
+      <div className="mx-auto mt-2 flex w-80 max-w-full flex-col gap-2 rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 shadow-2xl">
+        <p className="text-[8px] font-semibold uppercase tracking-wide text-zinc-500">{t("ajustes.apariencia")}</p>
+        <div className="grid grid-cols-3 gap-1.5">
+          {cards.map((card) => (
+            <div
+              key={card.label}
+              className={`flex flex-col gap-1 rounded-lg border p-1.5 ${card.active ? "border-sky-500/60 bg-sky-500/10" : "border-zinc-700"}`}
+            >
+              <span
+                aria-hidden
+                className="block h-9 rounded-md border"
+                style={{ backgroundColor: card.dark ? "#09090b" : "#f4f4f5", borderColor: card.dark ? "#3f3f46" : "#d4d4d8" }}
+              >
+                <span
+                  className="flex h-2.5 items-center gap-1 border-b px-1"
+                  style={{ backgroundColor: card.dark ? "#18181b" : "#ffffff", borderColor: card.dark ? "#27272a" : "#e4e4e7" }}
+                >
+                  <span className="h-1 w-4 rounded-full" style={{ backgroundColor: "#0284c7" }} />
+                  <span className="h-1 w-3 rounded-full" style={{ backgroundColor: card.dark ? "#52525b" : "#a1a1aa" }} />
+                </span>
               </span>
-              <Check className="h-3 w-3 text-sky-400" />
-            </span>
-            <span aria-hidden className="block h-12 rounded-md border" style={{ backgroundColor: "#09090b", borderColor: "#3f3f46" }}>
-              <span className="flex h-3 items-center gap-1 border-b px-1" style={{ backgroundColor: "#18181b", borderColor: "#27272a" }}>
-                <span className="h-1 w-6 rounded-full" style={{ backgroundColor: "#0284c7" }} />
-                <span className="h-1 w-4 rounded-full" style={{ backgroundColor: "#52525b" }} />
+              <span className="flex items-center justify-between text-[8px] font-medium text-zinc-200">
+                <span className="flex items-center gap-1">
+                  <card.icon className="h-2.5 w-2.5" />
+                  {card.label}
+                </span>
+                {card.active ? <Check className="h-2.5 w-2.5 text-sky-400" /> : null}
               </span>
-            </span>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-col gap-1.5 rounded-md border border-zinc-800 bg-zinc-900/40 p-2">
+          <p className="text-[8px] font-medium text-zinc-200">{t("ajustes.acento")}</p>
+          <div className="flex items-center gap-1.5">
+            {dots.map((color, i) => (
+              <span
+                key={color}
+                className={`flex h-5 w-5 items-center justify-center rounded-full border ${i === 0 ? "border-white ring-2 ring-white/60" : "border-zinc-600"}`}
+                style={{ backgroundColor: color }}
+              >
+                {i === 0 ? <Check className="h-2.5 w-2.5 text-white" /> : null}
+              </span>
+            ))}
           </div>
-          <div className="flex flex-col gap-1 rounded-lg border border-zinc-700 p-1.5">
-            <span className="flex items-center gap-1 text-[9px] font-medium text-zinc-200">
-              <Sun className="h-3 w-3" />
-              {t("ajustes.temaClaro")}
+          <p className="text-[8px] font-medium text-zinc-200">{t("ajustes.fondo")}</p>
+          <div className="flex items-center gap-1.5">
+            <span className="rounded-md border border-sky-500/60 bg-sky-500/10 px-1.5 py-0.5 text-[8px] font-medium text-sky-200">
+              {t("ajustes.fondoNinguno")}
             </span>
-            <span aria-hidden className="block h-12 rounded-md border" style={{ backgroundColor: "#f4f4f5", borderColor: "#d4d4d8" }}>
-              <span className="flex h-3 items-center gap-1 border-b bg-white px-1" style={{ borderColor: "#e4e4e7" }}>
-                <span className="h-1 w-6 rounded-full" style={{ backgroundColor: "#0284c7" }} />
-                <span className="h-1 w-4 rounded-full" style={{ backgroundColor: "#a1a1aa" }} />
-              </span>
+            <span className="rounded-md border border-zinc-700 px-1.5 py-0.5 text-[8px] font-medium text-zinc-300">
+              {t("ajustes.fondoExaminar")}
             </span>
           </div>
         </div>
-        <span className="flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-[10px] text-zinc-200">
-          <Globe className="h-3 w-3 shrink-0 text-zinc-500" />
-          {t("ajustes.espanol")}
-          <ChevronDown className="ml-auto h-3 w-3 text-zinc-500" />
+      </div>
+    </div>
+  );
+}
+
+function SettingsSizeVisual({ t }: { t: TranslateFn }) {
+  return (
+    <div className="flex h-72 flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+      <div className="flex justify-end">
+        <span className="rounded-md p-1.5 text-zinc-200 ring-2 ring-sky-400">
+          <Settings className="h-3.5 w-3.5" />
         </span>
+      </div>
+      <div className="mx-auto mt-2 flex w-80 max-w-full flex-col gap-3 rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 shadow-2xl">
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[8px] font-semibold uppercase tracking-wide text-zinc-500">{t("ajustes.tamano")}</p>
+          <div className="flex items-center gap-2">
+            <span className="relative h-1.5 flex-1 rounded-full bg-zinc-700">
+              <span className="absolute left-0 top-0 h-1.5 w-1/2 rounded-full bg-sky-500" />
+              <span className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-sky-400 bg-zinc-900" />
+            </span>
+            <span className="w-8 shrink-0 text-right text-[9px] font-semibold tabular-nums text-zinc-200">100%</span>
+            <span className="shrink-0 rounded-md border border-zinc-700 px-1.5 py-0.5 text-[8px] font-medium text-zinc-300">
+              {t("ajustes.restablecer")}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-[7px] text-zinc-500">
+            <span>{t("ajustes.compacto")}</span>
+            <span>{t("ajustes.predeterminado")}</span>
+            <span>{t("ajustes.espaciado")}</span>
+          </div>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[8px] font-semibold uppercase tracking-wide text-zinc-500">{t("ajustes.idioma")}</p>
+          <span className="flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-[10px] text-zinc-200">
+            <Globe className="h-3 w-3 shrink-0 text-zinc-500" />
+            {t("ajustes.espanol")}
+            <ChevronDown className="ml-auto h-3 w-3 text-zinc-500" />
+          </span>
+        </div>
+        <div className="flex flex-col gap-1 border-t border-zinc-800 pt-2">
+          <p className="text-[8px] font-semibold uppercase tracking-wide text-zinc-500">{t("ajustes.acerca")}</p>
+          <span className="flex items-center gap-1.5 text-[9px] font-medium text-zinc-300">
+            <GithubIcon className="h-3.5 w-3.5" />
+            {t("ajustes.verGithub")}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -469,7 +543,8 @@ export function TutorialModal({ onClose }: { onClose: () => void }) {
     { titulo: t("tutorial.s11Titulo"), desc: t("tutorial.s11Desc"), visual: <FileDetailVisual /> },
     { titulo: t("tutorial.s8Titulo"), desc: t("tutorial.s8Desc"), visual: <SearchVisual /> },
     { titulo: t("tutorial.s9Titulo"), desc: t("tutorial.s9Desc"), visual: <TrashVisual t={t} /> },
-    { titulo: t("tutorial.s10Titulo"), desc: t("tutorial.s10Desc"), visual: <SettingsVisual t={t} /> },
+    { titulo: t("tutorial.s10Titulo"), desc: t("tutorial.s10Desc"), visual: <SettingsThemeVisual t={t} /> },
+    { titulo: t("tutorial.s12Titulo"), desc: t("tutorial.s12Desc"), visual: <SettingsSizeVisual t={t} /> },
   ];
   const slide = slides[index];
   const isLast = index === LAST_INDEX;

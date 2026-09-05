@@ -407,9 +407,12 @@ export const en: Dictionary = {
     s9Titulo: "Disable and trash",
     s9Desc:
       "Disabling keeps things visible but not editable and hides them from search; trash keeps deleted items so you can bring them back with one click. Nothing is lost until permanent delete.",
-    s10Titulo: "Settings",
+    s10Titulo: "Settings: appearance",
     s10Desc:
-      "In the gear you switch between dark and light and pick your language. Done! You can start organizing.",
+      "In the gear you choose how the app looks: dark, light or custom with your own color and background image.",
+    s12Titulo: "Settings: size and language",
+    s12Desc:
+      "With the size control you make everything bigger or smaller, pick your language from the list and at the bottom you find info about the app.",
     s11Titulo: "Card detail and Browse",
     s11Desc:
       "Open a card to see each detail with its icon and format. If a field asks for a file, tap Browse (…) to pick the file on your computer — no need to type the path.",
