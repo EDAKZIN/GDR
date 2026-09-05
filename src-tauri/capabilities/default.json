@@ -9,6 +9,7 @@
     "dialog:default",
     "fs:default",
     "fs:allow-copy-file",
+    "fs:allow-remove",
     "fs:allow-mkdir",
     "fs:allow-read-file",
     {

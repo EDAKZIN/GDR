@@ -337,6 +337,7 @@ export const en: Dictionary = {
     emailPlaceholder: "user@example.com",
     imagenPlaceholder: "https://…/image.png",
     examinar: "Browse…",
+    examinarCarpeta: "Browse folder…",
   },
   error: {
     titulo: "An unexpected error occurred",

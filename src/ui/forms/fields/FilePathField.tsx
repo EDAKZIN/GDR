@@ -1,27 +1,27 @@
 import { useState } from "react";
-import { FolderOpen } from "lucide-react";
+import { Folder, FolderOpen } from "lucide-react";
 import { useT } from "../../../i18n";
 import type { FieldInputProps } from "./types";
 import { fieldInputClass } from "./fieldStyles";
 
 /**
- * Campo de ruta de archivo. El botón «…» abre el diálogo nativo de selección
- * de archivo (plugin dialog de Tauri) y vuelca la ruta elegida en el campo,
- * tanto si está vacío como si ya tiene un valor (se reemplaza). Fuera de
- * Tauri (navegador en npm run dev) el plugin no existe: la llamada va
- * envuelta en try/catch y el campo manual sigue funcionando igual.
+ * Campo de ruta de archivo o carpeta. Los botones «…» abren el diálogo nativo
+ * (plugin dialog de Tauri) y vuelcan la ruta elegida en el campo, tanto si
+ * está vacío como si ya tiene un valor (se reemplaza). Fuera de Tauri
+ * (navegador en npm run dev) el plugin no existe: la llamada va envuelta en
+ * try/catch y el campo manual sigue funcionando igual.
  */
 export function FilePathField({ value, onChange, disabled }: FieldInputProps) {
   const { t } = useT();
   const [picking, setPicking] = useState(false);
 
-  async function pickFile(): Promise<void> {
+  async function pickPath(directory: boolean): Promise<void> {
     setPicking(true);
     try {
       const { open } = await import("@tauri-apps/plugin-dialog");
       const selected = await open({
         multiple: false,
-        directory: false,
+        directory,
       });
       if (typeof selected === "string" && selected !== "") {
         onChange(selected);
@@ -52,11 +52,23 @@ export function FilePathField({ value, onChange, disabled }: FieldInputProps) {
         aria-label={t("campos.examinar")}
         className="shrink-0 rounded-md border border-zinc-700 bg-zinc-900 p-2 text-zinc-400 transition-colors duration-150 hover:bg-zinc-800 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
         onClick={() => {
-          void pickFile();
+          void pickPath(false);
         }}
         disabled={disabled || picking}
       >
         <FolderOpen className="h-4 w-4" aria-hidden />
+      </button>
+      <button
+        type="button"
+        title={t("campos.examinarCarpeta")}
+        aria-label={t("campos.examinarCarpeta")}
+        className="shrink-0 rounded-md border border-zinc-700 bg-zinc-900 p-2 text-zinc-400 transition-colors duration-150 hover:bg-zinc-800 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() => {
+          void pickPath(true);
+        }}
+        disabled={disabled || picking}
+      >
+        <Folder className="h-4 w-4" aria-hidden />
       </button>
     </div>
   );

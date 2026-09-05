@@ -8,7 +8,6 @@ import {
   getBackground,
   getTheme,
   setAccent,
-  setBackground,
   setTheme,
   subscribeAccent,
   subscribeBackground,
@@ -126,8 +125,13 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     { id: "custom", label: t("ajustes.temaPersonalizado"), icon: Palette },
   ];
 
-  async function pickBackgroundFile(): Promise<void> {
-    setPicking(true);
+  function ensureCustomTheme(): void {
+    if (getTheme() !== "custom") {
+      setTheme("custom");
+    }
+  }
+
+  async function pickBackgroundFile(): Promise<void> {    setPicking(true);
     setBgError("");
     try {
       const { open } = await import("@tauri-apps/plugin-dialog");
@@ -153,7 +157,10 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
       const safe = raw.replace(/[^\w.-]+/g, "_").slice(-80) || "fondo";
       const dest = await join(dir, `${String(Date.now())}-${safe}`);
       await copyFile(selected, dest);
-      setBackground(convertFileSrc(dest));
+      const { replaceBackground } = await import("../../backgroundFiles");
+      await replaceBackground(convertFileSrc(dest), dest);
+      setSource("file");
+      ensureCustomTheme();
       setSource("file");
     } catch (error) {
       setBgError(error instanceof Error ? error.message : String(error));
@@ -252,6 +259,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                           aria-label={id}
                           onClick={() => {
                             setAccent(id);
+                            ensureCustomTheme();
                           }}
                           className={`flex h-7 w-7 items-center justify-center rounded-full border transition-colors duration-150 ${
                             active
@@ -275,15 +283,18 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                       const next = event.target.value as BgSource;
                       setBgError("");
                       setSource(next);
-                      if (next === "none") {
-                        setBackground("");
-                      } else if (next === "url") {
-                        if (isAssetSrc(background)) {
-                          setBackground("");
+                      void (async () => {
+                        const { replaceBackground } = await import("../../backgroundFiles");
+                        if (next === "none") {
+                          await replaceBackground("", null);
+                        } else if (next === "url") {
+                          if (isAssetSrc(background)) {
+                            await replaceBackground("", null);
+                          }
+                        } else if (background !== "" && !isAssetSrc(background)) {
+                          await replaceBackground("", null);
                         }
-                      } else if (background !== "" && !isAssetSrc(background)) {
-                        setBackground("");
-                      }
+                      })();
                     }}
                     className="w-full cursor-pointer appearance-none rounded-md border border-zinc-700 bg-zinc-900 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23a1a1aa%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22/%3E%3C/svg%3E')] bg-[position:right_0.6rem_center] bg-no-repeat px-2.5 py-1.5 pr-8 text-xs text-zinc-200 outline-none transition-colors duration-150 hover:border-zinc-600 focus:border-sky-400"
                   >
@@ -308,7 +319,14 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                       value={background}
                       onChange={(event) => {
                         setBgError("");
-                        setBackground(event.target.value);
+                        const next = event.target.value;
+                        void (async () => {
+                          const { replaceBackground } = await import("../../backgroundFiles");
+                          await replaceBackground(next, null);
+                          if (next.trim() !== "") {
+                            ensureCustomTheme();
+                          }
+                        })();
                       }}
                       className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-100 outline-none transition-colors duration-150 placeholder:text-zinc-600 hover:border-zinc-600 focus:border-sky-400"
                     />

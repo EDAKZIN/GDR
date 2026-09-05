@@ -336,6 +336,7 @@ export const es = {
     emailPlaceholder: "usuario@dominio.com",
     imagenPlaceholder: "https://…/imagen.png",
     examinar: "Examinar…",
+    examinarCarpeta: "Examinar carpeta…",
   },
   error: {
     titulo: "Se produjo un error inesperado",
