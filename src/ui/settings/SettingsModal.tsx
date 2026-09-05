@@ -149,7 +149,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
       const dir = await join(await appDataDir(), "backgrounds");
       await mkdir(dir, { recursive: true });
       const raw = selected.split(/[/\\]/).pop() ?? "";
-      const safe = raw.replace(/[^\w.\-]+/g, "_").slice(-80) || "fondo";
+      const safe = raw.replace(/[^\w.-]+/g, "_").slice(-80) || "fondo";
       const dest = await join(dir, `${String(Date.now())}-${safe}`);
       await copyFile(selected, dest);
       setBackground(convertFileSrc(dest));
