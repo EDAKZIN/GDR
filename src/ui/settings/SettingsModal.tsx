@@ -1,8 +1,21 @@
-import { useEffect, useSyncExternalStore } from "react";
-import { Check, Moon, Sun, X } from "lucide-react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { Check, FolderOpen, Moon, Palette, Sun, X } from "lucide-react";
 import { useT } from "../../i18n";
 import { GithubIcon } from "../components/GithubIcon";
-import { getTheme, setTheme, subscribeTheme, type Theme } from "../../theme";
+import {
+  ACCENTS,
+  getAccent,
+  getBackground,
+  getTheme,
+  setAccent,
+  setBackground,
+  setTheme,
+  subscribeAccent,
+  subscribeBackground,
+  subscribeTheme,
+  type Accent,
+  type Theme,
+} from "../../theme";
 import {
   ZOOM_DEFAULT,
   ZOOM_MAX,
@@ -16,7 +29,7 @@ import { modalBackdrop, modalHeader, modalPanel } from "../components/uiStyles";
 
 /** Miniatura fija del tema (usa colores reales del tema, no utilidades vivas). */
 function ThemePreview({ theme }: { theme: Theme }) {
-  const dark = theme === "dark";
+  const dark = theme !== "light";
   return (
     <span
       aria-hidden
@@ -50,16 +63,32 @@ function ThemePreview({ theme }: { theme: Theme }) {
   );
 }
 
+const ACCENT_DOTS: Record<Accent, string> = {
+  sky: "#0ea5e9",
+  emerald: "#10b981",
+  amber: "#f59e0b",
+  rose: "#f43f5e",
+  violet: "#8b5cf6",
+};
+
+function isAssetSrc(value: string): boolean {
+  return value.startsWith("asset://") || value.includes("asset.localhost");
+}
+
 /**
- * Modal de Ajustes: dos grupos en orden de uso — Apariencia (tarjetas de tema
- * con mini-preview, aplicación instantánea sin guardar) e Idioma (desplegable
- * que escala a nuevos idiomas sin añadir controles).
- * Esc o clic en el fondo cierran; el idioma vive en i18n y el tema en theme.ts.
+ * Modal de Ajustes: Apariencia (tarjetas de tema con mini-preview, aplicación
+ * instantánea sin guardar; el tema personalizado suma acento y fondo propio),
+ * Tamaño de interfaz (zoom) e Idioma (desplegable que escala a nuevos idiomas
+ * sin añadir controles). Esc o clic en el fondo cierran; el idioma vive en
+ * i18n y el tema en theme.ts.
  */
 export function SettingsModal({ onClose }: { onClose: () => void }) {
   const { t, lang, setLang } = useT();
   const theme = useSyncExternalStore(subscribeTheme, getTheme);
+  const accent = useSyncExternalStore(subscribeAccent, getAccent);
+  const background = useSyncExternalStore(subscribeBackground, getBackground);
   const zoom = useSyncExternalStore(subscribeZoom, getZoom);
+  const [picking, setPicking] = useState(false);
 
   // Esc cierra el modal.
   useEffect(() => {
@@ -77,7 +106,33 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const themes: ReadonlyArray<{ id: Theme; label: string; icon: typeof Moon }> = [
     { id: "dark", label: t("ajustes.temaOscuro"), icon: Moon },
     { id: "light", label: t("ajustes.temaClaro"), icon: Sun },
+    { id: "custom", label: t("ajustes.temaPersonalizado"), icon: Palette },
   ];
+
+  async function pickBackgroundFile(): Promise<void> {
+    setPicking(true);
+    try {
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const selected = await open({
+        multiple: false,
+        directory: false,
+        filters: [
+          {
+            name: "Images",
+            extensions: ["png", "jpg", "jpeg", "webp", "gif", "bmp", "svg"],
+          },
+        ],
+      });
+      if (typeof selected === "string" && selected !== "") {
+        const { convertFileSrc } = await import("@tauri-apps/api/core");
+        setBackground(convertFileSrc(selected));
+      }
+    } catch {
+      // Sin plugin (navegador) o diálogo cancelado/fallido: se mantiene el fondo actual.
+    } finally {
+      setPicking(false);
+    }
+  }
 
   return (
     <div
@@ -117,7 +172,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               {t("ajustes.apariencia")}
             </h3>
             <p className="text-xs text-zinc-500">{t("ajustes.aparienciaDesc")}</p>
-            <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={t("ajustes.apariencia")}>
+            <div className="grid grid-cols-3 gap-3" role="radiogroup" aria-label={t("ajustes.apariencia")}>
               {themes.map((option) => {
                 const active = theme === option.id;
                 return (
@@ -147,6 +202,90 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 );
               })}
             </div>
+            {theme === "custom" ? (
+              <div className="flex flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-xs font-medium text-zinc-200">{t("ajustes.acento")}</p>
+                  <p className="text-xs text-zinc-500">{t("ajustes.acentoDesc")}</p>
+                  <div
+                    className="flex items-center gap-2"
+                    role="radiogroup"
+                    aria-label={t("ajustes.acento")}
+                  >
+                    {ACCENTS.map((id) => {
+                      const active = accent === id;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          title={id}
+                          aria-label={id}
+                          onClick={() => {
+                            setAccent(id);
+                          }}
+                          className={`flex h-7 w-7 items-center justify-center rounded-full border transition-colors duration-150 ${
+                            active
+                              ? "border-white ring-2 ring-white/60"
+                              : "border-zinc-600 hover:border-zinc-400"
+                          }`}
+                          style={{ backgroundColor: ACCENT_DOTS[id] }}
+                        >
+                          {active ? <Check className="h-3.5 w-3.5 text-white" /> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-xs font-medium text-zinc-200">{t("ajustes.fondo")}</p>
+                  <p className="text-xs text-zinc-500">{t("ajustes.fondoDesc")}</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      aria-pressed={background === ""}
+                      onClick={() => {
+                        setBackground("");
+                      }}
+                      className={`rounded-md border px-2 py-1 text-[11px] font-medium transition-colors duration-150 ${
+                        background === ""
+                          ? "border-sky-500/60 bg-sky-500/10 text-sky-200"
+                          : "border-zinc-700 text-zinc-300 hover:border-zinc-600 hover:text-zinc-100"
+                      }`}
+                    >
+                      {t("ajustes.fondoNinguno")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void pickBackgroundFile();
+                      }}
+                      disabled={picking}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 px-2 py-1 text-[11px] font-medium text-zinc-300 transition-colors duration-150 hover:border-zinc-600 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      <FolderOpen className="h-3.5 w-3.5" />
+                      {t("ajustes.fondoExaminar")}
+                    </button>
+                    <span className="text-[11px] text-zinc-500">{t("ajustes.fondoArchivo")}</span>
+                  </div>
+                  <input
+                    type="text"
+                    spellCheck={false}
+                    aria-label={t("ajustes.fondoUrl")}
+                    placeholder={t("ajustes.fondoUrlPlaceholder")}
+                    value={isAssetSrc(background) ? "" : background}
+                    onChange={(event) => {
+                      setBackground(event.target.value);
+                    }}
+                    className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-100 outline-none transition-colors duration-150 placeholder:text-zinc-600 hover:border-zinc-600 focus:border-sky-400"
+                  />
+                  {isAssetSrc(background) ? (
+                    <p className="truncate text-[11px] text-zinc-500">{background}</p>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </section>
 
           {/* Grupo 2: Tamaño de interfaz */}
