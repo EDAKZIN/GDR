@@ -7,6 +7,11 @@
     "core:default",
     "opener:default",
     "dialog:default",
+    "fs:default",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "$APPDATA" }, { "path": "$APPDATA/**" }, { "path": "$HOME/**" }]
+    },
     "sql:default",
     "sql:allow-load",
     "sql:allow-select",

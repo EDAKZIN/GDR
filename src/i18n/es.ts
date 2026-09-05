@@ -28,6 +28,7 @@ export const es = {
     fondoUrlPlaceholder: "https://…",
     fondoArchivo: "Archivo local",
     fondoExaminar: "Examinar…",
+    fondoError: "No se pudo usar la imagen: {n}",
     tamano: "Tamaño de interfaz",
     tamanoDesc: "Zoom de la interfaz (70%–130%).",
     tamanoAtajos: "Atajos: Ctrl + − / Ctrl + +.",

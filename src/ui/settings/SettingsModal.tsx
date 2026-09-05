@@ -92,6 +92,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const background = useSyncExternalStore(subscribeBackground, getBackground);
   const zoom = useSyncExternalStore(subscribeZoom, getZoom);
   const [picking, setPicking] = useState(false);
+  const [bgError, setBgError] = useState("");
 
   // Esc cierra el modal.
   useEffect(() => {
@@ -114,6 +115,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
 
   async function pickBackgroundFile(): Promise<void> {
     setPicking(true);
+    setBgError("");
     try {
       const { open } = await import("@tauri-apps/plugin-dialog");
       const selected = await open({
@@ -126,12 +128,21 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           },
         ],
       });
-      if (typeof selected === "string" && selected !== "") {
-        const { convertFileSrc } = await import("@tauri-apps/api/core");
-        setBackground(convertFileSrc(selected));
+      if (typeof selected !== "string" || selected === "") {
+        return;
       }
-    } catch {
-      // Sin plugin (navegador) o diálogo cancelado/fallido: se mantiene el fondo actual.
+      const { appDataDir, join } = await import("@tauri-apps/api/path");
+      const { mkdir, copyFile } = await import("@tauri-apps/plugin-fs");
+      const { convertFileSrc } = await import("@tauri-apps/api/core");
+      const dir = await join(await appDataDir(), "backgrounds");
+      await mkdir(dir, { recursive: true });
+      const raw = selected.split(/[/\\]/).pop() ?? "";
+      const safe = raw.replace(/[^\w.\-]+/g, "_").slice(-80) || "fondo";
+      const dest = await join(dir, `${String(Date.now())}-${safe}`);
+      await copyFile(selected, dest);
+      setBackground(convertFileSrc(dest));
+    } catch (error) {
+      setBgError(error instanceof Error ? error.message : String(error));
     } finally {
       setPicking(false);
     }
@@ -271,6 +282,11 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                     </button>
                     <span className="text-[11px] text-zinc-500">{t("ajustes.fondoArchivo")}</span>
                   </div>
+                  {bgError !== "" ? (
+                    <p role="alert" className="text-[11px] text-rose-300">
+                      {t("ajustes.fondoError", { n: bgError })}
+                    </p>
+                  ) : null}
                   <input
                     type="text"
                     spellCheck={false}
@@ -278,6 +294,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                     placeholder={t("ajustes.fondoUrlPlaceholder")}
                     value={isAssetSrc(background) ? "" : background}
                     onChange={(event) => {
+                      setBgError("");
                       setBackground(event.target.value);
                     }}
                     className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-100 outline-none transition-colors duration-150 placeholder:text-zinc-600 hover:border-zinc-600 focus:border-sky-400"

@@ -29,6 +29,7 @@ export const en: Dictionary = {
     fondoUrlPlaceholder: "https://…",
     fondoArchivo: "Local file",
     fondoExaminar: "Browse…",
+    fondoError: "Could not use the image: {n}",
     tamano: "Interface size",
     tamanoDesc: "Interface zoom (70%–130%).",
     tamanoAtajos: "Shortcuts: Ctrl + − / Ctrl + +.",
