@@ -103,8 +103,9 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const zoom = useSyncExternalStore(subscribeZoom, getZoom);
   const [picking, setPicking] = useState(false);
   const [bgError, setBgError] = useState("");
-  const bgSource: BgSource =
-    background === "" ? "none" : isAssetSrc(background) ? "file" : "url";
+  const [source, setSource] = useState<BgSource>(() =>
+    background === "" ? "none" : isAssetSrc(background) ? "file" : "url",
+  );
 
   // Esc cierra el modal.
   useEffect(() => {
@@ -153,6 +154,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
       const dest = await join(dir, `${String(Date.now())}-${safe}`);
       await copyFile(selected, dest);
       setBackground(convertFileSrc(dest));
+      setSource("file");
     } catch (error) {
       setBgError(error instanceof Error ? error.message : String(error));
     } finally {
@@ -268,10 +270,11 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                   <p className="text-xs font-medium text-zinc-200">{t("ajustes.fondo")}</p>
                   <select
                     aria-label={t("ajustes.fondoFuente")}
-                    value={bgSource}
+                    value={source}
                     onChange={(event) => {
                       const next = event.target.value as BgSource;
                       setBgError("");
+                      setSource(next);
                       if (next === "none") {
                         setBackground("");
                       } else if (next === "url") {
@@ -296,7 +299,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                       </option>
                     ))}
                   </select>
-                  {bgSource === "url" ? (
+                  {source === "url" ? (
                     <input
                       type="text"
                       spellCheck={false}
@@ -310,7 +313,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                       className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-100 outline-none transition-colors duration-150 placeholder:text-zinc-600 hover:border-zinc-600 focus:border-sky-400"
                     />
                   ) : null}
-                  {bgSource === "file" ? (
+                  {source === "file" ? (
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
