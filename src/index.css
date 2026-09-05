@@ -211,8 +211,10 @@
 /*
  * FONDO PROPIO del tema personalizado: la imagen vive en el body y un velo
  * oscuro fijo garantiza la legibilidad en ambos temas; la raíz de React se
- * transparenta para dejarla ver mientras paneles y tarjetas (opacos)
- * conservan su contraste. Sin data-background no hay ningún cambio visual.
+ * transparenta para dejarla ver y las superficies principales (barra, drawer
+ * y área principal) se vuelven translúcidas con blur sutil. Los modales
+ * siguen opacos para conservar su contraste. Sin data-background no hay
+ * ningún cambio visual.
  */
 html[data-background="image"] body {
   background-image: var(--gdr-bg-image);
@@ -239,6 +241,27 @@ html[data-background="image"] #root {
 
 html[data-background="image"] #root > div {
   background-color: transparent;
+}
+
+/*
+ * Fondo en TODA la UI: con imagen activa, la barra superior, el drawer y las
+ * superficies del área principal se vuelven translúcidos con blur sutil para
+ * dejar ver la imagen. Los selectores excluyen los modales ([role="dialog"]
+ * vive fuera de header/aside/main), que siguen opacos para la legibilidad.
+ */
+html[data-background="image"] #root > div > div > header,
+html[data-background="image"] #root > div > div > div > aside {
+  background-color: color-mix(in srgb, var(--color-zinc-950) 72%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+html[data-background="image"] #root > div > div > div > main .bg-zinc-950 {
+  background-color: color-mix(in srgb, var(--color-zinc-950) 78%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+html[data-background="image"] #root > div > div > div > main .bg-zinc-900\/70 {
+  backdrop-filter: blur(8px);
 }
 
 /*
