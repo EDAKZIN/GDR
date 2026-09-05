@@ -395,7 +395,7 @@ function FileDetailVisual() {
 }
 
 function SettingsThemeVisual({ t }: { t: TranslateFn }) {
-  const dots = ["#0ea5e9", "#10b981", "#f59e0b", "#f43f5e", "#8b5cf6"];
+  const dots = ["#0ea5e9", "#10b981", "#14b8a6", "#84cc16", "#f59e0b", "#f97316", "#f43f5e", "#8b5cf6"];
   const cards = [
     { icon: Moon, label: t("ajustes.temaOscuro"), active: true, dark: true },
     { icon: Sun, label: t("ajustes.temaClaro"), active: false, dark: false },
@@ -453,11 +453,12 @@ function SettingsThemeVisual({ t }: { t: TranslateFn }) {
             ))}
           </div>
           <p className="text-[8px] font-medium text-zinc-200">{t("ajustes.fondo")}</p>
-          <div className="flex items-center gap-1.5">
-            <span className="rounded-md border border-sky-500/60 bg-sky-500/10 px-1.5 py-0.5 text-[8px] font-medium text-sky-200">
+          <div className="flex flex-col gap-1.5">
+            <span className="flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-[8px] text-zinc-200">
               {t("ajustes.fondoNinguno")}
+              <ChevronDown className="ml-auto h-2.5 w-2.5 text-zinc-500" />
             </span>
-            <span className="rounded-md border border-zinc-700 px-1.5 py-0.5 text-[8px] font-medium text-zinc-300">
+            <span className="w-fit rounded-md border border-zinc-700 px-1.5 py-0.5 text-[8px] font-medium text-zinc-300">
               {t("ajustes.fondoExaminar")}
             </span>
           </div>
