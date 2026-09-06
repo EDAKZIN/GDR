@@ -1,6 +1,6 @@
 [package]
 name = "gdr"
-version = "4.3.3"
+version = "4.6.2"
 description = "A Tauri App"
 authors = ["EDAKZIN"]
 edition = "2021"
