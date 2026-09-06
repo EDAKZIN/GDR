@@ -43,6 +43,11 @@ src-tauri/gen/schemas
 # Test coverage
 coverage
 
+# Playwright (temporales de capturas/pruebas)
+test-results/
+playwright-report/
+playwright/.cache/
+
 # TypeScript incremental builds
 *.tsbuildinfo
 
