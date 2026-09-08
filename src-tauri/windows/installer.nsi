@@ -70,6 +70,9 @@ ${StrLoc}
 !define ESTIMATEDSIZE "{{estimated_size}}"
 !define STARTMENUFOLDER "{{start_menu_folder}}"
 
+LangString updateOption ${LANG_SPANISH} "Actualizar a ${VERSION} sin desinstalar (recomendado)"
+LangString updateOption ${LANG_ENGLISH} "Update to ${VERSION} without uninstalling (recommended)"
+
 Var PassiveMode
 Var UpdateMode
 Var NoShortcutMode
@@ -242,11 +245,7 @@ Function PageReinstall
   ${ElseIf} $R0 = 1
     StrCpy $R1 "$(olderOrUnknownVersionInstalled)"
     StrCpy $R2 "$(uninstallBeforeInstalling)"
-    ${If} $LANGUAGE == ${LANG_SPANISH}
-      StrCpy $R3 "Actualizar a ${VERSION} sin desinstalar (recomendado)"
-    ${Else}
-      StrCpy $R3 "Update to ${VERSION} without uninstalling (recommended)"
-    ${EndIf}
+    StrCpy $R3 "$(updateOption)"
     !insertmacro MUI_HEADER_TEXT "$(alreadyInstalled)" "$(choowHowToInstall)"
   ; Downgrading
   ${ElseIf} $R0 = -1
