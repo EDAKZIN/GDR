@@ -1,10 +1,15 @@
 ﻿# GDR
 
-Hi, I'm **EDAKZIN** and this is my personal data manager. I built it because
-I was tired of squeezing my information into apps that already decided how I
-should organize it: here nothing is hardcoded. You create your sections, build
-your form templates with whatever fields you want, and store your records.
-The app just gives you the engine.
+Hi, I'm **EDAKZIN**. I built GDR because I'm tired of forgetting everything and
+I never found an app that adapts to how I like to organize information, let
+alone without jumping between different apps just to jot things down. GDR
+solves that one specific problem: it gives you the freedom to store whatever
+you want, however you want. It's not perfect and it has its limitations, but
+I'll take that over fighting the tool.
+
+Here nothing is hardcoded: you create your sections, build your form
+templates with whatever fields you want, and store your records. The app just
+gives you the engine.
 
 It's built with **Tauri 2**, **React 19** and **SQLite**, and it installs like
 a regular desktop app on Windows.

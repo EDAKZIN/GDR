@@ -1,10 +1,15 @@
 ﻿# GDR
 
-Hola, soy **EDAKZIN** y este es mi gestor de datos personales. Lo hice porque
-estaba cansado de encajar mi información en apps que ya decidieron por mí cómo
-organizarla: aquí no hay nada hardcodeado. Tú creas tus secciones, armas tus
-plantillas de formularios con los campos que quieras y guardas tus registros.
-La app solo te da el motor.
+Hola, soy **EDAKZIN**. Hice GDR porque estoy cansado de olvidar todo y nunca
+encontré una app que se adaptara a como me gusta organizar la información, y
+mucho menos sin tenerme saltando entre diferentes apps para anotar cosas. GDR
+resuelve ese problema puntual: te da la libertad de guardar como quieras lo
+que quieras. No es perfecto y tiene sus limitaciones, pero prefiero eso a
+pelearme con la herramienta.
+
+Aquí no hay nada hardcodeado: tú creas tus secciones, armas tus plantillas de
+formularios con los campos que quieras y guardas tus registros. La app solo te
+da el motor.
 
 Está construida con **Tauri 2**, **React 19** y **SQLite**, y se instala como
 una app de escritorio normal en Windows.
