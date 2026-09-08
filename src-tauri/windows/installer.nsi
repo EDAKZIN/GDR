@@ -242,7 +242,11 @@ Function PageReinstall
   ${ElseIf} $R0 = 1
     StrCpy $R1 "$(olderOrUnknownVersionInstalled)"
     StrCpy $R2 "$(uninstallBeforeInstalling)"
-    StrCpy $R3 "$(dontUninstall)"
+    ${If} $LANGUAGE == ${LANG_SPANISH}
+      StrCpy $R3 "Actualizar a ${VERSION} sin desinstalar (recomendado)"
+    ${Else}
+      StrCpy $R3 "Update to ${VERSION} without uninstalling (recommended)"
+    ${EndIf}
     !insertmacro MUI_HEADER_TEXT "$(alreadyInstalled)" "$(choowHowToInstall)"
   ; Downgrading
   ${ElseIf} $R0 = -1
