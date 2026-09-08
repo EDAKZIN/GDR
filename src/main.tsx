@@ -7,6 +7,7 @@ import { runMigrations } from "./database/migrations/runner";
 import { createSearchRepository } from "./database/repositories";
 import { translate } from "./i18n";
 import { applyStoredTheme } from "./theme";
+import { restoreBackgroundFromDisk } from "./backgroundFiles";
 import { applyStoredZoom } from "./uiScale";
 import { useSectionStore } from "./stores";
 
@@ -52,6 +53,14 @@ async function bootstrap(): Promise<void> {
   } catch (error) {
     console.error("Error al inicializar la base de datos:", error);
     fatal = error;
+  }
+
+  // El fondo en disco manda como la db: si localStorage perdió la ruta
+  // (perfil nuevo, dev vs release) se adopta la imagen de backgrounds.
+  try {
+    await restoreBackgroundFromDisk();
+  } catch (error) {
+    console.error("Error al restaurar el fondo guardado:", error);
   }
 
   const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
