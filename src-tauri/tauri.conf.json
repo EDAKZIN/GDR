@@ -45,7 +45,7 @@
         "installerIcon": "icons/icon.ico",
         "installerHooks": "./windows/installer-hooks.nsh",
         "template": "windows/installer.nsi",
-        "languages": ["Spanish"],
+        "languages": ["Spanish", "English"],
         "displayLanguageSelector": false
       }
     }
