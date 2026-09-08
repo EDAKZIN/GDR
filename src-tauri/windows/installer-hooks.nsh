@@ -1,9 +1,6 @@
 ; Hooks NSIS para el instalador de GDR.
-; Nota: el texto del MessageBox es UI localizable (los idiomas del
-; instalador se configuran en bundle > windows > nsis > languages).
-
-LangString keepDataQuestion ${LANG_SPANISH} "¿Deseas conservar tus datos? Se mantendrán para una futura reinstalación."
-LangString keepDataQuestion ${LANG_ENGLISH} "Do you want to keep your data? It will be kept for a future reinstall."
+; Nota: los textos (keepDataQuestion) se definen en installer.nsi
+; después de MUI_LANGUAGE, si van antes NSIS los asigna mal y quedan vacíos.
 
 !macro NSIS_HOOK_POSTUNINSTALL
   ${If} $UpdateMode <> 1

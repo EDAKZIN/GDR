@@ -70,9 +70,6 @@ ${StrLoc}
 !define ESTIMATEDSIZE "{{estimated_size}}"
 !define STARTMENUFOLDER "{{start_menu_folder}}"
 
-LangString updateOption ${LANG_SPANISH} "Actualizar a ${VERSION} sin desinstalar (recomendado)"
-LangString updateOption ${LANG_ENGLISH} "Update to ${VERSION} without uninstalling (recommended)"
-
 Var PassiveMode
 Var UpdateMode
 Var NoShortcutMode
@@ -474,6 +471,11 @@ FunctionEnd
 {{#each language_files}}
   !include "{{this}}"
 {{/each}}
+
+LangString updateOption ${LANG_SPANISH} "Actualizar a ${VERSION} sin desinstalar (recomendado)"
+LangString updateOption ${LANG_ENGLISH} "Update to ${VERSION} without uninstalling (recommended)"
+LangString keepDataQuestion ${LANG_SPANISH} "¿Deseas conservar tus datos? Se mantendrán para una futura reinstalación."
+LangString keepDataQuestion ${LANG_ENGLISH} "Do you want to keep your data? It will be kept for a future reinstall."
 
 Function .onInit
   ${GetOptions} $CMDLINE "/P" $PassiveMode
