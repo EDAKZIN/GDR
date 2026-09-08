@@ -1,57 +1,74 @@
 ﻿# GDR
 
-**GDR** es una aplicación de escritorio para organizar datos personales,
-construida por **EDAKZIN** con **Tauri 2**, **React** y **SQLite**. Es un motor
-flexible: el usuario define sus propias secciones jerárquicas, plantillas de
-formularios y campos para organizar registros. Nada está hardcodeado: la
-estructura la decide el usuario en tiempo de ejecución desde la propia interfaz.
+Hola, soy **EDAKZIN** y este es mi gestor de datos personales. Lo hice porque
+estaba cansado de encajar mi información en apps que ya decidieron por mí cómo
+organizarla: aquí no hay nada hardcodeado. Tú creas tus secciones, armas tus
+plantillas de formularios con los campos que quieras y guardas tus registros.
+La app solo te da el motor.
 
-## Características
+Está construida con **Tauri 2**, **React 19** y **SQLite**, y se instala como
+una app de escritorio normal en Windows.
 
-- **Secciones jerárquicas o planas:** cada sección puede ser un contenedor con
-  subsecciones o una lista directa de registros.
-- **Plantillas de formularios con 14 tipos de campo:** texto, texto largo,
-  número, booleano, fecha, fecha y hora, URL, correo electrónico, contraseña,
-  selección, selección múltiple, etiquetas, ruta de archivo e imagen.
-- **Registros con dos vistas:** tabla densa para revisar muchos registros a la
-  vez y ficha de detalle para verlos en profundidad.
-- **Búsqueda global predictiva (Ctrl+K):** basada en FTS5, con filtros por tipo
-  de campo e historial persistente de búsquedas. Nunca indexa contraseñas.
-- **Papeleras con restauración:** borrado suave (soft delete) en todos los
-  niveles — secciones, formularios, campos y registros — con posibilidad de
-  restaurarlos.
-- **Reordenación drag & drop manteniendo presionado** sobre el grip del
-  elemento, sin arrastres accidentales.
-- **Temas oscuro y claro**, aplicados al instante desde Ajustes.
-- **Idiomas español e inglés**, seleccionables en Ajustes.
-- **Iconos personalizados por sección:** nombres de iconos Lucide o imágenes
-  por URL.
+## Qué puedes hacer
 
-## Requisitos
+- **Secciones a tu manera:** cada sección puede ser un contenedor con hasta 5
+  subsecciones o una lista plana que va directo a los registros.
+- **Formularios con 16 tipos de campo:** texto, texto largo, número, sí/no,
+  fecha, fecha y hora, teléfono (con validación real), correo, URL,
+  contraseña, selección, selección múltiple, etiquetas, calificación, ruta de
+  archivo e imagen.
+- **Dos vistas para tus registros:** tabla densa para revisar muchos de golpe
+  y ficha de detalle para verlos con calma.
+- **Búsqueda global con `Ctrl+F`:** rapidísima gracias a FTS5, tolera que
+  escribas sin acentos y guarda tu historial. Las contraseñas jamás se
+  indexan, por diseño.
+- **Papeleras con restauración:** todo se borra suave primero (secciones,
+  formularios, campos y registros). El borrado permanente solo existe dentro
+  de la papelera, para que no pierdas nada por accidente.
+- **Reordenar manteniendo presionado:** ~350 ms sobre el elemento y lo
+  arrastras. Así no hay reordenamientos accidentales.
+- **Tres temas:** oscuro, claro y personalizado (con tu color de acento y tu
+  propia imagen de fondo, por archivo o por URL). Más zoom de interfaz de
+  70% a 130% con `Ctrl +` / `Ctrl -`.
+- **Español e inglés**, cambiables en Ajustes.
+- **Iconos por sección o formulario:** nombre de icono Lucide o imagen por
+  URL.
+- **Tutorial incluido:** la primera vez la app te pasea por lo esencial.
 
-Para usuarios basta descargar el instalador; para desarrollar necesitas:
+## Tus datos (léeme, esto importa)
 
-| Requisito | Descripción |
-| --- | --- |
-| [Node.js](https://nodejs.org/) | LTS recomendado |
-| [Rust](https://www.rust-lang.org/tools/install) | Toolchain estable |
-| Windows 10/11 | Para construir el instalador NSIS |
+Todo vive en tu máquina, en `%APPDATA%\com.edakzin.gdr`:
 
-## Instalación (usuarios)
+| Qué           | Dónde          | Notas                                                        |
+| ------------- | -------------- | ------------------------------------------------------------ |
+| Base de datos | `gdr.db`       | Se crea sola al primer arranque, con migraciones versionadas |
+| Fondos        | `backgrounds/` | Tus imágenes de fondo, copiadas aquí al elegirlas            |
 
-1. Descarga el instalador desde la página de
+Tres cosas que quiero que sepas:
+
+1. **Al desinstalar te pregunto si quieres conservar tus datos.** Si dices
+   que sí, la carpeta se queda y al reinstalar todo sigue ahí. Si dices que
+   no, se borra completa.
+2. **Al actualizar te ofrezco no desinstalar.** El instalador detecta tu
+   versión anterior y te deja actualizar encima, sin tocar tus datos.
+3. **Si tu fondo se pierde, lo recupero del disco.** La ruta del fondo vive
+   en la app, pero el archivo vive en `backgrounds/`; si un día no coinciden
+   (perfil nuevo, reinstalación), al arrancar adopto la imagen más reciente
+   que encuentre ahí y limpio las huérfanas.
+
+## Instalación
+
+1. Descarga el instalador desde
    [GitHub Releases](https://github.com/EDAKZIN/GDR/releases):
-   - `x64`: instalador NSIS de 64 bits (recomendado).
-   - `x86`: instalador de 32 bits, para sistemas Windows de 32 bits.
-2. Ejecuta el instalador. Se instala solo para tu usuario (`currentUser`),
-   sin necesidad de permisos de administrador.
-
-Al desinstalar, el desinstalador **pregunta si deseas conservar tus datos**:
-si respondes «Sí», se mantienen en `%APPDATA%\com.edakzin.gdr` y estarán
-disponibles si reinstalas más adelante; si respondes «No», se elimina la
-carpeta completa de datos.
+   - `x64`: 64 bits, el de la mayoría.
+   - `x86`: 32 bits, para equipos viejos.
+2. Ejecútalo. Se instala solo para tu usuario, sin pedirte administrador.
 
 ## Desarrollo
+
+Necesitas [Node.js](https://nodejs.org/) LTS, el toolchain estable de
+[Rust](https://www.rust-lang.org/tools/install) y Windows 10/11 para el
+instalador NSIS.
 
 ```bash
 git clone https://github.com/EDAKZIN/GDR.git
@@ -60,113 +77,85 @@ npm install
 npm run tauri dev
 ```
 
-La base de datos SQLite (`gdr.db`) se crea automáticamente al arrancar la app,
-aplicando las migraciones SQL versionadas de `src/database/migrations/`.
+| Comando                       | Para qué                                     |
+| ----------------------------- | -------------------------------------------- |
+| `npm run tauri dev`           | La app en modo desarrollo                    |
+| `npm run build:installer`     | Instalador x64                               |
+| `npm run build:installer:x86` | Instalador x86                               |
+| `npm run build:installer:all` | Ambos                                        |
+| `npm run lint`                | Revisar el código con ESLint                 |
+| `npm run format`              | Formatear todo con Prettier                  |
+| `npm run migrate`             | Validar las migraciones SQL                  |
+| `cargo check`                 | Revisar el backend Rust (desde `src-tauri/`) |
 
-### Comandos disponibles
-
-| Comando | Descripción |
-| --- | --- |
-| `npm run tauri dev` | Ejecuta la app en modo desarrollo |
-| `npm run lint` | ESLint |
-| `npm run format` | Prettier |
-| `npm run migrate` | Valida las migraciones SQL del proyecto |
-| `cargo check` | Verificación del backend Rust (en `src-tauri/`) |
-
-## Compilación de instaladores
-
-```bash
-npm run build:installer        # instalador x64 (tauri build)
-npm run build:installer:x86    # instalador x86 (target i686-pc-windows-msvc)
-npm run build:installer:all    # ambos instaladores
-```
-
-El bundle usa NSIS con modo de instalación `currentUser` e incluye hooks de
-instalador/desinstalador en `src-tauri/windows/installer-hooks.nsh`.
-
-## Estructura del proyecto
+## Cómo está organizado
 
 ```
 GDR/
 ├── src/
-│   ├── core/                  # Dominio puro: modelos Zod, tipos y registro de tipos de campo
-│   │   ├── fields/
-│   │   ├── forms/
-│   │   ├── modules/
-│   │   ├── records/
-│   │   ├── search/
-│   │   ├── sections/
-│   │   └── utils/
-│   ├── database/              # Cliente SQLite (plugin-sql), migraciones y repositorios
-│   │   ├── migrations/        # Migraciones SQL versionadas + índice FTS5
-│   │   ├── repositories/
-│   │   ├── schema/
-│   │   └── client.ts
-│   ├── i18n/                  # Internacionalización propia (es/en), ver src/i18n/README.md
-│   ├── modules/               # Módulos integrados
-│   ├── stores/                # Estado global con Zustand (secciones, registros, UI)
-│   ├── ui/                    # Componentes React organizados por módulo
-│   │   ├── components/
-│   │   ├── forms/fields/      # Un componente por cada tipo de campo
-│   │   ├── menu/
-│   │   ├── navigation/
-│   │   ├── screens/
-│   │   ├── search/            # Búsqueda global Ctrl+K
-│   │   ├── sections/
-│   │   ├── settings/
-│   │   └── workspace/         # Tabla de registros, fichas y modales
-│   ├── App.tsx
-│   ├── index.css
-│   ├── main.tsx
-│   └── theme.ts               # Tema oscuro/claro persistido en localStorage
+│   ├── core/            # Dominio puro, sin SQL: modelos Zod y registro de tipos de campo
+│   │   ├── fields/      # Los 16 tipos: validación y serialización JSON
+│   │   ├── forms/       # Modelos de formularios
+│   │   ├── records/     # Entidades y orden de registros
+│   │   ├── search/      # Normalización y tokenizado para FTS5
+│   │   ├── sections/    # Jerarquía, allow_children e iconos
+│   │   └── utils/       # Tiempo relativo, uuid
+│   ├── database/        # Lo único que habla SQL
+│   │   ├── migrations/  # 0001 a 0007 + runner idempotente
+│   │   ├── repositories/# sections, forms, fields, records, search
+│   │   ├── schema/      # Esquema tipado con Drizzle
+│   │   └── client.ts    # Conexión única a sqlite:gdr.db
+│   ├── i18n/            # Mi sistema de idiomas, sin dependencias (es/en)
+│   ├── stores/          # Estado global con Zustand (UI, secciones, registros)
+│   ├── ui/              # React por módulo: screens, workspace, search, settings...
+│   ├── App.tsx          # Layout raíz y atajos globales
+│   ├── backgroundFiles.ts # Fondos en backgrounds/ + recuperación al arrancar
+│   ├── main.tsx         # Bootstrap: migraciones, índice FTS, fondo
+│   ├── theme.ts         # Temas persistidos en localStorage
+│   └── uiScale.ts       # Zoom 70–130 persistido
 ├── scripts/
-│   └── migrate.mjs
-└── src-tauri/                 # Backend Tauri/Rust y configuración del bundle NSIS
-    ├── capabilities/
-    ├── icons/
-    ├── src/
-    └── windows/installer-hooks.nsh
+│   └── migrate.mjs      # Validador de migraciones (numeración y vacías)
+└── src-tauri/           # Backend Rust y bundle NSIS
+    ├── capabilities/    # Permisos de plugins (fs, sql, dialog...)
+    ├── windows/         # Plantilla installer.nsi + hooks (ES/EN, update, keep-data)
+    └── tauri.conf.json  # com.edakzin.gdr, currentUser, asset scope $APPDATA
 ```
 
-Arquitectura en capas:
+La regla de oro: `UI (React) → stores (Zustand) → repositorios → SQLite / FTS5`.
+Las pantallas nunca tocan SQL; los repositorios son los únicos que lo ejecutan.
 
-```
-UI (React) → stores (Zustand) → repositorios → SQLite / FTS5
-```
+## Idiomas de la app
+
+El sistema lo hice yo, mínimo y sin dependencias: español (`es`) manda y el
+inglés (`en`) tiene que tener exactamente las mismas claves (TypeScript lo
+exige por tipos). El idioma activo se guarda en `localStorage` como
+`gdr.lang`.
+
+¿Quieres agregar otro idioma, digamos francés?
+
+1. Crea `src/i18n/fr.ts` con `export const fr: Dictionary = { … }` traducido.
+2. En `src/i18n/index.tsx` agrega `"fr"` a `LANGS` y el diccionario al
+   `translate`.
+3. Agrega la opción al selector de idioma (usa `setLang("fr")`).
+
+Tienes la guía completa en [`src/i18n/README.md`](src/i18n/README.md).
+
+> Also available in English: [`docs/README.en.md`](docs/README.en.md)
 
 ## Stack
 
-| Tecnología | Uso |
-| --- | --- |
-| [Tauri 2](https://tauri.app/) | Framework de escritorio (Rust + web) |
-| [React 19](https://react.dev/) | Interfaz de usuario |
-| [TypeScript](https://www.typescriptlang.org/) | Tipado estático |
-| [Tailwind CSS v4](https://tailwindcss.com/) | Estilos |
-| [SQLite + FTS5](https://www.sqlite.org/fts5.html) | Persistencia y búsqueda de texto completo |
-| [Drizzle ORM](https://orm.drizzle.team/) | Definición del esquema |
-| [Zod](https://zod.dev/) | Validación de modelos |
-| [Zustand](https://zustand.docs.pmnd.rs/) | Estado global |
-| [Lucide](https://lucide.dev/) | Iconos |
-
-## Internacionalización
-
-La internacionalización es propia, mínima y sin dependencias externas:
-español (`es`) es la fuente de verdad de las claves e inglés (`en`) debe tener
-exactamente las mismas (garantizado por tipado con TypeScript). El idioma activo
-se persiste en `localStorage` con la clave `gdr.lang`.
-
-Para añadir un idioma nuevo (por ejemplo francés):
-
-1. Crea `src/i18n/fr.ts` con `export const fr: Dictionary = { … }` traducido.
-2. En `src/i18n/index.tsx`, añade `"fr"` a la tupla `LANGS` e importa el
-   diccionario en la selección de `translate`.
-3. Añade la entrada del selector de idioma que consuma `setLang("fr")`.
-
-Consulta la guía completa en [`src/i18n/README.md`](src/i18n/README.md).
-
-> Documentación también disponible en inglés:
-> [`docs/README.en.md`](docs/README.en.md)
+| Tecnología                                        | Para qué la uso                         |
+| ------------------------------------------------- | --------------------------------------- |
+| [Tauri 2](https://tauri.app/)                     | App de escritorio (Rust + web)          |
+| [React 19](https://react.dev/)                    | Interfaz                                |
+| [TypeScript](https://www.typescriptlang.org/)     | Que el compilador me atrape los errores |
+| [Tailwind CSS v4](https://tailwindcss.com/)       | Estilos                                 |
+| [SQLite + FTS5](https://www.sqlite.org/fts5.html) | Datos y búsqueda de texto completo      |
+| [Drizzle ORM](https://orm.drizzle.team/)          | Esquema tipado                          |
+| [Zod](https://zod.dev/)                           | Validación de modelos                   |
+| [Zustand](https://zustand.docs.pmnd.rs/)          | Estado global                           |
+| [Lucide](https://lucide.dev/)                     | Iconos                                  |
 
 ## Licencia
 
-[MIT](LICENSE) - Creado por **EDAKZIN**
+[MIT](LICENSE) — hecho por **EDAKZIN**.
