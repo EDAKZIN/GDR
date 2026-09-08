@@ -44,6 +44,7 @@
         "installMode": "currentUser",
         "installerIcon": "icons/icon.ico",
         "installerHooks": "./windows/installer-hooks.nsh",
+        "template": "windows/installer.nsi",
         "languages": ["Spanish"],
         "displayLanguageSelector": false
       }
