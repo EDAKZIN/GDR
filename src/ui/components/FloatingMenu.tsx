@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { getZoom } from "../../uiScale";
 
 /** Rect del botón que abre un menú flotante (de getBoundingClientRect). */
 export interface FloatingMenuAnchor {
@@ -9,11 +11,29 @@ export interface FloatingMenuAnchor {
   bottom: number;
 }
 
+/** Zoom efectivo de la raíz: prefiere currentCSSZoom y cae a uiScale. */
+function getRootZoomFactor(): number {
+  try {
+    const current = (
+      document.documentElement as HTMLElement & { currentCSSZoom?: unknown }
+    ).currentCSSZoom;
+    if (typeof current === "number" && Number.isFinite(current) && current > 0) {
+      return current;
+    }
+  } catch {
+    // Sin acceso al DOM: se usa el zoom guardado.
+  }
+  const stored = getZoom() / 100;
+  return Number.isFinite(stored) && stored > 0 ? stored : 1;
+}
+
 /**
- * Menú contextual anclado con position:fixed al rect del botón que lo abre.
- * Al no vivir dentro del contenedor con overflow/scroll, NUNCA se recorta ni
- * genera scroll interno; se voltea sobre el botón si toca el borde inferior y
- * se ajusta horizontalmente al viewport. Clic fuera lo cierra.
+ * Menú contextual anclado al rect del botón que lo abre.
+ * Se portaliza a body para escapar de ancestros con overflow o
+ * backdrop-filter (el fondo personalizado los añade y convierten al fixed
+ * en relativo al contenedor). Las coordenadas de getBoundingClientRect y
+ * window.innerWidth son visuales, pero el fixed dentro de <html> con zoom
+ * se interpreta en coords de layout: se divide por el zoom raíz.
  */
 export function FloatingMenu({
   anchor,
@@ -36,31 +56,41 @@ export function FloatingMenu({
     }
     const margin = 8;
     const gap = 4;
-    const width = panel.offsetWidth;
-    const height = panel.offsetHeight;
-    const spaceBelow = window.innerHeight - margin - anchor.bottom - gap;
+    const zoom = getRootZoomFactor();
+    // Tamaño y viewport en píxeles visuales; el estilo final se pasa a
+    // coords de layout dividiendo por el zoom.
+    const panelRect = panel.getBoundingClientRect();
+    const width = panelRect.width;
+    const height = panelRect.height;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - margin - anchor.bottom - gap;
     const spaceAbove = anchor.top - gap - margin;
     const flipped = height > spaceBelow && spaceAbove > spaceBelow;
-    let top: number;
-    let maxHeight: number;
+    let visualTop: number;
+    let visualMaxHeight: number;
     if (flipped) {
-      top = Math.max(margin, anchor.top - gap - height);
-      maxHeight = anchor.top - gap - top;
+      visualTop = Math.max(margin, anchor.top - gap - height);
+      visualMaxHeight = anchor.top - gap - visualTop;
     } else {
-      top = Math.min(anchor.bottom + gap, window.innerHeight - margin);
-      maxHeight = window.innerHeight - margin - top;
+      visualTop = Math.min(anchor.bottom + gap, viewportHeight - margin);
+      visualMaxHeight = viewportHeight - margin - visualTop;
     }
-    let left = anchor.right - width;
-    if (left < margin) {
-      left = margin;
+    let visualLeft = anchor.right - width;
+    if (visualLeft < margin) {
+      visualLeft = margin;
     }
-    if (left + width > window.innerWidth - margin) {
-      left = window.innerWidth - margin - width;
+    if (visualLeft + width > viewportWidth - margin) {
+      visualLeft = viewportWidth - margin - width;
     }
-    setPos({ top, left, maxHeight: Math.max(maxHeight, 0) });
+    setPos({
+      top: visualTop / zoom,
+      left: visualLeft / zoom,
+      maxHeight: Math.max(visualMaxHeight, 0) / zoom,
+    });
   }, [anchor]);
 
-  return (
+  return createPortal(
     <>
       <div
         className="fixed inset-0 z-40"
@@ -83,6 +113,7 @@ export function FloatingMenu({
       >
         {children}
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
