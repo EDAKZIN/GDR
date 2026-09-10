@@ -98,7 +98,8 @@ function App() {
   return (
     <ErrorBoundary>
       <I18nProvider>
-        <div className="flex h-screen flex-col overflow-hidden bg-zinc-950 text-zinc-100">
+        {/* Altura compensada por zoom: 100vh dentro de <html> con zoom se escala y deja franja sin pintar. */}
+        <div className="flex h-[calc(100dvh/var(--gdr-zoom,1))] flex-col overflow-hidden bg-zinc-950 text-zinc-100">
           <MenuSidebar>
             <CurrentScreen />
           </MenuSidebar>

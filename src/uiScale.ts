@@ -31,6 +31,8 @@ export function getZoom(): number {
 
 export function applyZoomToDocument(zoom: number): void {
   document.documentElement.style.setProperty("zoom", `${String(zoom)}%`);
+  // Factor para compensar alturas 100vh/dvh y menús fixed bajo zoom.
+  document.documentElement.style.setProperty("--gdr-zoom", String(zoom / 100));
 }
 
 export function setZoom(zoom: number): void {

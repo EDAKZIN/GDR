@@ -70,7 +70,7 @@ async function bootstrap(): Promise<void> {
   if (fatal !== null) {
     root.render(
       <React.StrictMode>
-        <div className="flex h-screen flex-col items-center justify-center gap-3 bg-zinc-950 p-8 text-center">
+        <div className="flex h-[calc(100dvh/var(--gdr-zoom,1))] flex-col items-center justify-center gap-3 bg-zinc-950 p-8 text-center">
           <h1 className="text-lg font-semibold text-rose-400">
             {translate("app.dbErrorTitulo")}
           </h1>

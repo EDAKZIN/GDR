@@ -208,15 +208,22 @@
   --color-sky-400: var(--color-violet-600);
 }
 
+:root {
+  /* Factor de zoom (lo escribe src/uiScale.ts): compensa alturas de viewport. */
+  --gdr-zoom: 1;
+}
+
 /*
- * FONDO PROPIO del tema personalizado: la imagen vive en el body y un velo
- * oscuro fijo garantiza la legibilidad en ambos temas; la raíz de React se
- * transparenta para dejarla ver y las superficies principales (barra, drawer
- * y área principal) se vuelven translúcidas con blur sutil. Los modales
- * siguen opacos para conservar su contraste. Sin data-background no hay
- * ningún cambio visual.
+ * FONDO PROPIO del tema personalizado: la imagen vive en <html> para cubrir
+ * todo el viewport aunque el body sea más bajo (con zoom bajo, h-screen
+ * escalado deja franja sin pintar si la imagen está en el body, cuya altura
+ * depende del contenido). El velo oscuro fijo garantiza la legibilidad; la
+ * raíz de React se transparenta para dejarla ver y las superficies
+ * principales (barra, drawer y área principal) se vuelven translúcidas con
+ * blur sutil. Los modales siguen opacos para conservar su contraste. Sin
+ * data-background no hay ningún cambio visual.
  */
-html[data-background="image"] body {
+html[data-background="image"] {
   background-image: var(--gdr-bg-image);
   background-size: cover;
   background-position: center;

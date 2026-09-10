@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return this.props.children;
     }
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-zinc-950 p-8 text-center">
+      <div className="flex h-[calc(100dvh/var(--gdr-zoom,1))] flex-col items-center justify-center gap-4 bg-zinc-950 p-8 text-center">
         <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500/15 text-rose-300">
           <TriangleAlert className="h-6 w-6" aria-hidden />
         </span>
