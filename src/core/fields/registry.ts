@@ -132,7 +132,7 @@ const passwordHandler = stringType("contrasena");
 const filePathHandler = stringType("rutaArchivo");
 
 const imageHandler = stringType("imagen", (text) =>
-  /^(https?:\/\/|\/|\.?[\\/])/.test(text.trim())
+  /^(https?:\/\/|[a-zA-Z]:[\\/]|\\\\|\/|\.?[\\/])/.test(text.trim())
     ? null
     : translate("campos.validacion.imagenInvalida"),
 );
