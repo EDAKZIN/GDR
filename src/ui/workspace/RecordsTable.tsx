@@ -26,6 +26,7 @@ import { useRecordStore } from "../../stores";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { EmptyState } from "../components/EmptyState";
 import { FloatingMenu, type FloatingMenuAnchor } from "../components/FloatingMenu";
+import { useLocalImageSrc } from "../components/useLocalImageSrc";
 import { RatingStars } from "../forms/fields";
 import {
   btnPrimary,
@@ -94,6 +95,9 @@ function compareValues(a: unknown, b: unknown, type: string): number {
 /** Celda formateada según el tipo: contraseña oculta, booleano como badge… */
 function CellValue({ field, value }: { field: Field; value: unknown }) {
   const { t } = useT();
+  const imageRaw =
+    field.type === "image" && typeof value === "string" && value !== "" ? value : null;
+  const image = useLocalImageSrc(imageRaw);
   if (field.type === "password") {
     const empty = typeof value !== "string" || value === "";
     if (empty) {
@@ -123,11 +127,15 @@ function CellValue({ field, value }: { field: Field; value: unknown }) {
     );
   }
   if (field.type === "image" && typeof value === "string" && value !== "") {
+    if (image.src === null) {
+      return <span className="text-zinc-600">—</span>;
+    }
     return (
       <img
-        src={value}
+        src={image.src}
         alt={field.name}
         loading="lazy"
+        onError={image.handleError}
         className="h-8 w-8 rounded border border-zinc-700 object-cover"
       />
     );

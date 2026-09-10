@@ -36,6 +36,7 @@ import { useRecordStore } from "../../stores";
 import { FieldRenderer } from "../forms/fields";
 import { RatingStars, TelDisplay } from "../forms/fields";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { useLocalImageSrc } from "../components/useLocalImageSrc";
 import {
   btnDangerGhost,
   btnPrimary,
@@ -121,6 +122,8 @@ function ValueRow({
   const handler = getFieldTypeHandler(field.type);
   const empty = handler.isEmpty(value);
   const formatted = empty ? "—" : formatValue(field, value);
+  const imageRaw = field.type === "image" && typeof value === "string" ? value : null;
+  const image = useLocalImageSrc(imageRaw);
 
   let content;
   if (empty) {
@@ -174,25 +177,29 @@ function ValueRow({
   } else if ((field.type === "tags" || field.type === "multiselect") && Array.isArray(value)) {
     content = <ChipList items={value} />;
   } else if (field.type === "image" && typeof value === "string") {
-    content = (
-      <button
-        type="button"
-        title={t("registros.verEnGrande")}
-        className="group relative inline-block max-w-full cursor-zoom-in overflow-hidden rounded-lg border border-zinc-700"
-        onClick={() => {
-          onOpenImage(value);
-        }}
-      >
-        <img
-          src={value}
-          alt={field.name}
-          className="max-h-48 w-auto object-contain transition-transform duration-150 group-hover:scale-[1.02]"
-        />
-        <span className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/60 py-1 text-[10px] uppercase tracking-wide text-zinc-300 opacity-0 transition-opacity group-hover:opacity-100">
-          {t("registros.ampliar")}
-        </span>
-      </button>
-    );
+    content =
+      image.src === null ? (
+        <span className="break-all text-sm text-zinc-600">—</span>
+      ) : (
+        <button
+          type="button"
+          title={t("registros.verEnGrande")}
+          className="group relative inline-block max-w-full cursor-zoom-in overflow-hidden rounded-lg border border-zinc-700"
+          onClick={() => {
+            onOpenImage(value);
+          }}
+        >
+          <img
+            src={image.src}
+            alt={field.name}
+            onError={image.handleError}
+            className="max-h-48 w-auto object-contain transition-transform duration-150 group-hover:scale-[1.02]"
+          />
+          <span className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/60 py-1 text-[10px] uppercase tracking-wide text-zinc-300 opacity-0 transition-opacity group-hover:opacity-100">
+            {t("registros.ampliar")}
+          </span>
+        </button>
+      );
   } else if (field.type === "url" && typeof value === "string") {
     content = (
       <a
@@ -313,6 +320,7 @@ export function RecordModal() {
   const [copiedFieldId, setCopiedFieldId] = useState<string | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const lightbox = useLocalImageSrc(lightboxSrc);
 
   const open = mode !== "closed";
 
@@ -604,11 +612,14 @@ export function RecordModal() {
             setLightboxSrc(null);
           }}
         >
-          <img
-            src={lightboxSrc}
-            alt=""
-            className="max-h-[88vh] max-w-full rounded-lg border border-zinc-700 object-contain shadow-2xl"
-          />
+          {lightbox.src !== null ? (
+            <img
+              src={lightbox.src}
+              alt=""
+              onError={lightbox.handleError}
+              className="max-h-[88vh] max-w-full rounded-lg border border-zinc-700 object-contain shadow-2xl"
+            />
+          ) : null}
           <button
             type="button"
             aria-label={t("registros.cerrarImagen")}
