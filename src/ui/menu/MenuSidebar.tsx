@@ -958,8 +958,8 @@ export function MenuSidebar({ children }: { children: ReactNode }) {
               )}
             </nav>
 
-            {/* Papelera de secciones */}
-            <div className="border-t border-zinc-800">
+            {/* Papelera de secciones: siempre visible al pie (no se encoge con zoom). */}
+            <div className="shrink-0 border-t border-zinc-800">
                 {showTrash ? (
                   <div className="max-h-52 overflow-y-auto px-2 py-2">
                     <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
