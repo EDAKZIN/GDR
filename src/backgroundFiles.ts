@@ -1,4 +1,4 @@
-import { getBackground, getTheme, setBackground, setTheme } from "./theme";
+import { getBackground, setBackground } from "./theme";
 
 const BACKGROUND_PATH_KEY = "gdr.backgroundPath";
 const BACKGROUND_DIR = "backgrounds";
@@ -64,7 +64,7 @@ function baseName(path: string): string {
  * dev vs release), mientras el archivo sigue en disco: en ese caso se
  * adopta la imagen más reciente y se podan las demás para que no queden
  * flotando. Si la ruta guardada sigue válida no toca nada salvo podar
- * huérfanos y reparar el display si falta. Nunca lanza.
+ * huérfanos y reparar el display (la URL cambia entre arranques). Nunca lanza.
  */
 export async function restoreBackgroundFromDisk(): Promise<void> {
   const storedPath = getBackgroundFsPath();
@@ -102,9 +102,12 @@ export async function restoreBackgroundFromDisk(): Promise<void> {
         storedOk = false;
       }
       if (storedOk) {
-        if (getBackground() === "") {
-          const { convertFileSrc } = await import("@tauri-apps/api/core");
-          setBackground(convertFileSrc(storedPath));
+        // La URL de convertFileSrc puede cambiar entre arranques: se repara
+        // siempre, no solo cuando falta el display.
+        const { convertFileSrc } = await import("@tauri-apps/api/core");
+        const fresh = convertFileSrc(storedPath);
+        if (getBackground() !== fresh) {
+          setBackground(fresh);
         }
         await prune(baseName(storedPath));
         return;
@@ -112,6 +115,12 @@ export async function restoreBackgroundFromDisk(): Promise<void> {
     }
     const display = getBackground();
     if (display !== "" && !isFileDisplay(display)) {
+      // Fondo por URL: ningún archivo en disco es vigente; se podan
+      // huérfanos y se limpia una ruta guardada obsoleta.
+      await prune(null);
+      if (storedPath !== null) {
+        await replaceBackground(display, null);
+      }
       return;
     }
     if (names.length === 0) {
@@ -123,9 +132,8 @@ export async function restoreBackgroundFromDisk(): Promise<void> {
     const dest = await join(dir, names[0]);
     const { convertFileSrc } = await import("@tauri-apps/api/core");
     await replaceBackground(convertFileSrc(dest), dest);
-    if (getTheme() !== "custom") {
-      setTheme("custom");
-    }
+    // Sin forzar el tema: el fondo solo se pinta en personalizado (theme.ts)
+    // y el usuario puede quedarse en oscuro/claro con el valor guardado.
     await prune(names[0]);
   } catch {
     // Sin acceso al disco o al bridge: la app arranca con el fondo que haya.
