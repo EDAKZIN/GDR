@@ -20,7 +20,7 @@ a regular desktop app on Windows.
   subsections or a flat list that goes straight to records.
 - **Forms with 16 field types:** text, long text, number, yes/no, date,
   datetime, phone (with real validation), email, URL, password, select,
-  multiselect, tags, rating, file path and image.
+  multiselect, tags, rating, file path and image (URL or local, with Browse).
 - **Two views for your records:** a dense table to scan many at once and a
   detail card to read them calmly.
 - **Global search with `Ctrl+F`:** really fast thanks to FTS5, forgiving when

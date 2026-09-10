@@ -21,7 +21,7 @@ una app de escritorio normal en Windows.
 - **Formularios con 16 tipos de campo:** texto, texto largo, número, sí/no,
   fecha, fecha y hora, teléfono (con validación real), correo, URL,
   contraseña, selección, selección múltiple, etiquetas, calificación, ruta de
-  archivo e imagen.
+  archivo e imagen (URL o local, con Examinar).
 - **Dos vistas para tus registros:** tabla densa para revisar muchos de golpe
   y ficha de detalle para verlos con calma.
 - **Búsqueda global con `Ctrl+F`:** rapidísima gracias a FTS5, tolera que
