@@ -106,6 +106,17 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     background === "" ? "none" : isAssetSrc(background) ? "file" : "url",
   );
 
+  // Si el fondo cambia a un valor no vacío (p. ej. restaurado del disco),
+  // la fuente refleja su tipo; con "" se respeta la intención del usuario.
+  // Ajuste durante el render (patrón oficial de React), sin efectos.
+  const [syncedBackground, setSyncedBackground] = useState(background);
+  if (syncedBackground !== background) {
+    setSyncedBackground(background);
+    if (background !== "") {
+      setSource(isAssetSrc(background) ? "file" : "url");
+    }
+  }
+
   // Esc cierra el modal.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
@@ -131,7 +142,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     }
   }
 
-  async function pickBackgroundFile(): Promise<void> {    setPicking(true);
+  async function pickBackgroundFile(): Promise<void> {
+    setPicking(true);
     setBgError("");
     try {
       const { open } = await import("@tauri-apps/plugin-dialog");
@@ -161,7 +173,6 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
       await replaceBackground(convertFileSrc(dest), dest);
       setSource("file");
       ensureCustomTheme();
-      setSource("file");
     } catch (error) {
       setBgError(error instanceof Error ? error.message : String(error));
     } finally {
