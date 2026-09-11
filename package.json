@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "build:installer": "tauri build",
-    "build:installer:x86": "tauri build -- --target i686-pc-windows-msvc",
+    "build:installer:x86": "tauri build --target i686-pc-windows-msvc",
     "build:installer:all": "npm run build:installer && npm run build:installer:x86",
     "lint": "eslint .",
     "format": "prettier --write .",
