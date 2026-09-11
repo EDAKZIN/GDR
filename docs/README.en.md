@@ -47,18 +47,15 @@ Everything lives on your machine, under `%APPDATA%\com.edakzin.gdr`:
 | Database    | `gdr.db`       | Created automatically on first launch, with versioned migrations |
 | Backgrounds | `backgrounds/` | Your background images, copied here when you pick them           |
 
-Three things I want you to know:
+## Password warning (read this, it matters)
 
-1. **On uninstall I ask whether you want to keep your data.** Say yes and
-   the folder stays, so reinstalling later brings everything back. Say no
-   and the whole data folder is removed.
-2. **On update I offer to install over the previous version.** The installer
-   detects your existing install and lets you update without uninstalling,
-   leaving your data untouched.
-3. **If your background ever gets lost, I recover it from disk.** The
-   background path lives in the app, but the file lives in `backgrounds/`;
-   if they ever disagree (fresh profile, reinstall), on startup I adopt the
-   newest image found there and clean up the orphaned ones.
+GDR has a password field, but its existence doesn't mean it's safe: passwords
+are stored in plain text inside your `gdr.db`, with no encryption whatsoever.
+Anyone who opens that file can read them. I keep them out of the search index
+so they don't spread further, but that's not protection.
+
+If you choose to store passwords here, it's at your own risk and I'm not
+responsible. For real secrets use a dedicated manager.
 
 ## Installation
 
@@ -143,7 +140,7 @@ Want to add another language, say French?
    `translate`.
 3. Add the option to the language selector (it consumes `setLang("fr")`).
 
-Full guide at [`src/i18n/README.md`](../src/i18n/README.md) (Spanish).
+Full guide at [`src/i18n/README.en.md`](../src/i18n/README.en.md).
 
 > También disponible en español: [`README.md`](../README.md)
 

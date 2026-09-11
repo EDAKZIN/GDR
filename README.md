@@ -49,17 +49,15 @@ Todo vive en tu máquina, en `%APPDATA%\com.edakzin.gdr`:
 | Base de datos | `gdr.db`       | Se crea sola al primer arranque, con migraciones versionadas |
 | Fondos        | `backgrounds/` | Tus imágenes de fondo, copiadas aquí al elegirlas            |
 
-Tres cosas que quiero que sepas:
+## Aviso sobre contraseñas (léeme, esto importa)
 
-1. **Al desinstalar te pregunto si quieres conservar tus datos.** Si dices
-   que sí, la carpeta se queda y al reinstalar todo sigue ahí. Si dices que
-   no, se borra completa.
-2. **Al actualizar te ofrezco no desinstalar.** El instalador detecta tu
-   versión anterior y te deja actualizar encima, sin tocar tus datos.
-3. **Si tu fondo se pierde, lo recupero del disco.** La ruta del fondo vive
-   en la app, pero el archivo vive en `backgrounds/`; si un día no coinciden
-   (perfil nuevo, reinstalación), al arrancar adopto la imagen más reciente
-   que encuentre ahí y limpio las huérfanas.
+GDR tiene campo de contraseña, pero que exista no significa que sea seguro:
+se guarda en texto plano dentro de tu `gdr.db`, sin cifrado de ningún tipo.
+Cualquiera que abra ese archivo puede leerlas. Las dejo fuera del índice de
+búsqueda para no regarlas por más lados, pero eso no es protección.
+
+Si decides guardar contraseñas aquí, es bajo tu propio riesgo y no me hago
+responsable. Para secretos de verdad usa un gestor dedicado.
 
 ## Instalación
 
