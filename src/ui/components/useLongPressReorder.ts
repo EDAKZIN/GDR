@@ -21,6 +21,8 @@ const MAX_SCROLL_SPEED_PX = 14;
 const CLAMP_MARGIN_PX = 4;
 /** Duración de las transiciones de colocación (soltar y desplazar vecinos). */
 const SETTLE_MS = 120;
+/** Histéresis del hueco en px: evita exigir puntería exacta y oscilaciones. */
+const HYSTERESIS_PX = 8;
 
 interface DragState {
   id: string;
@@ -37,24 +39,21 @@ function px(value: number): string {
   return `${String(value)}px`;
 }
 
-/** Coloca el ítem arrastrado bajo el puntero, acotado a los bounds del contenedor. */
-function applyDragTransform(
-  drag: DragState,
-  nodes: Map<string, HTMLElement>,
-  container: HTMLElement | null,
-): void {
+/** Coloca el ítem arrastrado bajo el puntero, acotado al viewport. */
+function applyDragTransform(drag: DragState, nodes: Map<string, HTMLElement>): void {
   const node = nodes.get(drag.id);
-  if (node === undefined || container === null) {
+  if (node === undefined) {
     return;
   }
   const rect = node.getBoundingClientRect();
   const flowLeft = rect.left - drag.appliedX;
   const flowTop = rect.top - drag.appliedY;
-  const bounds = container.getBoundingClientRect();
-  const minLeft = bounds.left + CLAMP_MARGIN_PX;
-  const minTop = bounds.top + CLAMP_MARGIN_PX;
-  const maxLeft = Math.max(minLeft, bounds.right - CLAMP_MARGIN_PX - rect.width);
-  const maxTop = Math.max(minTop, bounds.bottom - CLAMP_MARGIN_PX - rect.height);
+  // Al viewport y no al contenedor: el puntero tampoco sale del viewport,
+  // así la tarjeta nunca se congela antes que el puntero y el hueco reacciona.
+  const minLeft = CLAMP_MARGIN_PX;
+  const minTop = CLAMP_MARGIN_PX;
+  const maxLeft = Math.max(minLeft, window.innerWidth - CLAMP_MARGIN_PX - rect.width);
+  const maxTop = Math.max(minTop, window.innerHeight - CLAMP_MARGIN_PX - rect.height);
   const desiredLeft = Math.min(Math.max(drag.pointerX - drag.grabOffsetX, minLeft), maxLeft);
   const desiredTop = Math.min(Math.max(drag.pointerY - drag.grabOffsetY, minTop), maxTop);
   const x = desiredLeft - flowLeft;
@@ -149,10 +148,9 @@ export interface LongPressReorderApi {
  * - pointerdown inicia un timer (~350 ms); soltar antes o desplazarse más
  *   de ~6 px lo cancela, dejando el clic y el scroll táctiles intactos.
  * - Activado: el ítem sigue al puntero mediante `transform: translate3d`
- *   continuo (sin saltos entre slots), siempre dentro de los bounds del
- *   contenedor; el hueco se recalcula en vivo y los vecinos se desplazan
- *   con transición corta (FLIP). Hay auto-scroll al acercarse a los
- *   bordes del contenedor.
+ *   continuo (sin saltos entre slots), acotado al viewport; el hueco se
+ *   recalcula en vivo y los vecinos se desplazan con transición corta
+ *   (FLIP). Hay auto-scroll al acercarse a los bordes del contenedor.
  * - pointerup confirma via `onReorder`; Escape cancela sin tocar datos.
  * - `touch-action: none` solo aplica durante el arrastre activo para no
  *   romper el scroll táctil normal; los botones subir/bajar siguen siendo
@@ -187,26 +185,37 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
       return;
     }
     const current = draftOrderRef.current ?? orderedIdsRef.current;
-    const others = current.filter((id) => id !== drag.id);
+    const dragIndex = current.indexOf(drag.id);
     let insertAt = 0;
-    for (const id of others) {
+    for (let index = 0; index < current.length; index += 1) {
+      if (index === dragIndex) {
+        continue;
+      }
+      const id = current[index];
       const node = itemNodes.current.get(id);
       if (node === undefined) {
         continue;
       }
+      // Centros de origen (se descuenta el FLIP en curso): con centros
+      // visuales el hueco oscila porque el vecino se mueve bajo el puntero.
       const flipOffset = flipOffsetsRef.current.get(id);
       const rect = node.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2 - (flipOffset?.x ?? 0);
       const centerY = rect.top + rect.height / 2 - (flipOffset?.y ?? 0);
+      // Histéresis según el orden vigente: mover el hueco exige sobrepasar el
+      // centro por el margen, y devolverlo exige retrocederlo por el margen.
+      const edgeShift = index < dragIndex ? -HYSTERESIS_PX : HYSTERESIS_PX;
       const sameRow = Math.abs(drag.pointerY - centerY) < rect.height * 0.5;
-      const isAfter = sameRow ? drag.pointerX > centerX : drag.pointerY > centerY;
+      const isAfter = sameRow
+        ? drag.pointerX > centerX + edgeShift
+        : drag.pointerY > centerY + edgeShift;
       if (isAfter) {
         insertAt += 1;
       }
     }
     // Solo re-renderiza cuando el hueco cambia realmente de posición.
-    if (insertAt !== current.indexOf(drag.id)) {
-      const next = [...others];
+    if (insertAt !== dragIndex) {
+      const next = current.filter((id) => id !== drag.id);
       next.splice(insertAt, 0, drag.id);
       const before = new Map<string, { left: number; top: number }>();
       for (const [id, node] of itemNodes.current) {
@@ -220,7 +229,7 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
       // Tras el re-render síncrono el layout ya está aplicado: se anima a los
       // vecinos y se restaura la continuidad visual del ítem arrastrado.
       flipNeighbors(drag.id, before, itemNodes.current, flipOffsetsRef.current, flipTimersRef.current);
-      applyDragTransform(drag, itemNodes.current, containerNode.current);
+      applyDragTransform(drag, itemNodes.current);
     }
   }, []);
 
@@ -266,7 +275,7 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
         if (delta !== 0) {
           scrollEl.scrollTop += delta;
           // Al moverse el contenido cambian las posiciones: recalcular todo.
-          applyDragTransform(drag, itemNodes.current, container);
+          applyDragTransform(drag, itemNodes.current);
           updateTargetIndex();
         }
         scrollRaf.current = requestAnimationFrame(autoScrollTick);
@@ -354,7 +363,7 @@ export function useLongPressReorder(options: LongPressReorderOptions): LongPress
         }
         drag.pointerX = event.clientX;
         drag.pointerY = event.clientY;
-        applyDragTransform(drag, itemNodes.current, containerNode.current);
+        applyDragTransform(drag, itemNodes.current);
         updateTargetIndex();
       };
 
