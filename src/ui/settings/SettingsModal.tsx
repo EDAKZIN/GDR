@@ -71,6 +71,7 @@ const ACCENT_DOTS: Record<Accent, string> = {
   orange: "#f97316",
   rose: "#f43f5e",
   violet: "#8b5cf6",
+  pink: "#f472b6",
 };
 
 function isAssetSrc(value: string): boolean {

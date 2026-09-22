@@ -153,6 +153,20 @@
   --color-sky-950: var(--color-violet-950);
 }
 
+[data-accent="pink"] {
+  --color-sky-50: var(--color-pink-50);
+  --color-sky-100: var(--color-pink-100);
+  --color-sky-200: var(--color-pink-200);
+  --color-sky-300: var(--color-pink-300);
+  --color-sky-400: var(--color-pink-300);
+  --color-sky-500: var(--color-pink-300);
+  --color-sky-600: var(--color-pink-400);
+  --color-sky-700: var(--color-pink-700);
+  --color-sky-800: var(--color-pink-800);
+  --color-sky-900: var(--color-pink-900);
+  --color-sky-950: var(--color-pink-950);
+}
+
 /*
  * Acentos en tema claro: igual que el bloque [data-theme="light"] oscurece
  * los tonos claros de sky para mantener el contraste sobre blanco, aquí se
@@ -206,6 +220,13 @@
   --color-sky-200: var(--color-violet-800);
   --color-sky-300: var(--color-violet-700);
   --color-sky-400: var(--color-violet-600);
+}
+
+[data-theme="light"][data-accent="pink"] {
+  --color-sky-100: var(--color-pink-900);
+  --color-sky-200: var(--color-pink-800);
+  --color-sky-300: var(--color-pink-700);
+  --color-sky-400: var(--color-pink-600);
 }
 
 :root {
