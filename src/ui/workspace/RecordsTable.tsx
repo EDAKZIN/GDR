@@ -134,6 +134,7 @@ function CellValue({ field, value }: { field: Field; value: unknown }) {
       <img
         src={image.src}
         alt={field.name}
+        title={value}
         loading="lazy"
         onError={image.handleError}
         className="h-8 w-8 rounded border border-zinc-700 object-cover"

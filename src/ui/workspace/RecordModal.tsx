@@ -181,24 +181,32 @@ function ValueRow({
       image.src === null ? (
         <span className="break-all text-sm text-zinc-600">—</span>
       ) : (
-        <button
-          type="button"
-          title={t("registros.verEnGrande")}
-          className="group relative inline-block max-w-full cursor-zoom-in overflow-hidden rounded-lg border border-zinc-700"
-          onClick={() => {
-            onOpenImage(value);
-          }}
-        >
-          <img
-            src={image.src}
-            alt={field.name}
-            onError={image.handleError}
-            className="max-h-48 w-auto object-contain transition-transform duration-150 group-hover:scale-[1.02]"
-          />
-          <span className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/60 py-1 text-[10px] uppercase tracking-wide text-zinc-300 opacity-0 transition-opacity group-hover:opacity-100">
-            {t("registros.ampliar")}
+        <span className="inline-flex max-w-full flex-col items-start gap-1">
+          <button
+            type="button"
+            title={t("registros.verEnGrande")}
+            className="group relative inline-block max-w-full cursor-zoom-in overflow-hidden rounded-lg border border-zinc-700"
+            onClick={() => {
+              onOpenImage(value);
+            }}
+          >
+            <img
+              src={image.src}
+              alt={field.name}
+              onError={image.handleError}
+              className="max-h-48 w-auto object-contain transition-transform duration-150 group-hover:scale-[1.02]"
+            />
+            <span className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/60 py-1 text-[10px] uppercase tracking-wide text-zinc-300 opacity-0 transition-opacity group-hover:opacity-100">
+              {t("registros.ampliar")}
+            </span>
+          </button>
+          <span
+            title={value}
+            className="max-w-64 truncate font-mono text-[10px] text-zinc-500"
+          >
+            {value}
           </span>
-        </button>
+        </span>
       );
   } else if (field.type === "url" && typeof value === "string") {
     content = (
@@ -620,6 +628,12 @@ export function RecordModal() {
               className="max-h-[88vh] max-w-full rounded-lg border border-zinc-700 object-contain shadow-2xl"
             />
           ) : null}
+          <span
+            title={lightboxSrc}
+            className="absolute inset-x-0 bottom-3 mx-auto w-fit max-w-[80vw] truncate rounded bg-black/70 px-2 py-1 font-mono text-[10px] text-zinc-400"
+          >
+            {lightboxSrc}
+          </span>
           <button
             type="button"
             aria-label={t("registros.cerrarImagen")}

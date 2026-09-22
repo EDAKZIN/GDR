@@ -38,7 +38,7 @@ export function ImageField({ field, value, onChange, disabled }: FieldInputProps
     }
   }
 
-  const showPreview = url !== null && !image.failed && image.src !== null;
+  const previewSrc = url !== null && !image.failed ? image.src : null;
 
   return (
     <div className="flex items-start gap-3">
@@ -64,10 +64,11 @@ export function ImageField({ field, value, onChange, disabled }: FieldInputProps
       >
         <FolderOpen className="h-4 w-4" aria-hidden />
       </button>
-      {showPreview ? (
+      {url !== null && previewSrc !== null ? (
         <img
-          src={image.src ?? ""}
+          src={previewSrc}
           alt={field.name}
+          title={url}
           className="h-16 w-16 shrink-0 rounded-md border border-zinc-700 object-cover"
           onError={image.handleError}
         />
